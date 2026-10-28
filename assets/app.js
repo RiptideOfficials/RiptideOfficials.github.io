@@ -194,13 +194,16 @@
   };
 
   R.ASSIGN_GROUPS = [
-    { key: "meetRef", label: "Meet Referee" },
-    { key: "admin", label: "Admin Official" },
-    { key: "leadStarter", label: "Lead Starter" },
-    { key: "starter", label: "Starters" },
-    { key: "strokeTurn", label: "Stroke & Turn" },
-    { key: "relief", label: "Relief" },
-    { key: "shadow", label: "Shadowing" }
+    { key: "meetRef", label: "Meet Referee", cert: "Meet Referee" },
+    { key: "admin", label: "Admin Official", cert: "Admin Official" },
+    { key: "deckRef", label: "Deck Referee", cert: "Deck Referee" },
+    { key: "reliefDeckRef", label: "Relief Deck Referee", cert: "Deck Referee" },
+    { key: "leadStarter", label: "Lead Starter", cert: "Starter" },
+    { key: "starter", label: "Starters", cert: "Starter" },
+    { key: "reliefStarter", label: "Relief Starter", cert: "Starter" },
+    { key: "chiefJudge", label: "Chief Judge", cert: "Chief Judge" },
+    { key: "strokeTurn", label: "Stroke & Turn", cert: "Stroke & Turn" },
+    { key: "shadow", label: "Shadowing", cert: "" }
   ];
 
   /* ---------- add to calendar ---------- */

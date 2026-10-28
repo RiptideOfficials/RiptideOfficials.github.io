@@ -105,6 +105,7 @@
         $("meets").innerHTML = meets.length ? meets.map(function (m) {
           return "<li><div><strong>" + esc(m.title) + "</strong><br><span class=\"muted small\">" + esc(R.fmtRange(m)) + "</span></div>" +
             '<div class="btn-row" style="margin:0"><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Open</a>' +
+            '<a class="btn small ghost" href="assignments.html?m=' + encodeURIComponent(m.id) + '">Assignments</a>' +
             '<button class="btn small ghost" data-copy="' + esc(m.id) + '">Copy link</button>' +
             '<button class="btn small ghost" data-edit="' + esc(m.id) + '">Edit</button>' +
             '<button class="btn small danger" data-del="' + esc(m.id) + '">Delete</button></div></li>';

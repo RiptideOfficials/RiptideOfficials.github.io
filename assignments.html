@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Assigned positions | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* Admin-only: see everyone who signed up and assign positions. */
+(function () {
+  var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
+  R.footer();
+  var meetId = new URLSearchParams(location.search).get("m");
+  R.requireAdmin("meets").then(function (ctx) {
+    if (!ctx) return;
+    if (!meetId) { app.innerHTML = '<div class="card"><h2>Meet not found</h2></div>'; return; }
+    var meetRef = R.db.collection("meets").doc(meetId);
+    var $ = function (id) { return document.getElementById(id); };
+    meetRef.get().then(function (snap) {
+      if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2></div>'; return; }
+      document.title = "Assigned positions: " + snap.data().title;
+      render(snap.data());
+    }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
+
+    function render(m) {
+      var signups = [], contacts = {}, asg = {};
+      R.ASSIGN_GROUPS.forEach(function (g) { asg[g.key] = ((m.assignments || {})[g.key] || []).slice(); });
+      var detailsUrl = "meet.html?m=" + encodeURIComponent(meetId), signupUrl = "signup.html?m=" + encodeURIComponent(meetId);
+      app.innerHTML =
+        '<p style="margin:0 0 10px"><a href="' + detailsUrl + '">&larr; Meet details (what officials see)</a></p>' +
+        '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": assigned positions</h1>" +
+        "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
+        '<div class="btn-row"><a class="btn small ghost" href="' + signupUrl + '">Sign-up page</a>' +
+        '<button class="btn small ghost" id="copysu" type="button">Copy sign-up link</button></div></div>' +
+        '<div class="card" id="people-card"><h2>Signed up</h2><div id="people" class="muted">Loading...</div></div>' +
+        '<div class="card" id="assign-card"></div>' +
+        '<div class="card hidden" id="tools-card"></div>';
+      $("copysu").onclick = function () {
+        var u = R.meetUrl(meetId).replace("meet.html", "signup.html");
+        R.copyText(u).then(function () { $("copysu").textContent = "Copied!"; setTimeout(function () { $("copysu").textContent = "Copy sign-up link"; }, 1500); });
+      };
+
+      function label(s) { return s.name + (s.team && !/^riptide$/i.test(s.team) ? " (" + s.team + ")" : ""); }
+      function asArr(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
+
+      function drawPeople() {
+        var el = $("people");
+        if (!signups.length) { el.textContent = "No sign-ups yet."; return; }
+        el.className = "";
+        el.innerHTML = '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Certified in</th><th>Shadowing</th><th>Comments</th><th>Email / phone</th><th></th></tr></thead><tbody>' +
+          signups.map(function (s) { var c = contacts[s.id] || {};
+            return "<tr><td>" + esc(label(s)) + (s.session && s.session !== "All sessions" ? '<br><span class="muted small">' + esc(s.session) + "</span>" : "") +
+              "</td><td>" + esc(asArr(s.certified).join(", ") || (s.role || "")) + "</td><td>" + esc(asArr(s.shadow).join(", ")) +
+              "</td><td>" + esc(c.comments || "") + "</td><td>" + esc(c.email || "") + "<br>" + esc(c.phone || "") +
+              '</td><td><button class="btn small danger" data-remove="' + esc(s.id) + '">Remove</button></td></tr>';
+          }).join("") + "</tbody></table></div>";
+      }
+
+      function drawAssign() {
+        var card = $("assign-card");
+        card.innerHTML = '<h2>Assign positions</h2><p class="muted small">Pick people who signed up, or type a name. People certified for a position are listed first. Tap <strong>Save and publish</strong> when you are done and everyone can see the assignments on the meet details page.</p>' +
+          R.ASSIGN_GROUPS.map(function (g) {
+            var first = [], rest = [];
+            signups.forEach(function (s) {
+              var ok = g.key === "shadow" ? asArr(s.shadow).length : asArr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); });
+              var info = g.key === "shadow" ? "wants to shadow " + asArr(s.shadow).join(", ") : asArr(s.certified).join(", ");
+              var o = '<option value="' + esc(label(s)) + '">' + esc(label(s)) + (info ? " \u2014 " + esc(info) : "") + "</option>";
+              (ok ? first : rest).push(o);
+            });
+            var opts = (first.length ? '<optgroup label="' + (g.key === "shadow" ? "Interested in shadowing" : "Certified") + '">' + first.join("") + "</optgroup>" : "") +
+                       (rest.length ? '<optgroup label="Everyone else">' + rest.join("") + "</optgroup>" : "");
+            return '<div class="asg-group"><h3>' + esc(g.label) + '</h3><div class="chips">' +
+              (asg[g.key].length ? asg[g.key].map(function (n, i) {
+                return '<span class="chip">' + esc(n) + ' <button type="button" aria-label="Remove ' + esc(n) + '" data-asg-rm="' + g.key + ":" + i + '">&times;</button></span>';
+              }).join("") : '<span class="muted small">No one yet</span>') + "</div>" +
+              '<div class="asg-add"><select data-asg-sel="' + g.key + '"><option value="">Add from sign-ups...</option>' + opts + "</select>" +
+              '<input data-asg-txt="' + g.key + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + g.key + '">Add</button></div></div>';
+          }).join("") +
+          '<div class="btn-row"><button class="btn green" type="button" id="asg-save">Save and publish</button></div><div id="asg-status" role="status"></div>';
+      }
+
+      function drawTools() {
+        var emails = [];
+        signups.forEach(function (s) { var c = contacts[s.id]; if (c && c.email && emails.indexOf(c.email) < 0) emails.push(c.email); });
+        var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title);
+        var card = $("tools-card"); card.classList.remove("hidden");
+        card.innerHTML = '<h2>Email officials</h2><div class="btn-row" style="margin-top:0">' +
+          (emails.length ? '<a class="btn" href="' + mailto + '">Email officials</a>' : '<button class="btn" disabled>Email officials</button>') +
+          '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ")</button></div>" +
+          '<p class="hint">"Email officials" opens your email app with everyone on blind copy and the meet name as the subject. If your email app cuts off a long list, use Copy all emails instead.</p>';
+        var ce = $("copyemails");
+        if (ce) ce.onclick = function () { R.copyText(emails.join(", ")).then(function () { ce.textContent = "Copied!"; }); };
+      }
+
+      app.addEventListener("click", function (e) {
+        var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
+        if (g("data-asg-rm")) { var pr = g("data-asg-rm").split(":"); asg[pr[0]].splice(+pr[1], 1); drawAssign(); }
+        else if (g("data-asg-add")) {
+          var k = g("data-asg-add"), sel = document.querySelector('[data-asg-sel="' + k + '"]'), txt = document.querySelector('[data-asg-txt="' + k + '"]');
+          var v = txt.value.trim() || sel.value;
+          if (v && asg[k].indexOf(v) < 0) asg[k].push(v);
+          drawAssign();
+        } else if (t.id === "asg-save") {
+          var st = $("asg-status"); t.disabled = true;
+          meetRef.update({ assignments: asg }).then(function () {
+            st.innerHTML = '<div class="msg ok">Saved. <a href="' + detailsUrl + '">See the published assignments</a></div>';
+          }).catch(function () { st.innerHTML = '<div class="msg err">Could not save. Please try again.</div>'; })
+            .then(function () { t.disabled = false; });
+        } else if (g("data-remove")) {
+          var id = g("data-remove");
+          if (!confirm("Remove this person's sign-up?")) return;
+          Promise.all([meetRef.collection("signups").doc(id).delete(), meetRef.collection("contacts").doc(id).delete()]).then(load)
+            .catch(function () { alert("Could not remove that sign-up."); });
+        }
+      });
+
+      function load() {
+        return meetRef.collection("signups").orderBy("createdAt").get().then(function (snap) {
+          signups = snap.docs.map(function (d) { var s = d.data(); s.id = d.id; return s; });
+          return meetRef.collection("contacts").get();
+        }).then(function (cs) {
+          contacts = {}; cs.docs.forEach(function (d) { contacts[d.id] = d.data(); });
+          drawPeople(); drawAssign(); drawTools();
+        }).catch(function () { $("people").innerHTML = '<div class="msg err">Could not load the sign-ups.</div>'; });
+      }
+      load();
+    }
+  });
+})();
+</script>
+</body>
+</html>

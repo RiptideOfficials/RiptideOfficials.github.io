@@ -40,7 +40,7 @@
       function row(m) {
         return "<li><div><strong>" + esc(m.title) + "</strong><br><span class=\"muted small\">" + esc(R.fmtRange(m)) +
           (m.location ? " &middot; " + esc(m.location) : "") + "</span></div><div class=\"btn-row\" style=\"margin:0\">" +
-          (ctx.isAdmin ? '<button class="btn small ghost" data-copy="' + esc(m.id) + '">Copy link</button>' : "") +
+          (ctx.isAdmin ? '<a class="btn small ghost" href="assignments.html?m=' + encodeURIComponent(m.id) + '">Assignments</a><button class="btn small ghost" data-copy="' + esc(m.id) + '">Copy link</button>' : "") +
           '<a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Open</a></div></li>';
       }
       var up = meets.filter(function (m) { return (m.endDate || m.date) >= key; });
