@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Meet Sign-Up | Riptide Officials</title>
+<title>Meet | Riptide Officials</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
 <meta name="theme-color" content="#0a2a4a">
@@ -25,8 +25,7 @@
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
 <script>
-/* Public by link: anyone with this page's URL can view the meet and sign up (no login).
-   Names are shown publicly; email/phone go to a separate admin-only collection. */
+/* Public by link: anyone with this page's URL can view the meet details and assignments (no login). */
 (function () {
   var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
   R.footer();
@@ -36,155 +35,48 @@
   R.getContext().then(function (ctx) {
     R.renderHeader(ctx, "meets");
     if (!meetId) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is missing its meet code. Please use the full link you were sent.</p></div>'; return; }
-    var meetRef = R.db.collection("meets").doc(meetId);
-    meetRef.get().then(function (snap) {
-      if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This sign-up link is not valid. Please check the link you were sent.</p></div>'; return; }
+    R.db.collection("meets").doc(meetId).get().then(function (snap) {
+      if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is not valid. Please check the link you were sent.</p></div>'; return; }
       document.title = snap.data().title + " | Riptide Officials";
-      render(ctx, snap.data());
+      render(snap.data());
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
 
-    function render(ctx, m) {
-      var sched = R.parseSchedule(m.schedule), roles = R.parseRoles(m.roles), sessions = R.lines(m.sessions);
-      if (!sessions.length) sessions = ["All sessions"];
-      roles = roles.filter(function (r) { return !/shadow/i.test(r.name); });
-      var shadowRoles = roles.filter(function (r) { return !/^meet referee$/i.test(r.name); });
+    function render(m) {
+      var sched = R.parseSchedule(m.schedule), a = m.assignments || {};
+      var url = R.meetUrl(meetId), signupUrl = "signup.html?m=" + encodeURIComponent(meetId);
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
-        "<h1 style=\"margin-top:8px\">" + esc(m.title) + "</h1>" +
+        '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
         (m.notes ? '<p style="white-space:pre-wrap">' + esc(m.notes) + "</p>" : "") +
-        (ctx.isAdmin ? '<div class="btn-row"><a class="btn small ghost" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
-          '<button class="btn small ghost" id="copylink">Copy sign-up link</button></div>' : "") + "</div>";
+        '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up to work</a>' +
+        '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button>' +
+        (ctx.isAdmin ? '<a class="btn small ghost" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
+          '<a class="btn small ghost" href="' + signupUrl + '#assign">Assign positions</a>' +
+          '<button class="btn small ghost" type="button" id="copylink">Copy link</button>' : "") + "</div>" +
+        '<div id="cal-opts" class="btn-row hidden">' +
+        '<a class="btn small" target="_blank" rel="noopener" href="' + esc(R.googleCalUrl(m, url)) + '">Google Calendar</a>' +
+        '<a class="btn small" download="' + esc(m.title.replace(/[^\w]+/g, "-")) + '.ics" href="' + R.icsHref(m, meetId, url) + '">Apple / Outlook (.ics)</a></div></div>';
 
       html += '<div class="meet-grid"><div>';
       if (sched.length) {
         html += '<div class="card"><h2>Meet details</h2><table class="sched">' + sched.map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
       }
-
-      html += '<div class="card" id="signup-card"><h2>Sign up to work</h2>' +
-        '<form id="su" novalidate>' +
-        '<div id="step1"><p class="muted small" style="margin-top:0">Step 1 of 2</p>' +
-        '<label for="su-name">Your name</label><input id="su-name" autocomplete="name" required>' +
-        (sessions.length > 1 ? '<label>Which sessions can you work?</label><div class="checks" id="su-sessions">' +
-          sessions.map(function (x, i) { return '<label class="chk"><input type="checkbox" name="sess" value="' + esc(x) + '"' + (i === 0 && sessions.length === 1 ? " checked" : "") + "> " + esc(x) + "</label>"; }).join("") + "</div>" : "") +
-        '<div class="btn-row"><button class="btn" type="button" id="su-next">Next</button></div></div>' +
-        '<div id="step2" class="hidden"><p class="muted small" style="margin-top:0">Step 2 of 2</p>' +
-        '<div class="row2"><div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>' +
-        '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
-        '<label for="su-team">Team / club</label><input id="su-team" placeholder="Riptide">' +
-        '<div class="hint">Your email and phone are only seen by the officials coordinators. Other officials see your name and team only.</div>' +
-        '<label>Select everything you are certified in</label><div class="checks" id="su-certs">' +
-        roles.map(function (r) { return '<label class="chk"><input type="checkbox" name="cert" value="' + esc(r.name) + '"> ' + esc(r.name) + "</label>"; }).join("") + "</div>" +
-        '<label>Interested in shadowing? Pick one position</label><div class="checks" id="su-shadow">' +
-        '<label class="chk"><input type="radio" name="shadow" value="" checked> Not shadowing</label>' +
-        shadowRoles.map(function (r) { return '<label class="chk"><input type="radio" name="shadow" value="' + esc(r.name) + '"> ' + esc(r.name) + "</label>"; }).join("") + "</div>" +
-        '<div class="btn-row"><button class="btn ghost" type="button" id="su-back">Back</button><button class="btn green" type="submit" id="su-btn">Sign me up</button></div></div>' +
-        '<div id="su-status" role="status"></div></form></div>';
-
-      html += '</div><div><div class="card who" id="who"><h2>Who\'s signed up</h2><div id="who-body" class="muted">Loading...</div></div></div></div>';
-      if (ctx.isAdmin) html += '<div class="card hidden" id="admin-card"></div>';
+      html += '<div class="card"><h2>Want to work this meet?</h2><p>Sign up and tell us what you are certified in.</p><div class="btn-row" style="margin-top:0"><a class="btn green" href="' + signupUrl + '">Sign up to work</a></div></div>';
+      html += "</div><div>";
+      var any = R.ASSIGN_GROUPS.some(function (g) { return (a[g.key] || []).length; });
+      html += '<div class="card" id="assignments"><h2>Meet assignments</h2>';
+      if (!any) html += '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>';
+      else html += R.ASSIGN_GROUPS.map(function (g) {
+        var list = a[g.key] || []; if (!list.length) return "";
+        return '<div class="asg-show"><h3>' + esc(g.label) + "</h3><ul>" + list.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
+      }).join("");
+      html += "</div></div>";
       app.innerHTML = html;
 
-      var signups = [], contacts = {};
-      var $ = function (id) { return document.getElementById(id); };
-
-      if (ctx.user) {
-        var p = ctx.profile || {};
-        $("su-name").value = p.name || ""; $("su-email").value = p.email || ctx.user.email || ""; $("su-phone").value = p.phone || "";
-        $("su-team").value = "Riptide";
-      }
-      var cl = $("copylink");
-      if (cl) cl.onclick = function () { R.copyText(R.meetUrl(meetId)).then(function () { cl.textContent = "Copied!"; setTimeout(function () { cl.textContent = "Copy sign-up link"; }, 1500); }); };
-
-      function drawWho() {
-        var body = $("who-body");
-        if (!signups.length) { body.textContent = "No one yet. Be the first!"; drawAdmin(); return; }
-        body.className = "";
-        body.innerHTML = "<ul>" + signups.map(function (s) {
-          var mine = ctx.user && s.uid === ctx.user.uid;
-          return "<li><strong>" + esc(s.name) + "</strong>" + (s.team ? ' <span class="muted small">(' + esc(s.team) + ")</span>" : "") +
-            '<br><span class="small">' + (s.certified && s.certified.length ? "Certified: " + esc(s.certified.join(", ")) : (s.role && !s.shadow ? esc(s.role) : "")) +
-            (s.shadow ? (s.certified && s.certified.length ? " &middot; " : "") + "Shadowing: " + esc(s.shadow) : "") + "</span>" +
-            (mine ? ' <button class="btn small ghost" data-cancel="' + esc(s.id) + '">Cancel mine</button>' : "") + "</li>";
-        }).join("") + "</ul>";
-        drawAdmin();
-      }
-
-      function load() {
-        return meetRef.collection("signups").orderBy("createdAt").get().then(function (snap) {
-          signups = snap.docs.map(function (d) { var s = d.data(); s.id = d.id; return s; });
-          if (!ctx.isAdmin) return;
-          return meetRef.collection("contacts").get().then(function (cs) {
-            contacts = {}; cs.docs.forEach(function (d) { contacts[d.id] = d.data(); });
-          });
-        }).then(drawWho).catch(function () { $("who-body").innerHTML = '<div class="msg err">Could not load the sign-up list.</div>'; });
-      }
-
-      function drawAdmin() {
-        if (!ctx.isAdmin) return;
-        var card = $("admin-card"); card.classList.remove("hidden");
-        var emails = [];
-        signups.forEach(function (s) { var c = contacts[s.id]; if (c && c.email && emails.indexOf(c.email) < 0) emails.push(c.email); });
-        var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title);
-        card.innerHTML = '<h2>Coordinator tools</h2><p class="muted small">Only admins can see this section.</p>' +
-          '<div class="btn-row" style="margin-top:0">' +
-          (emails.length ? '<a class="btn" href="' + mailto + '">Email officials</a>' : '<button class="btn" disabled>Email officials</button>') +
-          '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ")</button></div>" +
-          '<p class="hint">"Email officials" opens your email app with everyone on blind copy and the meet name as the subject. If your email app cuts off a long list, use Copy all emails instead.</p>' +
-          '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Sessions</th><th>Certified / shadowing</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>' +
-          signups.map(function (s) { var c = contacts[s.id] || {};
-            return "<tr><td>" + esc(s.name) + (s.team ? "<br><span class=\"muted small\">" + esc(s.team) + "</span>" : "") + "</td><td>" + esc(s.session) + "</td><td>" + esc(s.certified && s.certified.length ? s.certified.join(", ") : (s.role || "")) + (s.shadow ? "<br><em>Shadowing: " + esc(s.shadow) + "</em>" : "") +
-              "</td><td>" + esc(c.email || "") + "</td><td>" + esc(c.phone || "") + '</td><td><button class="btn small danger" data-remove="' + esc(s.id) + '">Remove</button></td></tr>';
-          }).join("") + "</tbody></table></div>";
-        var ce = $("copyemails");
-        if (ce) ce.onclick = function () { R.copyText(emails.join(", ")).then(function () { ce.textContent = "Copied!"; }); };
-      }
-
-      app.addEventListener("click", function (e) {
-        var t = e.target, cancel = t.getAttribute && t.getAttribute("data-cancel"), rem = t.getAttribute && t.getAttribute("data-remove");
-        var id = cancel || rem;
-        if (!id) return;
-        if (!confirm(rem ? "Remove this person from the sign-up?" : "Cancel your sign-up?")) return;
-        Promise.all([meetRef.collection("signups").doc(id).delete(), meetRef.collection("contacts").doc(id).delete()])
-          .then(load).catch(function () { alert("Could not remove that sign-up."); });
-      });
-
-      function val(sel) { return Array.prototype.map.call(document.querySelectorAll(sel + ":checked"), function (i) { return i.value; }); }
-      $("su-next").onclick = function () {
-        var st = $("su-status");
-        if (!$("su-name").value.trim()) { st.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
-        if (sessions.length > 1 && !val('input[name="sess"]').length) { st.innerHTML = '<div class="msg err">Please pick at least one session.</div>'; return; }
-        st.innerHTML = ""; $("step1").classList.add("hidden"); $("step2").classList.remove("hidden");
-        $("su-email").focus();
-      };
-      $("su-back").onclick = function () { $("step2").classList.add("hidden"); $("step1").classList.remove("hidden"); };
-      $("su").addEventListener("submit", function (e) {
-        e.preventDefault();
-        var st = $("su-status"), btn = $("su-btn");
-        var name = $("su-name").value.trim(), email = $("su-email").value.trim(), phone = $("su-phone").value.trim(),
-            team = $("su-team").value.trim(), certified = val('input[name="cert"]'),
-            shadow = (val('input[name="shadow"]')[0]) || "",
-            session = sessions.length > 1 ? val('input[name="sess"]').join(", ") : sessions[0];
-        if (!name || !/^\S+@\S+\.\S+$/.test(email) || !phone) { st.innerHTML = '<div class="msg err">Please fill in a valid email and your phone number.</div>'; return; }
-        if (!certified.length && !shadow) { st.innerHTML = '<div class="msg err">Please select what you are certified in, or pick a position to shadow.</div>'; return; }
-        btn.disabled = true; btn.textContent = "Signing up...";
-        var id = R.newId(), ts = firebase.firestore.FieldValue.serverTimestamp(), uid = ctx.user ? ctx.user.uid : null;
-        var role = (certified.join(", ") || "Shadowing").slice(0, 190);
-        var pub = { name: name, team: team, role: role, certified: certified, shadow: shadow, session: session.slice(0, 190), uid: uid, createdAt: ts };
-        var priv = Object.assign({ email: email, phone: phone }, pub);
-        var batch = R.db.batch();
-        batch.set(meetRef.collection("signups").doc(id), pub);
-        batch.set(meetRef.collection("contacts").doc(id), priv);
-        batch.commit().then(function () {
-          st.innerHTML = '<div class="msg ok">You\'re signed up. Thank you! To make a change, email ' + esc(window.ADMIN_EMAIL) + ".</div>";
-          $("su").reset(); $("step2").classList.add("hidden"); $("step1").classList.remove("hidden");
-          if (ctx.user) { var p2 = ctx.profile || {}; $("su-name").value = p2.name || ""; $("su-email").value = p2.email || ctx.user.email || ""; $("su-phone").value = p2.phone || ""; $("su-team").value = "Riptide"; }
-          return load();
-        }).catch(function () { st.innerHTML = '<div class="msg err">Sorry, that didn\'t go through. Please try again.</div>'; })
-          .then(function () { btn.disabled = false; btn.textContent = "Sign me up"; });
-      });
-
-      load();
+      document.getElementById("cal-btn").onclick = function () { document.getElementById("cal-opts").classList.toggle("hidden"); };
+      var cl = document.getElementById("copylink");
+      if (cl) cl.onclick = function () { R.copyText(url).then(function () { cl.textContent = "Copied!"; setTimeout(function () { cl.textContent = "Copy link"; }, 1500); }); };
     }
   });
 })();

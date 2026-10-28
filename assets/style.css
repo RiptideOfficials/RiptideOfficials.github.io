@@ -235,3 +235,11 @@ details.card[open] summary{margin-bottom:8px}
 .chk{display:flex;align-items:center;gap:10px;font-weight:500;margin:0;padding:10px 12px;border:1px solid var(--line,#d5e0ea);border-radius:10px;background:#fff;cursor:pointer}
 .chk input{width:20px;height:20px;margin:0;flex:none}
 @media (min-width:760px){.checks{grid-template-columns:1fr 1fr}}
+
+/* assignments */
+.asg-show{margin:0 0 14px}.asg-show h3{margin:0 0 4px;color:var(--blue-dark)}.asg-show ul{margin:0;padding-left:20px}
+.asg-group{border-top:1px solid var(--line);padding:12px 0}.asg-group h3{margin:0 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--sky);color:var(--navy);border-radius:99px;padding:4px 6px 4px 12px;font-weight:600}
+.chip button{border:0;background:#fff;border-radius:50%;width:24px;height:24px;font-size:1.1rem;line-height:1;cursor:pointer;color:var(--navy)}
+.asg-add{display:flex;flex-wrap:wrap;gap:8px}.asg-add select,.asg-add input{flex:1 1 180px;min-width:0}

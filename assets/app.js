@@ -193,6 +193,45 @@
     return String(text || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
   };
 
+  R.ASSIGN_GROUPS = [
+    { key: "meetRef", label: "Meet Referee" },
+    { key: "admin", label: "Admin Official" },
+    { key: "leadStarter", label: "Lead Starter" },
+    { key: "starter", label: "Starters" },
+    { key: "strokeTurn", label: "Stroke & Turn" },
+    { key: "relief", label: "Relief" },
+    { key: "shadow", label: "Shadowing" }
+  ];
+
+  /* ---------- add to calendar ---------- */
+  function addDays(iso, n) {
+    var p = iso.split("-");
+    return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10);
+  }
+  R.meetDescription = function (m, url) {
+    var lines = R.parseSchedule(m.schedule).map(function (x) { return x.label + (x.value ? ": " + x.value : ""); });
+    if (m.notes) lines.push("", m.notes);
+    lines.push("", "Details and sign-up: " + url);
+    return lines.join("\n");
+  };
+  R.googleCalUrl = function (m, url) {
+    var a = m.date.replace(/-/g, ""), b = addDays(m.endDate || m.date, 1).replace(/-/g, "");
+    return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(m.title) +
+      "&dates=" + a + "/" + b + "&details=" + encodeURIComponent(R.meetDescription(m, url)) +
+      "&location=" + encodeURIComponent(m.location || "");
+  };
+  R.icsHref = function (m, id, url) {
+    function esc(t) { return String(t || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n"); }
+    function fold(l) { var o = []; while (l.length > 74) { o.push(l.slice(0, 74)); l = " " + l.slice(74); } o.push(l); return o.join("\r\n"); }
+    var stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+    var lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Riptide Officials//EN", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+      "UID:" + id + "@riptideofficials", "DTSTAMP:" + stamp,
+      "DTSTART;VALUE=DATE:" + m.date.replace(/-/g, ""), "DTEND;VALUE=DATE:" + addDays(m.endDate || m.date, 1).replace(/-/g, ""),
+      "SUMMARY:" + esc(m.title), "LOCATION:" + esc(m.location), "DESCRIPTION:" + esc(R.meetDescription(m, url)), "URL:" + url,
+      "END:VEVENT", "END:VCALENDAR"];
+    return "data:text/calendar;charset=utf-8," + encodeURIComponent(lines.map(fold).join("\r\n"));
+  };
+
   R.newId = function () {
     var a = new Uint8Array(15);
     (window.crypto || window.msCrypto).getRandomValues(a);
