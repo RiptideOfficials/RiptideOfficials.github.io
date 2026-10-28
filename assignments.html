@@ -159,13 +159,16 @@
         var emails = [];
         signups.forEach(function (s) { if (s.email && emails.indexOf(s.email) < 0) emails.push(s.email); });
         var body = meetText();
-        var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title) + "&body=" + encodeURIComponent(body);
+        var bccS = encodeURIComponent(emails.join(",")).replace(/%2C/g, ","), subS = encodeURIComponent(m.title);
+        function cap(txt, room) { var t = txt; while (t.length && encodeURIComponent(t).length > room) t = t.slice(0, Math.floor(t.length * 0.9)); return t.length < txt.length ? t.replace(/\s+\S*$/, "") + "\n...(more on the meet page: " + R.meetUrl(meetId) + ")" : t; }
+        var gm = "https://mail.google.com/mail/?view=cm&fs=1&bcc=" + bccS + "&su=" + subS + "&body=" + encodeURIComponent(cap(body, 6000));
+        var mailto = "mailto:?bcc=" + bccS + "&subject=" + subS + "&body=" + encodeURIComponent(cap(body, Math.max(200, 1900 - bccS.length - subS.length)));
         var card = $("tools-card"); card.classList.remove("hidden");
         card.innerHTML = '<h2>Email officials</h2><div class="btn-row" style="margin-top:0">' +
-          (emails.length ? '<a class="btn" href="' + mailto + '">Email officials</a>' : '<button class="btn" disabled>Email officials</button>') +
+          (emails.length ? '<a class="btn" href="' + gm + '" target="_blank" rel="noopener">Email in Gmail</a><a class="btn ghost" href="' + mailto + '">Email in my email app</a>' : '<button class="btn" disabled>Email officials</button>') +
           '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ')</button>' +
           '<button class="btn ghost" id="copybody">Copy meet info</button></div>' +
-          '<p class="hint">"Email officials" opens your email app with everyone on blind copy, the meet name as the subject, and the meet details and assignments in the message. Assignments are taken as you see them below, so save first if you want the saved version. If your email app cuts off a long list or message, use Copy all emails and Copy meet info and paste them in.</p>';
+          '<p class="hint">"Email in Gmail" opens a new Gmail message in your browser with everyone on blind copy, the meet name as the subject, and the meet details and assignments in the message. "Email in my email app" does the same in Outlook or Mail if your computer is set up for it. Assignments are taken as you see them below, so save first if you want the saved version. If a long message gets cut off, use Copy all emails and Copy meet info and paste them in.</p>';
         var ce = $("copyemails");
         if (ce) ce.onclick = function () { R.copyText(emails.join(", ")).then(function () { ce.textContent = "Copied!"; }); };
         var cb = $("copybody");
