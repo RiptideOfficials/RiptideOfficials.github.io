@@ -31,10 +31,14 @@
   var DEFAULT_SCHEDULE = "Warm-ups | \nOfficials meeting | \nTimers meeting | \nMeet starts | ";
   var DEFAULT_ROLES = "Meet Referee | 1\nAdmin Official | 1\nStarter\nStroke & Turn\nChief Judge\nDeck Referee";
 
+  var SITE = location.href.split("#")[0].split("?")[0].replace(/[^\/]*$/, "");
   R.requireAdmin("admin").then(function (ctx) {
     if (!ctx) return;
     $("app").innerHTML =
       "<h1>Admin</h1>" +
+      '<div class="card"><h2>Share this site</h2><p class="muted small" style="margin-top:0">Send this link to anyone. They land on the Riptide Officials home page, where they can log in or ask to become an official.</p>' +
+      '<p><a href="' + R.esc(SITE) + '" target="_blank" rel="noopener"><strong>' + R.esc(SITE) + '</strong></a></p>' +
+      '<div class="btn-row" style="margin-top:0"><button class="btn" type="button" id="share-site">Share</button><button class="btn ghost" type="button" id="copy-site">Copy link</button></div></div>' +
       '<div class="card" id="meets-card"><h2>Meets</h2><div class="btn-row" style="margin:0 0 10px"><a class="btn coord" href="meet-edit.html">+ Add a meet</a></div><ul class="meet-list" id="meets"><li class="muted">Loading...</li></ul></div>' +
       '<div class="card"><h2>Private team info</h2><p class="muted small">Only approved members can see this, and it is never stored in the website files.</p>' +
       '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
@@ -75,6 +79,11 @@
       });
     }
 
+    $("copy-site").onclick = function () { var b = this; R.copyText(SITE).then(function () { b.textContent = "Copied!"; setTimeout(function () { b.textContent = "Copy link"; }, 1500); }); };
+    $("share-site").onclick = function () {
+      if (navigator.share) navigator.share({ title: "Riptide Officials", text: "Riptide Swimming Officials", url: SITE }).catch(function () {});
+      else R.copyText(SITE).then(function () { $("share-site").textContent = "Link copied!"; });
+    };
     $("meets").addEventListener("click", function (e) {
       var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
       if (g("data-copy")) R.copyText(R.meetUrl(g("data-copy"))).then(function () { t.textContent = "Copied!"; setTimeout(function () { t.textContent = "Copy link"; }, 1500); });
