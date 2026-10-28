@@ -92,8 +92,9 @@
         '<div class="row2"><div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>' +
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
         '<label for="su-team">Team / club</label><input id="su-team" placeholder="Your team or club">' +
+        '<label for="su-level">Certification level</label><input id="su-level" placeholder="For example: Apprentice, N2, N3" maxlength="40">' +
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
-        (n.whole.length ? '<div class="card"><h2>Whole meet</h2><p class="muted small" style="margin-top:0">These cover every session. Select any you are certified in.</p>' +
+        (n.whole.length ? '<div class="card"><h2>Sign up for the whole meet</h2><p class="muted small" style="margin-top:0">Every meet needs a Meet Referee and an Admin Official. If you sign up for one of these you are signing up for every session, so you do not need to pick sessions below.</p>' +
           checks("whole", n.whole, ex.certified, 'data-whole="1"') + "</div>" : "") +
         sessCards +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
@@ -104,7 +105,7 @@
       function fillMine() {
         if (editing) {
           $("su-name").value = ex.name || ""; $("su-email").value = ex.email || ""; $("su-phone").value = ex.phone || "";
-          $("su-team").value = ex.team || ""; $("su-comments").value = ex.comments || "";
+          $("su-team").value = ex.team || ""; $("su-comments").value = ex.comments || ""; $("su-level").value = ex.level || "";
           return;
         }
         if (!ctx.user) return;
@@ -119,7 +120,7 @@
         e.preventDefault();
         var st = $("su-status"), btn = $("su-btn");
         var name = $("su-name").value.trim(), email = $("su-email").value.trim(), phone = $("su-phone").value.trim(),
-            team = $("su-team").value.trim(), comments = $("su-comments").value.trim();
+            team = $("su-team").value.trim(), comments = $("su-comments").value.trim(), level = $("su-level").value.trim();
         var wholeSel = picked("input[data-whole]"), perSession = [], workAll = [], shadowAll = [], names = [];
         n.sessions.forEach(function (x, i) {
           var w = picked('input[data-s="' + i + '"][data-k="work"]'), sh = picked('input[data-s="' + i + '"][data-k="shadow"]');
@@ -131,7 +132,7 @@
         if (!certified.length && !shadow.length) { st.innerHTML = '<div class="msg err">Please select at least one position, or something you would like to shadow.</div>'; return; }
         btn.disabled = true; btn.textContent = "Saving...";
         var data = { name: name, team: team, role: (certified.join(", ") || "Shadowing").slice(0, 190), certified: certified, shadow: shadow,
-                     perSession: perSession, session: (names.join(", ") || "Whole meet").slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500) };
+                     perSession: perSession, session: (names.join(", ") || "Whole meet").slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500), level: level.slice(0, 40) };
         var k = key || R.newId(), ref = meetRef.collection("contacts").doc(k), p;
         if (editing) p = ref.update(data);
         else {

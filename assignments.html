@@ -60,7 +60,8 @@
         R.copyText(u).then(function () { $("copysu").textContent = "Copied!"; setTimeout(function () { $("copysu").textContent = "Copy sign-up link"; }, 1500); });
       };
 
-      function label(s) { return s.name + (s.team && !/^riptide$/i.test(s.team) ? " (" + s.team + ")" : ""); }
+      function label(s) { return s.name + (s.team && !/^riptide$/i.test(s.team) ? " (" + s.team + ")" : ""); }   // what gets published
+      function labelLv(s) { return label(s) + (s.level ? " [" + s.level + "]" : ""); }
       function arr(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
       function picks(s, i, kind) {
         if (Array.isArray(s.perSession)) { var f = s.perSession.filter(function (x) { return x.i === i; })[0]; return f ? arr(f[kind]) : []; }
@@ -72,7 +73,7 @@
         var el = $("people");
         if (!signups.length) { el.textContent = "No sign-ups yet."; return; }
         el.className = "";
-        el.innerHTML = '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Signed up for</th><th>Comments</th><th>Email / phone</th><th></th></tr></thead><tbody>' +
+        el.innerHTML = '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Level</th><th>Signed up for</th><th>Comments</th><th>Email / phone</th><th></th></tr></thead><tbody>' +
           signups.map(function (s) {
             var lines = [];
             var w = wholeCerts(s); if (w.length) lines.push("<strong>Whole meet:</strong> " + esc(w.join(", ")));
@@ -80,7 +81,7 @@
               var wk = picks(s, i, "work").filter(function (p) { return R.WHOLE_POS.indexOf(p) < 0 || !n.v2; }), sh = picks(s, i, "shadow");
               if (wk.length || sh.length) lines.push("<strong>" + esc(x.name) + ":</strong> " + esc(wk.join(", ")) + (sh.length ? (wk.length ? "; " : "") + "<em>shadow " + esc(sh.join(", ")) + "</em>" : ""));
             });
-            return "<tr><td>" + esc(label(s)) + "</td><td>" + (lines.join("<br>") || "") + "</td><td>" + esc(s.comments || "") +
+            return "<tr><td>" + esc(s.name + (s.team && !/^riptide$/i.test(s.team) ? " (" + s.team + ")" : "")) + "</td><td>" + esc(s.level || "") + "</td><td>" + (lines.join("<br>") || "") + "</td><td>" + esc(s.comments || "") +
               "</td><td>" + esc(s.email || "") + "<br>" + esc(s.phone || "") +
               '</td><td><button class="btn small danger" data-remove="' + esc(s.id) + '">Remove</button></td></tr>';
           }).join("") + "</tbody></table></div>";
@@ -93,7 +94,7 @@
           if (scope === "w") { ok = arr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? g.cert : ""; }
           else if (g.key === "shadow") { var sh = picks(s, sessionIndex, "shadow"); ok = sh.length > 0; info = ok ? "shadow " + sh.join(", ") : ""; }
           else { var wk = picks(s, sessionIndex, "work"); ok = wk.some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? wk.join(", ") : ""; }
-          var o = '<option value="' + esc(label(s)) + '">' + esc(label(s)) + (info ? " \u2014 " + esc(info) : "") + "</option>";
+          var o = '<option value="' + esc(label(s)) + '">' + esc(labelLv(s)) + (info ? " \u2014 " + esc(info) : "") + "</option>";
           (ok ? first : rest).push(o);
         });
         var opts = (first.length ? '<optgroup label="' + (g.key === "shadow" ? "Wants to shadow" : "Signed up for this") + '">' + first.join("") + "</optgroup>" : "") +
@@ -109,7 +110,9 @@
       function listFor(scope) { return scope === "w" ? asg.whole : asg.sessions[+scope.slice(1)]; }
 
       function drawAssign() {
+        var missing = R.WHOLE_GROUPS.filter(function (g) { return !asg.whole[g.key].length; }).map(function (g) { return g.label; });
         var html = '<div class="card coord-card"><h2>Whole meet</h2>' +
+          (missing.length ? '<div class="msg err">Every meet needs a Meet Referee and an Admin Official. Still needed: ' + esc(missing.join(" and ")) + ".</div>" : "") +
           R.WHOLE_GROUPS.map(function (g) { return groupHtml("w", g, asg.whole[g.key]); }).join("") + "</div>";
         n.sessions.forEach(function (x, i) {
           html += '<div class="card coord-card"><h2>' + esc(x.name) + "</h2>" + (R.sessionWhen(x) ? '<p class="muted" style="margin-top:0">' + esc(R.sessionWhen(x)) + "</p>" : "") +
