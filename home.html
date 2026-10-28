@@ -33,17 +33,14 @@
     var name = ctx.profile && ctx.profile.name ? ctx.profile.name.split(" ")[0] : "";
     app.innerHTML =
       '<h1>' + (name ? "Welcome, " + esc(name) : "Meet calendar") + "</h1>" +
-      '<div class="home-grid"><div><div class="card"><div class="cal-head">' +
+      '<div class="card"><h2>Upcoming meets</h2><ul class="meet-list" id="upcoming"><li class="muted">Loading...</li></ul>' +
+      '<div class="btn-row"><a class="btn ghost small" href="meets.html">All meets</a></div></div>' +
+      '<div class="card"><div class="cal-head">' +
       '<button class="btn small ghost" id="prev" aria-label="Previous month">&larr;</button>' +
       '<h2 id="month"></h2>' +
       '<button class="btn small ghost" id="next" aria-label="Next month">&rarr;</button></div>' +
       '<div class="cal" id="cal"></div>' +
-      '<p class="muted small" style="margin-bottom:0">Tap a meet to see details and sign up.</p></div></div><div>' +
-      '<div class="card"><h2>Upcoming meets</h2><ul class="meet-list" id="upcoming"><li class="muted">Loading...</li></ul>' +
-      '<div class="btn-row"><a class="btn ghost small" href="meets.html">All meets</a></div></div>' +
-      '<div class="grid"><a class="card" href="docs.html" style="margin:0;text-decoration:none"><h3>Documents</h3><p class="muted" style="margin:0">Briefings, situations and resolutions, counting sheets, pool diagram.</p></a>' +
-      '<a class="card" href="apprentice-forms.html" style="margin:0;text-decoration:none"><h3>Apprentice forms</h3><p class="muted" style="margin:0">Printable forms to bring to shadow sessions.</p></a>' +
-      '<a class="card" href="docs.html#training" style="margin:0;text-decoration:none"><h3>Training and registration</h3><p class="muted" style="margin:0">How to become a USA Swimming official.</p></a></div></div></div>';
+      '<p class="muted small" style="margin-bottom:0">Tap a meet to see details and sign up.</p></div>';
 
     var meets = [], view = new Date(); view.setDate(1);
     var today = new Date(); today.setHours(0, 0, 0, 0);
