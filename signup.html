@@ -37,6 +37,7 @@
     R.renderHeader(ctx, "meets");
     if (!meetId) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is missing its meet code. Please use the full link you were sent.</p></div>'; return; }
     var meetRef = R.db.collection("meets").doc(meetId);
+    var claims = {}, WK = { "Meet Referee": "meetRef", "Admin Official": "admin" };
     function findKey() {
       var q = new URLSearchParams(location.search).get("e"), ls = null;
       if (q) return Promise.resolve(q);
@@ -49,10 +50,15 @@
       if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This sign-up link is not valid. Please check the link you were sent.</p></div>'; return; }
       document.title = "Sign up: " + snap.data().title + " | Riptide Officials";
       return findKey().then(function (key) {
-        if (!key) return render(snap.data(), null, null);
-        return meetRef.collection("contacts").doc(key).get().then(function (c) {
-          if (c.exists) render(snap.data(), key, c.data()); else render(snap.data(), null, null, !!new URLSearchParams(location.search).get("e"));
-        }).catch(function () { render(snap.data(), null, null); });
+        return meetRef.collection("whole").get().then(function (cs) {
+          var cl = {}; cs.docs.forEach(function (d) { cl[d.id] = d.data(); }); return cl;
+        }).catch(function () { return {}; }).then(function (cl) {
+          claims = cl;
+          if (!key) return render(snap.data(), null, null);
+          return meetRef.collection("contacts").doc(key).get().then(function (c) {
+            if (c.exists) render(snap.data(), key, c.data()); else render(snap.data(), null, null, !!new URLSearchParams(location.search).get("e"));
+          }).catch(function () { render(snap.data(), null, null); });
+        });
       });
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
 
@@ -94,8 +100,11 @@
         '<label for="su-team">Team / club</label><input id="su-team" placeholder="Your team or club">' +
         '<label for="su-level">Certification level</label><input id="su-level" placeholder="For example: Apprentice, N2, N3" maxlength="40">' +
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
-        (n.whole.length ? '<div class="card"><h2>Sign up for the whole meet</h2><p class="muted small" style="margin-top:0">Every meet needs a Meet Referee and an Admin Official. If you sign up for one of these you are signing up for every session, so you do not need to pick sessions below.</p>' +
-          checks("whole", n.whole, ex.certified, 'data-whole="1"') + "</div>" : "") +
+        (n.whole.length ? '<div class="card"><h2>Meet Referee and Admin Official</h2><div class="checks">' + n.whole.map(function (p) {
+          var c = claims[WK[p]], isMine = editing && has(ex.certified, p);
+          if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + ' &mdash; ' + esc(c.name) + "</div>";
+          return '<label class="chk"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>";
+        }).join("") + "</div></div>" : "") +
         sessCards +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
         '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">' + (editing ? "Save changes" : "Sign me up") + "</button>" +
@@ -134,11 +143,24 @@
         var data = { name: name, team: team, role: (certified.join(", ") || "Shadowing").slice(0, 190), certified: certified, shadow: shadow,
                      perSession: perSession, session: (names.join(", ") || "Whole meet").slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500), level: level.slice(0, 40) };
         var k = key || R.newId(), ref = meetRef.collection("contacts").doc(k), p;
-        if (editing) p = ref.update(data);
-        else {
+        var held = editing ? R.WHOLE_POS.filter(function (x) { return has(ex.certified, x); }) : [];
+        var toClaim = wholeSel.filter(function (x) { return held.indexOf(x) < 0; }), toRelease = held.filter(function (x) { return wholeSel.indexOf(x) < 0; });
+        var taken = [];
+        p = toClaim.reduce(function (chain, pos) {
+          return chain.then(function () {
+            return meetRef.collection("whole").doc(WK[pos]).set({ name: name, team: team, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+              .then(function () { taken.push(pos); });
+          });
+        }, Promise.resolve()).then(function () {
+          return Promise.all(toRelease.map(function (pos) { return meetRef.collection("whole").doc(WK[pos]).delete(); }));
+        }).then(function () {
+          if (editing) return ref.update(data);
           data.uid = ctx.user ? ctx.user.uid : null; data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-          p = ref.set(data);
-        }
+          return ref.set(data);
+        }).catch(function (err) {
+          return Promise.all(taken.map(function (pos) { return meetRef.collection("whole").doc(WK[pos]).delete().catch(function () {}); }))
+            .then(function () { var e2 = new Error("claim"); e2.claim = true; throw e2; });
+        });
         p.then(function () {
           try { localStorage.setItem("ro_su_" + meetId, k); } catch (x) {}
           if (ctx.user) R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).set({ key: k }).catch(function () {});
@@ -154,15 +176,16 @@
             '<a class="btn ghost" href="' + detailsUrl + '">See meet details</a></div></div>';
           $("cp").onclick = function () { R.copyText(link).then(function () { $("cp").textContent = "Copied!"; }); };
           window.scrollTo(0, 0);
-        }).catch(function () {
-          st.innerHTML = '<div class="msg err">Sorry, that didn\'t go through. Please try again.</div>';
+        }).catch(function (err) {
+          st.innerHTML = '<div class="msg err">' + (err && err.claim && toClaim.length ? "Sorry, someone just took " + esc(toClaim.join(" / ")) + ". Please refresh the page and pick again." : "Sorry, that didn\'t go through. Please try again.") + "</div>";
           btn.disabled = false; btn.textContent = editing ? "Save changes" : "Sign me up";
         });
       });
       var cancel = $("su-cancel");
       if (cancel) cancel.onclick = function () {
         if (!confirm("Cancel your sign-up for this meet?")) return;
-        meetRef.collection("contacts").doc(key).delete().then(function () {
+        Promise.all(R.WHOLE_POS.filter(function (x) { return has(ex.certified, x); }).map(function (x) { return meetRef.collection("whole").doc(WK[x]).delete(); }))
+          .then(function () { return meetRef.collection("contacts").doc(key).delete(); }).then(function () {
           try { localStorage.removeItem("ro_su_" + meetId); } catch (x) {}
           if (ctx.user) R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).delete().catch(function () {});
           app.innerHTML = '<div class="card"><h1>Your sign-up was cancelled</h1><p>You can sign up again any time from the meet page.</p><div class="btn-row"><a class="btn" href="' + detailsUrl + '">Meet details</a></div></div>';

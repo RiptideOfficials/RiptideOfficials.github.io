@@ -35,10 +35,12 @@
   R.getContext().then(function (ctx) {
     R.renderHeader(ctx, "meets");
     if (!meetId) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is missing its meet code. Please use the full link you were sent.</p></div>'; return; }
-    R.db.collection("meets").doc(meetId).get().then(function (snap) {
+    var meetRef = R.db.collection("meets").doc(meetId);
+    meetRef.get().then(function (snap) {
       if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is not valid. Please check the link you were sent.</p></div>'; return; }
       document.title = snap.data().title + " | Riptide Officials";
-      render(snap.data());
+      return meetRef.collection("whole").get().then(function (cs) { var c = {}; cs.docs.forEach(function (d) { c[d.id] = d.data().name; }); return c; })
+        .catch(function () { return {}; }).then(function (claims) { render(snap.data(), claims); });
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
 
     function paras(t) {
@@ -59,8 +61,9 @@
       return '<div class="asg-show"><h3>' + esc(label) + "</h3><ul>" + names.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
     }
 
-    function render(m) {
+    function render(m, claims) {
       var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length);
+      R.WHOLE_GROUPS.forEach(function (g) { if (!asg.whole[g.key].length && claims[g.key]) asg.whole[g.key] = [claims[g.key]]; });
       var url = R.meetUrl(meetId), signupUrl = "signup.html?m=" + encodeURIComponent(meetId);
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
@@ -96,6 +99,7 @@
       // sessions
       n.sessions.forEach(function (x, i) {
         var o = asg.sessions[i], any = R.SESSION_GROUPS.some(function (g) { return o[g.key].length; });
+        if (!n.v2 && !any) return;
         html += '<div class="card session"><h2>' + esc(x.name) + "</h2>" +
           (R.sessionWhen(x) ? '<p class="when-line">' + esc(R.sessionWhen(x)) + "</p>" : "") +
           (x.notes ? "<h3>Notes for officials</h3>" + paras(x.notes) : "") +

@@ -42,7 +42,7 @@
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
 
     function render(m) {
-      var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length), signups = [];
+      var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length), signups = [], claims = {};
       var detailsUrl = "meet.html?m=" + encodeURIComponent(meetId), signupUrl = "signup.html?m=" + encodeURIComponent(meetId);
       app.innerHTML =
         '<p style="margin:0 0 10px"><a href="' + detailsUrl + '">&larr; Meet details (what officials see)</a></p>' +
@@ -100,7 +100,8 @@
         var opts = (first.length ? '<optgroup label="' + (g.key === "shadow" ? "Wants to shadow" : "Signed up for this") + '">' + first.join("") + "</optgroup>" : "") +
                    (rest.length ? '<optgroup label="Everyone else">' + rest.join("") + "</optgroup>" : "");
         var id = scope + ":" + g.key;
-        return '<div class="asg-group"><h3>' + esc(g.label) + '</h3><div class="chips">' +
+        var claim = scope === "w" && claims[g.key] ? '<p class="small" style="margin:0 0 6px">Signed up on the sign-up page: <strong>' + esc(claims[g.key].name) + '</strong> <button type="button" class="btn small ghost" data-clear-claim="' + g.key + '">Clear</button></p>' : "";
+        return '<div class="asg-group"><h3>' + esc(g.label) + "</h3>" + claim + '<div class="chips">' +
           (list.length ? list.map(function (nm, i) {
             return '<span class="chip">' + esc(nm) + ' <button type="button" aria-label="Remove ' + esc(nm) + '" data-asg-rm="' + id + ":" + i + '">&times;</button></span>';
           }).join("") : '<span class="muted small">No one yet</span>') + "</div>" +
@@ -150,6 +151,9 @@
             st.innerHTML = '<div class="msg ok">Saved. <a href="' + detailsUrl + '">See the published assignments</a></div>';
           }).catch(function () { st.innerHTML = '<div class="msg err">Could not save. Please try again.</div>'; })
             .then(function () { t.disabled = false; });
+        } else if (g("data-clear-claim")) {
+          var ck = g("data-clear-claim");
+          meetRef.collection("whole").doc(ck).delete().then(function () { delete claims[ck]; drawAssign(); }).catch(function () { alert("Could not clear that."); });
         } else if (g("data-remove")) {
           var rid = g("data-remove");
           if (!confirm("Remove this person's sign-up?")) return;
@@ -158,6 +162,7 @@
       });
 
       function load() {
+        meetRef.collection("whole").get().then(function (cs) { claims = {}; cs.docs.forEach(function (d) { claims[d.id] = d.data(); }); drawAssign(); }).catch(function () {});
         return meetRef.collection("contacts").orderBy("createdAt").get().then(function (cs) {
           signups = cs.docs.map(function (d) { var s = d.data(); s.id = d.id; return s; });
           drawPeople(); drawAssign(); drawTools();
