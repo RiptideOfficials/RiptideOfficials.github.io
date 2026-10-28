@@ -43,9 +43,10 @@
           if (!r.ok || j.success === "false") throw new Error(j.message || "Send failed");
           form.reset();
           status.innerHTML = '<div class="msg ok">Thank you! Your message was sent and we\'ll be in touch soon.</div>';
-        }); }).catch(function () {
+        }); }).catch(function (err) {
           status.innerHTML = '<div class="msg err">Sorry, that didn\'t send. Please email ' +
-            R.esc(window.INTEREST_FORM_EMAIL) + ' directly.</div>';
+            R.esc(window.INTEREST_FORM_EMAIL) + ' directly.' +
+            (err && err.message ? '<br><span class="small">(' + R.esc(err.message) + ")</span>" : "") + "</div>";
         }).then(function () { btn.disabled = false; btn.textContent = "Send"; });
       });
     }
