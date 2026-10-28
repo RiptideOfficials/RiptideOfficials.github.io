@@ -60,6 +60,8 @@
       links += a("home.html", "Calendar", "home");
       links += a("docs.html", "Documents", "docs");
       links += a("apprentice-forms.html", "Apprentice Forms", "forms");
+      links += a("how-to.html", "Steps to Become", "steps");
+      links += a("docs.html#apparel", "Apparel", "apparel");
       links += a("meets.html", "Meet Sign-Ups", "meets");
       if (ctx.isAdmin) links += a("admin.html", "Admin", "admin", "coord");
       links += a("account.html", "Account", "account");
@@ -127,6 +129,7 @@
     var jump = root.querySelector("p.muted a[href^='#']"); if (jump) jump.parentNode.hidden = true;   // old "Jump to" line
     var want = (location.hash || "").slice(1);
     show(secs.some(function (s) { return s.id === want; }) ? want : secs[0].id);
+    window.addEventListener("hashchange", function () { var h = (location.hash || "").slice(1); if (secs.some(function (s) { return s.id === h; })) show(h); });
   };
 
   /* ---------- auth context ---------- */

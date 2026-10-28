@@ -309,3 +309,21 @@ h2 .cnt{font-size:.8rem;vertical-align:middle;margin-left:8px}
 .doc-grid.tabbed>.card[hidden]{display:none}
 .doc-grid.tabbed .doc-list li:nth-child(even){background:#f7fafc}
 .doc-grid.tabbed h2{margin-top:0}
+
+/* "Step 1" label on the how-to steps: plain text, not the big brochure circle */
+.step .num{display:block;width:auto;height:auto;border-radius:0;background:none;color:var(--blue-dark);font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase}
+/* admin edit pencil + editors */
+.has-pencil{position:relative}
+.pencil{position:absolute;top:10px;right:10px;z-index:3;display:inline-flex;align-items:center;gap:4px;font:inherit;font-weight:700;font-size:.85rem;padding:5px 10px;border-radius:9px;border:1.5px dashed #d9b43f;background:#fff1c2;color:#6b4e00;cursor:pointer}
+.pencil:hover{background:#ffe9a0}
+details.has-pencil>.pencil{top:8px;right:40px}
+.edit-ui{border:1.5px dashed #d9b43f;background:#fff8dc;border-radius:12px;padding:12px;margin-top:10px}
+.edit-ui input{width:100%;margin:0 0 6px}
+.edit-group{border-top:1px solid #ecd98a;padding:10px 0}
+.edit-row{display:grid;gap:6px;margin:0 0 12px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:10px}
+.edit-tools{display:flex;gap:6px;flex-wrap:wrap}
+.rt-tools{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+.rt-box{min-height:160px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff}
+.rt-box:focus{outline:3px solid #bfe0f7}
+.rt-ph{padding:8px 10px;margin:8px 0;border:1px dashed var(--line);border-radius:8px;color:var(--muted);background:#f4f8fb}
+@media print{.pencil,.edit-ui{display:none!important}}

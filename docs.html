@@ -30,7 +30,7 @@
       <span id="team-link-body">Loading...</span>
     </div>
     <ul class="doc-list">
-      <li><a href="how-to.html"><span class="badge page">PAGE</span><span><span class="t">How to become a USA Swimming official</span><span class="d">Step-by-step checklist with saved progress</span></span></a><a class="dl" href="docs/training/USA_Swimming_Officials_How_To_for_Riptide.docx" download>Word</a></li>
+      <li><a href="how-to.html"><span class="badge page">PAGE</span><span><span class="t">Steps to become an official</span><span class="d">Step-by-step checklist with saved progress</span></span></a><a class="dl" href="docs/training/USA_Swimming_Officials_How_To_for_Riptide.docx" download>Word</a></li>
       <li><a href="register.html"><span class="badge page">PAGE</span><span><span class="t">Register with USA Swimming (2026)</span><span class="d">Start as an apprentice official; steps for new, renewing, and upgrading officials</span></span></a><a class="dl" href="docs/training/Riptide_Officials_Registration_Steps.docx" download>Word</a></li>
       <li><a href="interested.html"><span class="badge page">PAGE</span><span><span class="t">Become a Stroke &amp; Turn official</span><span class="d">The recruiting flyer. Handy for parents who might be interested</span></span></a><a class="dl" href="docs/training/Become_a_Stroke_and_Turn_Official_Flyer.docx" download>Word</a></li>
     </ul>
@@ -95,6 +95,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/edit.js"></script>
 <script>
 (function () {
   var R = window.Riptide;
@@ -114,7 +115,7 @@
         body.textContent = "The coordinator hasn't added the link yet. Email " + window.ADMIN_EMAIL + ".";
       }
     }).catch(function () { document.getElementById("team-link-body").textContent = "Could not load the link."; });
-    R.docTabs(app);
+    R.Edit.run(app, ctx, "docs").catch(function () {}).then(function () { R.docTabs(app); });
   });
 })();
 </script>

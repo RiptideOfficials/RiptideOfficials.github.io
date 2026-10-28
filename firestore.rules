@@ -86,6 +86,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Edits an admin makes to the Documents, Apprentice forms and Steps pages (members read, admins write).
+    match /pagecontent/{page} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
     // "Interested in becoming an official" form: anyone can submit; only admins can read or delete.
     match /interest/{id} {
       allow create: if request.resource.data.keys().hasOnly(['name','email','phone','swimmer','message','createdAt'])

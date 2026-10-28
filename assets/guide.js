@@ -12,6 +12,7 @@
       app.appendChild(document.getElementById("content").content.cloneNode(true));
       if (R.docTabs) R.docTabs(app);
 
+      function go() {
       var boxes = Array.prototype.slice.call(app.querySelectorAll("input.stepbox"));
       var progress = document.getElementById("progress");
       var saveNote = null, timer = null;
@@ -83,7 +84,10 @@
         }).catch(function () {});
       }
 
-      if (location.hash) { var t = document.querySelector(location.hash); if (t) t.scrollIntoView(); }
+      }
+      (R.Edit ? R.Edit.run(app, ctx, key).catch(function () {}) : Promise.resolve()).then(go).then(function () {
+        if (location.hash) { var t = document.querySelector(location.hash); if (t) t.scrollIntoView(); }
+      });
     });
   };
 })();
