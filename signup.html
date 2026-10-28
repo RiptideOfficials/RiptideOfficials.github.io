@@ -222,15 +222,14 @@
           try { localStorage.setItem("ro_su_" + meetId, k); localStorage.removeItem(DK); } catch (x) {}
           if (ctx.user) R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).set({ key: k }).catch(function () {});
           var link = location.href.split("#")[0].split("?")[0] + "?m=" + encodeURIComponent(meetId) + "&e=" + encodeURIComponent(k);
-          var mail = "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent("Your sign-up for " + m.title) +
-            "&body=" + encodeURIComponent("Use this private link any time to change or cancel your sign-up for " + m.title + ":\n\n" + link);
           app.innerHTML = '<div class="card"><span class="pill green">' + (editing ? "Saved" : "All set") + '</span><h1 style="margin-top:8px">' +
             (editing ? "Your changes are saved" : "Thank you, " + esc(name.split(" ")[0]) + "!") + "</h1>" +
             "<p>You're signed up for <strong>" + esc(m.title) + "</strong>. The coordinator will post assignments on the meet page.</p>" +
             "<h3>Need to change something later?</h3><p>Come back to this meet's sign-up page on this phone or computer and your sign-up will open for editing" +
             (ctx.user ? " (it is also listed under Account)" : "") + ". To open it anywhere else, save your private link:</p>" +
-            '<div class="btn-row"><button class="btn" type="button" id="cp">Copy my edit link</button><a class="btn ghost" href="' + mail + '">Email me my edit link</a>' +
+            '<div class="btn-row"><button class="btn" type="button" id="cp">Copy my edit link</button><a class="btn ghost" href="' + esc(link) + '">Open my sign-up</a>' + (navigator.share ? '<button class="btn ghost" type="button" id="shr">Share or send link</button>' : "") +
             '<a class="btn ghost" href="' + detailsUrl + '">See meet details</a></div></div>';
+          if ($("shr")) $("shr").onclick = function () { navigator.share({ title: "My sign-up for " + m.title, text: "My private link to change or cancel my sign-up:", url: link }).catch(function () {}); };
           $("cp").onclick = function () { R.copyText(link).then(function () { $("cp").textContent = "Copied!"; }); };
           window.scrollTo(0, 0);
         }).catch(function (err) {
