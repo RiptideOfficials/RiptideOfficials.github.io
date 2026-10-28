@@ -30,9 +30,20 @@
   var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
   R.footer();
   var meetId = new URLSearchParams(location.search).get("m");
-  R.requireAdmin("meets").then(function (ctx) {
+  R.requireAdmin("assignments").then(function (ctx) {
     if (!ctx) return;
-    if (!meetId) { app.innerHTML = '<div class="card"><h2>Meet not found</h2></div>'; return; }
+    if (!meetId) {
+      R.db.collection("meets").orderBy("date").get().then(function (snap) {
+        var key = new Date().toISOString().slice(0, 10), up = [], past = [];
+        snap.docs.forEach(function (d) { var m = d.data(); m.id = d.id; ((m.endDate || m.date) >= key ? up : past).push(m); });
+        past.reverse();
+        function row(m) { return '<li style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0"><span><strong>' + esc(m.title) + '</strong><br><span class="muted small">' + esc(R.fmtRange(m)) + '</span></span><a class="btn small" href="assignments.html?m=' + encodeURIComponent(m.id) + '">Assignments</a></li>'; }
+        app.innerHTML = '<div class="card"><h1>Assignments</h1><p class="muted">Pick a meet to see who signed up and assign positions.</p><h2>Upcoming meets</h2><ul style="list-style:none;padding:0;margin:0">' +
+          (up.length ? up.map(row).join("") : '<li class="muted">No upcoming meets yet.</li>') + "</ul></div>" +
+          (past.length ? '<div class="card"><h2>Past meets</h2><ul style="list-style:none;padding:0;margin:0">' + past.map(row).join("") + "</ul></div>" : "");
+      }).catch(function () { app.innerHTML = '<div class="msg err">Could not load meets.</div>'; });
+      return;
+    }
     var meetRef = R.db.collection("meets").doc(meetId);
     var $ = function (id) { return document.getElementById(id); };
     meetRef.get().then(function (snap) {
