@@ -294,3 +294,4 @@ h2 .badge{font-size:.8rem;vertical-align:middle;margin-left:8px}
 .asg-pos{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .asg-names div{font-weight:600;color:var(--navy)}
 @media (min-width:760px){.asg-row{grid-template-columns:200px 1fr}}
+.asg-pos.shadow{color:#47660f}.shadow-h{color:#47660f}

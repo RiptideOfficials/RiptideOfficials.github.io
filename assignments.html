@@ -93,7 +93,7 @@
         signups.forEach(function (s) {
           var ok, info;
           if (scope === "w") { ok = arr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }) || Object.keys(s.certLevels || {}).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? "certified" : ""; }
-          else if (g.key === "shadow") { var sh = picks(s, sessionIndex, "shadow"); ok = sh.length > 0; info = ok ? "shadow " + sh.join(", ") : ""; }
+          else if (g.key === "shadow") { var sh = picks(s, sessionIndex, "shadow"); if (sessionIndex === 0) sh = sh.concat(arr(s.shadow).filter(function (x) { return R.WHOLE_POS.indexOf(x) >= 0 && sh.indexOf(x) < 0; })); ok = sh.length > 0; info = ok ? "shadow " + sh.join(", ") : ""; }
           else { var wk = picks(s, sessionIndex, "work"); ok = wk.some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ""; }
           if (!ok) return;
           var lab = label(s); names[lab] = 1;
@@ -104,7 +104,7 @@
         });
         var typed = list.map(function (nm, i) { return names[nm] ? "" : '<span class="chip">' + esc(nm) + ' <button type="button" aria-label="Remove ' + esc(nm) + '" data-asg-rm="' + id + ":" + i + '">&times;</button></span>'; }).join("");
         var claim = scope === "w" && claims[g.key] ? '<p class="small" style="margin:0 0 6px">Signed up on the sign-up page: <strong>' + esc(claims[g.key].name) + '</strong> <button type="button" class="btn small ghost" data-clear-claim="' + g.key + '">Clear</button></p>' : "";
-        return '<div class="asg-group"><h3>' + esc(g.label) + "</h3>" + claim +
+        return '<div class="asg-group"><h3' + (g.key === "shadow" ? ' class="shadow-h"' : "") + ">" + esc(g.label) + "</h3>" + claim +
           (cands.length ? '<div class="checks">' + cands.join("") + "</div>" : '<p class="muted small" style="margin:0 0 6px">No one has signed up for this yet.</p>') +
           (typed ? '<div class="chips" style="margin-bottom:6px">' + typed + "</div>" : "") +
           '<div class="asg-add"><input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
