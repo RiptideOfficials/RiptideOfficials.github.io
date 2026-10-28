@@ -129,19 +129,47 @@
             R.SESSION_GROUPS.map(function (g) { return groupHtml("s" + i, g, asg.sessions[i][g.key], i); }).join("") + "</div>";
         });
         $("assign-area").innerHTML = html;
+        if (!$("tools-card").classList.contains("hidden")) drawTools();
+      }
+
+      function meetText() {
+        var L = [], single = n.sessions.length === 1;
+        function names(a) { return (a || []).map(function (v) { return v.indexOf(" | ") > 0 ? v.split(" | ")[1] + " (shadowing " + v.split(" | ")[0] + ")" : v; }).join(", "); }
+        L.push(m.title, R.fmtRange(m) + (m.location ? " - " + m.location : ""), "Details and sign-up: " + R.meetUrl(meetId), "");
+        n.sessions.forEach(function (x, i) {
+          var when = R.sessionWhen(x);
+          L.push((single ? (when || "Meet details") : x.name + (when ? " - " + when : "")).toUpperCase());
+          R.parseSchedule(x.details).filter(function (d) { return d.value; }).forEach(function (d) { L.push(d.label + ": " + d.value); });
+          if (x.notes) L.push("Notes: " + x.notes);
+          R.uniformDays(n.info).filter(function (d) { return !d.date || !x.date || d.date === x.date || single; }).forEach(function (d) {
+            L.push("Uniform" + (d.date && !single ? " (" + R.fmtDate(d.date) + ")" : "") + ": " + d.text); });
+          var rows = [];
+          R.WHOLE_GROUPS.forEach(function (g) { if (asg.whole[g.key].length) rows.push(g.label + ": " + names(asg.whole[g.key])); });
+          R.SESSION_GROUPS.forEach(function (g) { var a = asg.sessions[i][g.key]; if (a && a.length) rows.push(g.label + ": " + names(a)); });
+          if (rows.length) { L.push("", "Assignments:"); rows.forEach(function (r) { L.push("  " + r); }); }
+          L.push("");
+        });
+        if (n.info.parking) L.push("PARKING", n.info.parking, "");
+        if (n.info.food) L.push("FOOD", n.info.food, "");
+        if (n.info.misc) L.push("MISCELLANEOUS", n.info.misc, "");
+        return L.join("\n").replace(/\n{3,}/g, "\n\n").trim();
       }
 
       function drawTools() {
         var emails = [];
         signups.forEach(function (s) { if (s.email && emails.indexOf(s.email) < 0) emails.push(s.email); });
-        var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title);
+        var body = meetText();
+        var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title) + "&body=" + encodeURIComponent(body);
         var card = $("tools-card"); card.classList.remove("hidden");
         card.innerHTML = '<h2>Email officials</h2><div class="btn-row" style="margin-top:0">' +
           (emails.length ? '<a class="btn" href="' + mailto + '">Email officials</a>' : '<button class="btn" disabled>Email officials</button>') +
-          '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ")</button></div>" +
-          '<p class="hint">"Email officials" opens your email app with everyone on blind copy and the meet name as the subject. If your email app cuts off a long list, use Copy all emails instead.</p>';
+          '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ')</button>' +
+          '<button class="btn ghost" id="copybody">Copy meet info</button></div>' +
+          '<p class="hint">"Email officials" opens your email app with everyone on blind copy, the meet name as the subject, and the meet details and assignments in the message. Assignments are taken as you see them below, so save first if you want the saved version. If your email app cuts off a long list or message, use Copy all emails and Copy meet info and paste them in.</p>';
         var ce = $("copyemails");
         if (ce) ce.onclick = function () { R.copyText(emails.join(", ")).then(function () { ce.textContent = "Copied!"; }); };
+        var cb = $("copybody");
+        if (cb) cb.onclick = function () { R.copyText(meetText()).then(function () { cb.textContent = "Copied!"; }); };
       }
 
       app.addEventListener("click", function (e) {
