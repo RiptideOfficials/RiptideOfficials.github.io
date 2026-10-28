@@ -125,6 +125,8 @@
         sessCards +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
         '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">' + (editing ? "Save changes" : "Sign me up") + "</button>" +
+        (editing ? "" : '<button class="btn ghost" type="button" id="su-later">Save and come back later</button>') +
+        '<a class="btn ghost" id="su-leave" href="' + detailsUrl + '">' + (editing ? "Leave without changes" : "Cancel") + "</a>" +
         (editing ? '<button class="btn danger" type="button" id="su-cancel">Cancel my sign-up</button>' : "") + '</div><div id="su-status" role="status"></div></form>';
 
       var $ = function (id) { return document.getElementById(id); };
@@ -139,6 +141,30 @@
         $("su-name").value = p.name || ""; $("su-email").value = p.email || ctx.user.email || ""; $("su-phone").value = p.phone || ""; $("su-team").value = "Riptide";
       }
       fillMine();
+      var DK = "ro_draft_" + meetId;
+      function formFields() { return Array.prototype.slice.call(document.querySelectorAll("#su input, #su textarea")); }
+      function saveDraft() {
+        var d = formFields().map(function (f) { return f.type === "checkbox" ? (f.checked ? 1 : 0) : f.value; });
+        try { localStorage.setItem(DK, JSON.stringify(d)); return true; } catch (x) { return false; }
+      }
+      if (!editing) {   // bring back a draft saved earlier on this device
+        try {
+          var dr = JSON.parse(localStorage.getItem(DK) || "null"), fl = formFields();
+          if (dr && dr.length === fl.length) {
+            fl.forEach(function (f, i) {
+              if (f.type === "checkbox") { f.checked = !!dr[i]; var w = f.closest && f.closest(".chk2"); var lv = w && !f.hasAttribute("data-lv") && w.querySelector(".lv"); if (lv) lv.style.display = f.checked ? "" : "none"; }
+              else if (dr[i] !== "" || !f.value) f.value = dr[i];
+            });
+            $("su-status").innerHTML = '<div class="msg info">Welcome back. Your saved answers are filled in below.</div>';
+          }
+        } catch (x) {}
+      }
+      var later = $("su-later");
+      if (later) later.onclick = function () {
+        $("su-status").innerHTML = saveDraft()
+          ? '<div class="msg ok">Saved on this device. Come back to this page any time to finish signing up. <a href="' + detailsUrl + '">Back to meet details</a></div>'
+          : '<div class="msg err">Could not save on this device. Please finish signing up now.</div>';
+      };
       document.getElementById("su").addEventListener("change", function (e) {
         var t = e.target;
         if (t.type === "checkbox" && t.closest && t.closest(".chk2") && !t.hasAttribute("data-lv")) {
@@ -193,7 +219,7 @@
             .then(function () { var e2 = new Error("claim"); e2.claim = true; throw e2; });
         });
         p.then(function () {
-          try { localStorage.setItem("ro_su_" + meetId, k); } catch (x) {}
+          try { localStorage.setItem("ro_su_" + meetId, k); localStorage.removeItem(DK); } catch (x) {}
           if (ctx.user) R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).set({ key: k }).catch(function () {});
           var link = location.href.split("#")[0].split("?")[0] + "?m=" + encodeURIComponent(meetId) + "&e=" + encodeURIComponent(k);
           var mail = "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent("Your sign-up for " + m.title) +
