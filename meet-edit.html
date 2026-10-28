@@ -33,7 +33,7 @@
     if (!ctx) return;
     var app = $("app"), S = [], whole = R.WHOLE_POS.slice(), legacy = false;
 
-    var DKEYS = [["Warm-ups", "warm", /warm/i], ["Officials meeting", "off", /official/i], ["Timers meeting", "timers", /timer/i], ["Meet starts", "start", /start/i]];
+    var DKEYS = [["Warm-ups", "warm", /warm/i], ["Officials meeting", "off", /official/i], ["Timers meeting", "timers", /timer(?!.*(led|run) by)/i], ["Timers meeting led by", "timersby", /(led|run) by/i], ["Meet starts", "start", /start/i]];
     function parseDetails(text) {   // "Label | time" lines -> the four boxes (+ any other lines kept as they are)
       var dv = {}, extra = [];
       R.parseSchedule(text).forEach(function (l) {
@@ -164,7 +164,7 @@
           "<label>Positions people can sign up for in this session</label>" + checks("positions", x.positions) +
           "<label>Positions people can ask to shadow in this session</label>" + checks("shadow", x.shadow) +
           "<label>Meet details</label>" + '<div class="row2">' + DKEYS.map(function (d) {
-            return '<div><label class="muted small" style="font-weight:600">' + d[0] + '</label><input data-i="' + i + '" data-dv="' + d[1] + '" placeholder="Time" value="' + esc(x.dv[d[1]] || "") + '"></div>';
+            return '<div><label class="muted small" style="font-weight:600">' + d[0] + '</label><input data-i="' + i + '" data-dv="' + d[1] + '" placeholder="' + (d[1] === "timersby" ? "Name (add when known)" : "Time") + '" value="' + esc(x.dv[d[1]] || "") + '"></div>';
           }).join("") + "</div>" +
           '<label>Notes for officials</label><textarea rows="3" data-i="' + i + '" data-f="notes" placeholder="Warm-ups, officials meeting, timers meeting...">' + esc(x.notes) + "</textarea>" +
           (S.length > 1 ? '<div class="btn-row"><button class="btn small danger" type="button" data-remove="' + i + '">Remove this session</button></div>' : "") + "</div>";
