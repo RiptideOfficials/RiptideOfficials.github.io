@@ -92,7 +92,7 @@
         var first = [], rest = [];
         signups.forEach(function (s) {
           var ok, info;
-          if (scope === "w") { ok = arr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? g.cert : ""; }
+          if (scope === "w") { ok = arr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }) || Object.keys(s.certLevels || {}).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? g.cert + " (certified)" : ""; }
           else if (g.key === "shadow") { var sh = picks(s, sessionIndex, "shadow"); ok = sh.length > 0; info = ok ? "shadow " + sh.join(", ") : ""; }
           else { var wk = picks(s, sessionIndex, "work"); ok = wk.some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? wk.join(", ") : ""; }
           var o = '<option value="' + esc(label(s)) + '">' + esc(labelLv(s)) + (info ? " \u2014 " + esc(info) : "") + "</option>";
