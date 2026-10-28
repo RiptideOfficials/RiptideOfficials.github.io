@@ -115,7 +115,7 @@
         return '<div class="asg-group"><h3' + (g.key === "shadow" ? ' class="shadow-h"' : "") + ">" + esc(g.label) + "</h3>" + claim +
           (cands.length ? '<div class="checks">' + cands.join("") + "</div>" : '<p class="muted small" style="margin:0 0 6px">No one has signed up for this yet.</p>') +
           (typed ? '<div class="chips" style="margin-bottom:6px">' + typed + "</div>" : "") +
-          '<div class="asg-add">' + (g.key === "shadow" ? '<select data-asg-pos="' + id + '">' + R.WHOLE_POS.concat(R.SESSION_POS).map(function (p) { return "<option>" + esc(p) + "</option>"; }).join("") + "</select>" : "") + '<input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
+          '<div class="asg-add">' + (g.key === "shadow" ? '<select data-asg-pos="' + id + '"><option value="">Choose from drop-down</option>' + R.WHOLE_POS.concat(R.SESSION_POS).map(function (p) { return "<option>" + esc(p) + "</option>"; }).join("") + "</select>" : "") + '<input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
       }
       function listFor(scope) { return scope === "w" ? asg.whole : asg.sessions[+scope.slice(1)]; }
 
@@ -151,7 +151,7 @@
         } else if (g("data-asg-add")) {
           var id = g("data-asg-add"), pr2 = id.split(":");
           var txt = document.querySelector('[data-asg-txt="' + id + '"]');
-          var v = txt.value.trim(), ps = document.querySelector('[data-asg-pos="' + id + '"]'); if (v && ps) v = ps.value + " | " + v; var list = listFor(pr2[0])[pr2[1]];
+          var v = txt.value.trim(), ps = document.querySelector('[data-asg-pos="' + id + '"]'); if (v && ps && !ps.value) { alert("Please choose the position they will shadow from the drop-down."); return; } if (v && ps) v = ps.value + " | " + v; var list = listFor(pr2[0])[pr2[1]];
           if (v && list.indexOf(v) < 0) list.push(v);
           drawAssign();
         } else if (t.id === "asg-save") {
