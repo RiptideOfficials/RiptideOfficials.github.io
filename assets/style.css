@@ -206,3 +206,26 @@ details.card[open] summary{margin-bottom:8px}
 @keyframes slowload{from{opacity:0}to{opacity:1}}
 .card.loading{opacity:0;animation:slowload .2s ease 1.2s forwards}
 .footer.pending{visibility:hidden}
+
+/* public "become an official" brochure layout */
+.lead{font-size:1.2rem;max-width:44rem;margin:6px 0 26px}
+.band{margin:0 0 30px}
+.band h2{font-size:2rem;position:relative;padding-bottom:8px;margin-bottom:16px}
+.band h2::after{content:"";position:absolute;left:0;bottom:0;width:64px;height:5px;border-radius:3px;background:linear-gradient(90deg,var(--blue),var(--green))}
+.why{display:grid;gap:18px;grid-template-columns:1fr}
+.why>div{border-left:5px solid var(--green);padding:2px 0 2px 14px;font-size:1.05rem}
+.why .k{display:block;font-family:"Barlow Condensed","Barlow",sans-serif;font-weight:700;font-size:1.35rem;color:var(--navy)}
+.steps3{display:grid;gap:20px;grid-template-columns:1fr}
+.steps3>div{font-size:1.02rem}
+.steps3 strong{display:block;font-family:"Barlow Condensed","Barlow",sans-serif;font-size:1.35rem;color:var(--navy);margin:6px 0 2px}
+.num{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--blue);color:#fff;font-family:"Barlow Condensed","Barlow",sans-serif;font-weight:700;font-size:1.6rem}
+.steps3>div:nth-child(2) .num{background:#1b8fb8}
+.steps3>div:nth-child(3) .num{background:var(--green-dark)}
+.join{background:var(--navy);color:#fff;border-radius:20px;padding:28px 22px;margin:0 0 24px}
+.join h2{color:#fff;font-size:2.1rem}
+.join p{max-width:38rem;font-size:1.08rem}
+@media (min-width:760px){
+  .why{grid-template-columns:1fr 1fr;gap:22px 40px}
+  .steps3{grid-template-columns:repeat(3,1fr);gap:30px}
+  .join{padding:36px 44px}
+}

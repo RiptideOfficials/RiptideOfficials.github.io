@@ -21,23 +21,11 @@
   <section class="hero">
     <div class="logo-chip"><img src="assets/img/riptide-logo.jpg" alt="Riptide Swimming"></div>
     <h1>Officials make our meets happen.</h1>
-    <p>Training, documents, and sign-ups for the Riptide officials crew. New to officiating? We'll help you get started.</p>
+    <p>Home of the Riptide Swimming officials crew. New to officiating? We'll help you get started.</p>
     <div class="btn-row" id="hero-buttons">
       <a class="btn light" href="login.html">Member login</a>
       <a class="btn green" href="interested.html">I'm interested in becoming an official</a>
     </div>
-  </section>
-
-  <div class="grid three">
-    <div class="card"><h3>Documents</h3><p>Briefings, situations and resolutions, counting sheets, and the pool diagram, sorted by role.</p></div>
-    <div class="card"><h3>Meet sign-ups</h3><p>Pick your role and session for each meet we host: admin, starter, stroke and turn, and shadowing.</p></div>
-    <div class="card"><h3>Get certified</h3><p>Step-by-step help registering with USA Swimming and starting as an apprentice official.</p></div>
-  </div>
-
-  <section class="card" id="interested">
-    <h2>Interested in becoming an official?</h2>
-    <p>No account needed. Tell us a little about yourself and the Riptide officials coordinator will get back to you. Not sure what's involved? <a href="interested.html"><strong>See why officials love it and how to get started &rarr;</strong></a></p>
-    <div id="interest-slot"></div>
   </section>
 
   <div class="logos-strip">
@@ -51,7 +39,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
-<script src="assets/interest.js"></script>
 <script>
 (function () {
   var R = window.Riptide;
@@ -64,8 +51,6 @@
         '<a class="btn green" href="docs.html">Documents</a>';
     }
   });
-
-  InterestForm.mount("interest-slot");
 })();
 </script>
 </body>
