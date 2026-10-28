@@ -41,13 +41,24 @@
       render(snap.data());
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
 
+    function notesHtml(t) {
+      var L = String(t || "").split(/\r?\n/).map(function (x) { return x.trim(); }), out = "";
+      for (var i = 0; i < L.length; i++) {
+        if (!L[i]) continue;
+        var nx = ""; for (var j = i + 1; j < L.length; j++) if (L[j]) { nx = L[j]; break; }
+        if (L[i].length <= 40 && !/[.!?:]$/.test(L[i]) && nx.length > L[i].length) out += '<h3 class="note-h">' + esc(L[i]) + "</h3>";
+        else out += '<p class="note-p">' + esc(L[i]) + "</p>";
+      }
+      return out;
+    }
+
     function render(m) {
       var sched = R.parseSchedule(m.schedule), a = m.assignments || {};
       var url = R.meetUrl(meetId), signupUrl = "signup.html?m=" + encodeURIComponent(meetId);
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
-        "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
-        (m.notes ? '<p style="white-space:pre-wrap">' + esc(m.notes) + "</p>" : "") +
+        '<div class="meet-when"><span class="when">' + esc(R.fmtRange(m)) + "</span>" + (m.location ? '<span class="where">' + esc(m.location) + "</span>" : "") + "</div>" +
+        notesHtml(m.notes) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up to work</a>' +
         '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button>' +
         (ctx.isAdmin ? '<a class="btn small ghost" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
@@ -57,21 +68,18 @@
         '<a class="btn small" target="_blank" rel="noopener" href="' + esc(R.googleCalUrl(m, url)) + '">Google Calendar</a>' +
         '<a class="btn small" download="' + esc(m.title.replace(/[^\w]+/g, "-")) + '.ics" href="' + R.icsHref(m, meetId, url) + '">Apple / Outlook (.ics)</a></div></div>';
 
-      html += '<div class="meet-grid"><div>';
       if (sched.length) {
         html += '<div class="card"><h2>Meet details</h2><table class="sched">' + sched.map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
       }
-      html += '<div class="card"><h2>Want to work this meet?</h2><p>Sign up and tell us what you are certified in. Already signed up? Use the same button to change or cancel your sign-up.</p><div class="btn-row" style="margin-top:0"><a class="btn green" href="' + signupUrl + '">Sign up to work</a></div></div>';
-      html += "</div><div>";
       var any = R.ASSIGN_GROUPS.some(function (g) { return (a[g.key] || []).length; });
       html += '<div class="card" id="assignments"><h2>Meet assignments</h2>';
       if (!any) html += '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>';
-      else html += R.ASSIGN_GROUPS.map(function (g) {
+      else html += '<div class="asg-cols">' + R.ASSIGN_GROUPS.map(function (g) {
         var list = a[g.key] || []; if (!list.length) return "";
         return '<div class="asg-show"><h3>' + esc(g.label) + "</h3><ul>" + list.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
-      }).join("");
-      html += "</div></div>";
+      }).join("") + "</div>";
+      html += "</div>";
       app.innerHTML = html;
 
       document.getElementById("cal-btn").onclick = function () { document.getElementById("cal-opts").classList.toggle("hidden"); };

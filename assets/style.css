@@ -243,3 +243,12 @@ details.card[open] summary{margin-bottom:8px}
 .chip{display:inline-flex;align-items:center;gap:6px;background:var(--sky);color:var(--navy);border-radius:99px;padding:4px 6px 4px 12px;font-weight:600}
 .chip button{border:0;background:#fff;border-radius:50%;width:24px;height:24px;font-size:1.1rem;line-height:1;cursor:pointer;color:var(--navy)}
 .asg-add{display:flex;flex-wrap:wrap;gap:8px}.asg-add select,.asg-add input{flex:1 1 180px;min-width:0}
+
+/* meet details header */
+.meet-when{margin:6px 0 14px}
+.meet-when .when{display:inline-block;font-family:"Barlow Condensed","Barlow",sans-serif;font-weight:700;font-size:1.5rem;color:#fff;background:var(--blue);border-radius:10px;padding:4px 14px}
+.meet-when .where{display:block;margin-top:6px;font-size:1.1rem;color:var(--navy);font-weight:500}
+.note-h{display:inline-block;margin:6px 0 4px;padding:3px 12px;border-radius:8px;background:var(--lime-soft);color:var(--green-dark);font-size:1.25rem}
+.note-p{margin:0 0 10px}
+.asg-cols{display:grid;gap:4px 30px;grid-template-columns:1fr}
+@media (min-width:760px){.asg-cols{grid-template-columns:1fr 1fr 1fr}}
