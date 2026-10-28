@@ -89,25 +89,25 @@
       }
 
       function groupHtml(scope, g, list, sessionIndex) {
-        var first = [], rest = [];
+        var id = scope + ":" + g.key, cands = [], names = {};
         signups.forEach(function (s) {
           var ok, info;
-          if (scope === "w") { ok = arr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }) || Object.keys(s.certLevels || {}).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? g.cert + " (certified)" : ""; }
+          if (scope === "w") { ok = arr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }) || Object.keys(s.certLevels || {}).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? "certified" : ""; }
           else if (g.key === "shadow") { var sh = picks(s, sessionIndex, "shadow"); ok = sh.length > 0; info = ok ? "shadow " + sh.join(", ") : ""; }
-          else { var wk = picks(s, sessionIndex, "work"); ok = wk.some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? wk.join(", ") : ""; }
-          var o = '<option value="' + esc(label(s)) + '">' + esc(labelLv(s)) + (info ? " \u2014 " + esc(info) : "") + "</option>";
-          (ok ? first : rest).push(o);
+          else { var wk = picks(s, sessionIndex, "work"); ok = wk.some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ""; }
+          if (!ok) return;
+          var lab = label(s); names[lab] = 1;
+          var lv = s.certLevels && Object.keys(s.certLevels).filter(function (k) { return k.toLowerCase() === (g.cert || "").toLowerCase(); })[0];
+          var lvTxt = lv && (s.certLevels[lv] || []).length ? s.certLevels[lv].join("/") : "";
+          cands.push('<label class="chk"><input type="checkbox" data-asg-tick="' + esc(id) + '" data-v="' + esc(lab) + '"' + (list.indexOf(lab) >= 0 ? " checked" : "") + "> " + esc(lab) +
+            (lvTxt ? ' <span class="chip" style="margin-left:4px">' + esc(lvTxt) + "</span>" : "") + (info && info !== "certified" ? ' <span class="muted small">' + esc(info) + "</span>" : "") + "</label>");
         });
-        var opts = (first.length ? '<optgroup label="' + (g.key === "shadow" ? "Wants to shadow" : "Signed up for this") + '">' + first.join("") + "</optgroup>" : "") +
-                   (rest.length ? '<optgroup label="Everyone else">' + rest.join("") + "</optgroup>" : "");
-        var id = scope + ":" + g.key;
+        var typed = list.map(function (nm, i) { return names[nm] ? "" : '<span class="chip">' + esc(nm) + ' <button type="button" aria-label="Remove ' + esc(nm) + '" data-asg-rm="' + id + ":" + i + '">&times;</button></span>'; }).join("");
         var claim = scope === "w" && claims[g.key] ? '<p class="small" style="margin:0 0 6px">Signed up on the sign-up page: <strong>' + esc(claims[g.key].name) + '</strong> <button type="button" class="btn small ghost" data-clear-claim="' + g.key + '">Clear</button></p>' : "";
-        return '<div class="asg-group"><h3>' + esc(g.label) + "</h3>" + claim + '<div class="chips">' +
-          (list.length ? list.map(function (nm, i) {
-            return '<span class="chip">' + esc(nm) + ' <button type="button" aria-label="Remove ' + esc(nm) + '" data-asg-rm="' + id + ":" + i + '">&times;</button></span>';
-          }).join("") : '<span class="muted small">No one yet</span>') + "</div>" +
-          '<div class="asg-add"><select data-asg-sel="' + id + '"><option value="">Add from sign-ups...</option>' + opts + "</select>" +
-          '<input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
+        return '<div class="asg-group"><h3>' + esc(g.label) + "</h3>" + claim +
+          (cands.length ? '<div class="checks">' + cands.join("") + "</div>" : '<p class="muted small" style="margin:0 0 6px">No one has signed up for this yet.</p>') +
+          (typed ? '<div class="chips" style="margin-bottom:6px">' + typed + "</div>" : "") +
+          '<div class="asg-add"><input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
       }
       function listFor(scope) { return scope === "w" ? asg.whole : asg.sessions[+scope.slice(1)]; }
 
@@ -142,8 +142,8 @@
           var pr = g("data-asg-rm").split(":"); listFor(pr[0])[pr[1]].splice(+pr[2], 1); drawAssign();
         } else if (g("data-asg-add")) {
           var id = g("data-asg-add"), pr2 = id.split(":");
-          var sel = document.querySelector('[data-asg-sel="' + id + '"]'), txt = document.querySelector('[data-asg-txt="' + id + '"]');
-          var v = txt.value.trim() || sel.value, list = listFor(pr2[0])[pr2[1]];
+          var txt = document.querySelector('[data-asg-txt="' + id + '"]');
+          var v = txt.value.trim(), list = listFor(pr2[0])[pr2[1]];
           if (v && list.indexOf(v) < 0) list.push(v);
           drawAssign();
         } else if (t.id === "asg-save") {
@@ -160,6 +160,14 @@
           if (!confirm("Remove this person's sign-up?")) return;
           meetRef.collection("contacts").doc(rid).delete().then(load).catch(function () { alert("Could not remove that sign-up."); });
         }
+      });
+
+      app.addEventListener("change", function (e) {   // tick a name to assign them, untick to remove
+        var t = e.target, id = t.getAttribute && t.getAttribute("data-asg-tick");
+        if (!id) return;
+        var pr = id.split(":"), list = listFor(pr[0])[pr[1]], v = t.getAttribute("data-v"), at = list.indexOf(v);
+        if (t.checked && at < 0) list.push(v); else if (!t.checked && at >= 0) list.splice(at, 1);
+        var y = window.scrollY; drawAssign(); window.scrollTo(0, y);
       });
 
       function load() {
