@@ -47,7 +47,7 @@
       if (x.extra) lines.push(x.extra);
       return lines.join("\n");
     }
-    function blankSession(i) { return { name: "Session " + (i + 1), date: $("m-date") ? $("m-date").value : "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), dv: {}, extra: "", notes: "" }; }
+    function blankSession(i) { return { name: "", date: $("m-date") ? $("m-date").value : "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), dv: {}, extra: "", notes: "" }; }
     var U = {};   // meet uniform text by date
 
     function load() {
@@ -107,7 +107,7 @@
       if (!S.length) S.push(blankSession(0));
       drawSessions();
 
-      $("m-date").addEventListener("change", drawUniform); $("m-end").addEventListener("change", drawUniform);
+      $("m-date").addEventListener("change", function () { drawUniform(); if (S.length === 1) drawSessions(); }); $("m-end").addEventListener("change", drawUniform);
       $("uni").addEventListener("input", function (ev) { var d = ev.target.getAttribute("data-uni"); if (d) U[d] = ev.target.value; });
       $("add-sess").onclick = function () { S.push(blankSession(S.length)); drawSessions(); };
       $("whole").addEventListener("change", function () {
@@ -157,8 +157,8 @@
             return '<label class="chk"><input type="checkbox" data-i="' + i + '" data-list="' + list + '" value="' + esc(p) + '"' + (chosen.indexOf(p) >= 0 ? " checked" : "") + "> " + esc(p) + "</label>";
           }).join("") + "</div>";
         }
-        return '<div class="card coord-card"><h2>' + esc(x.name || "Session " + (i + 1)) + "</h2>" +
-          '<label>Session name (optional)</label><input data-i="' + i + '" data-f="name" placeholder="Session ' + (i + 1) + '" value="' + esc(x.name) + '">' +
+        return '<div class="card coord-card"><h2>' + esc(x.name || (S.length === 1 ? ((x.date || ($("m-date") && $("m-date").value)) ? new Date((x.date || $("m-date").value) + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "Session details") : "Session " + (i + 1))) + "</h2>" +
+          '<label>Session name (optional)</label><input data-i="' + i + '" data-f="name" placeholder="' + (S.length === 1 ? "Leave blank \u2014 only one session" : "Session " + (i + 1)) + '" value="' + esc(x.name) + '">' +
           '<div class="row2"><div><label>Date</label><input type="date" data-i="' + i + '" data-f="date" value="' + esc(x.date) + '"></div>' +
           '<div><label>Start time</label><input type="time" data-i="' + i + '" data-f="start" value="' + esc(x.start) + '"></div></div>' +
           "<label>Positions people can sign up for in this session</label>" + checks("positions", x.positions) +
