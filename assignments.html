@@ -76,7 +76,8 @@
         el.innerHTML = '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Level</th><th>Signed up for</th><th>Comments</th><th>Email / phone</th><th></th></tr></thead><tbody>' +
           signups.map(function (s) {
             var lines = [];
-            var w = wholeCerts(s); if (w.length) lines.push("<strong>Whole meet:</strong> " + esc(w.join(", ")));
+            var w = wholeCerts(s); var ws = arr(s.shadow).filter(function (x) { return R.WHOLE_POS.indexOf(x) >= 0; });
+            if (w.length || ws.length) lines.push("<strong>All sessions:</strong> " + esc(w.join(", ")) + (ws.length ? (w.length ? "; " : "") + "<em>shadow " + esc(ws.join(", ")) + "</em>" : ""));
             n.sessions.forEach(function (x, i) {
               var wk = picks(s, i, "work").filter(function (p) { return R.WHOLE_POS.indexOf(p) < 0 || !n.v2; }), sh = picks(s, i, "shadow");
               if (wk.length || sh.length) lines.push("<strong>" + esc(x.name) + ":</strong> " + esc(wk.join(", ")) + (sh.length ? (wk.length ? "; " : "") + "<em>shadow " + esc(sh.join(", ")) + "</em>" : ""));

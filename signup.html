@@ -111,7 +111,10 @@
           var c = claims[WK[p]], isMine = editing && has(ex.certified, p);
           if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + ' &mdash; ' + esc(c.name) + "</div>";
           return '<div class="chk2"><label class="pos"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>" + lvBox(p, isMine) + "</div>";
-        }).join("") + "</div></div>" : "") +
+        }).join("") + "</div>" +
+          "<label>I would like to shadow (choose as many as you like)</label>" + '<div class="checks">' + n.whole.map(function (p) {
+            return '<label class="chk"><input type="checkbox" data-wshadow="1" value="' + esc(p) + '"' + (editing && has(ex.shadow, p) ? " checked" : "") + "> " + esc(p) + "</label>";
+          }).join("") + "</div></div>" : "") +
         sessCards +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
         '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">' + (editing ? "Save changes" : "Sign me up") + "</button>" +
@@ -149,7 +152,7 @@
           if (w.length || sh.length) { perSession.push({ i: i, work: w, shadow: sh }); names.push(x.name); }
           workAll = workAll.concat(w); shadowAll = shadowAll.concat(sh);
         });
-        var certified = uniq(wholeSel.concat(workAll)), shadow = uniq(shadowAll), certLevels = {};
+        var certified = uniq(wholeSel.concat(workAll)), shadow = uniq(shadowAll.concat(picked("input[data-wshadow]"))), certLevels = {};
         Array.prototype.forEach.call(document.querySelectorAll("input[data-lv]:checked"), function (b) {
           var pos = b.getAttribute("data-pos"), L = b.getAttribute("data-lv");
           if (certified.indexOf(pos) < 0) return;
