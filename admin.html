@@ -39,8 +39,8 @@
       '<div class="card"><h2>Private team info</h2><p class="muted small">Only approved members can see this, and it is never stored in the website files.</p>' +
       '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
       '<div class="btn-row"><button class="btn green" id="t-save" type="button">Save</button></div><div id="t-status" role="status"></div></div>' +
-      '<div class="card"><h2>People interested in becoming officials</h2><p class="muted small">From the "I\'m interested" form on the public pages.</p><div id="interested">Loading...</div></div>' +
-      '<div class="card"><h2>Members</h2><p class="muted small">New accounts wait here until approved. Admins can see members\' email and phone. ' + (ctx.isOwner ? 'To let another Meet Ref (or anyone) help run meets, approve their account and tap <strong>Make admin</strong>. Admins can add and edit meets, email officials, and approve members.' : '') + '</p><div id="members" class="table-wrap">Loading...</div></div>';
+      '<div class="card"><h2>People interested in becoming officials <span class="badge" id="b-int" hidden></span></h2><p class="muted small">From the "I\'m interested" form on the public pages.</p><div id="interested">Loading...</div></div>' +
+      '<div class="card"><h2>Members <span class="badge" id="b-mem" hidden></span></h2><p class="muted small">New accounts wait here until approved. Admins can see members\' email and phone. ' + (ctx.isOwner ? 'To let another Meet Ref (or anyone) help run meets, approve their account and tap <strong>Make admin</strong>. Admins can add and edit meets, email officials, and approve members.' : '') + '</p><div id="members" class="table-wrap">Loading...</div></div>';
     Array.prototype.forEach.call(document.querySelectorAll("#app .card"), function (c) { c.classList.add("coord-card"); });
     // make every box collapsible (triangle), with Expand all / Collapse all at the top
     Array.prototype.forEach.call(document.querySelectorAll("#app .card"), function (c) {
@@ -103,6 +103,7 @@
                           : '<button class="btn small green" data-approve="' + esc(u.id) + '">Approve</button> <button class="btn small danger" data-deluser="' + esc(u.id) + '">Delete</button>') +
               "</td></tr>";
           }).join("") + "</tbody></table>" : '<p class="muted">No accounts yet.</p>';
+        setBadge("b-mem", users.filter(function (u) { return !u.approved; }).length); R.adminBadge();
       }).catch(function () { $("members").innerHTML = '<div class="msg err">Could not load members.</div>'; });
     }
     $("members").addEventListener("click", function (e) {
@@ -135,12 +136,19 @@
             '<a href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" + (u.phone ? " &middot; " + esc(u.phone) : "") +
             (u.swimmer ? '<br><span class="small">Swimmer: ' + esc(u.swimmer) + "</span>" : "") +
             (u.message ? '<br><span class="small">' + esc(u.message) + "</span>" : "") +
-            '</div><button class="btn small danger" data-delint="' + esc(u.id) + '">Delete</button></li>';
+            '</div><div class="btn-row" style="margin:0;flex:none">' + (u.responded ? '<span class="pill green">Responded</span> <button class="btn small ghost" data-unresp="' + esc(u.id) + '">Undo</button>' : '<button class="btn small green" data-resp="' + esc(u.id) + '">I responded</button>') +
+            ' <button class="btn small danger" data-delint="' + esc(u.id) + '">Delete</button></div></li>';
         }).join("") + "</ul>" : '<p class="muted">No one yet.</p>';
+        setBadge("b-int", rows.filter(function (u) { return !u.responded; }).length); R.adminBadge();
       }).catch(function () { $("interested").innerHTML = '<div class="msg err">Could not load. Make sure the latest firestore.rules are published.</div>'; });
     }
+    function setBadge(id, n) { var b = $(id); if (!b) return; b.textContent = n; b.hidden = !n; }
     $("interested").addEventListener("click", function (e) {
-      var id = e.target.getAttribute && e.target.getAttribute("data-delint");
+      var g = function (a) { return e.target.getAttribute && e.target.getAttribute(a); };
+      var col = R.db.collection("interest");
+      if (g("data-resp")) return col.doc(g("data-resp")).update({ responded: true }).then(loadInterested).catch(function () { alert("Could not save."); });
+      if (g("data-unresp")) return col.doc(g("data-unresp")).update({ responded: false }).then(loadInterested).catch(function () { alert("Could not save."); });
+      var id = g("data-delint");
       if (!id || !confirm("Delete this entry?")) return;
       R.db.collection("interest").doc(id).delete().then(loadInterested).catch(function () { alert("Could not delete."); });
     });

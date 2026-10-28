@@ -286,4 +286,6 @@ details.fold[open]>summary{margin-bottom:12px}
 .chk2 .lv{display:inline-flex;gap:8px}
 .chk2 .lvl{display:inline-flex;align-items:center;gap:5px;margin:0;font-weight:700;font-size:.9rem;padding:4px 9px;border-radius:8px;background:var(--sky);color:var(--navy);cursor:pointer}
 .chk2 .lvl input{width:18px;height:18px}
-.nav a .badge{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:#d63a2f;color:#fff;font-size:.78rem;font-weight:700;line-height:1.35;text-align:center;vertical-align:middle}
+.badge{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:#d63a2f;color:#fff;font-size:.78rem;font-weight:700;line-height:1.35;text-align:center;vertical-align:middle}
+.badge[hidden]{display:none}
+h2 .badge{font-size:.8rem;vertical-align:middle;margin-left:8px}
