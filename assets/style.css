@@ -26,8 +26,16 @@ a{color:var(--blue-dark)}
 img{max-width:100%;height:auto}
 
 /* header */
-.site-header{background:#fff;border-bottom:5px solid transparent;border-image:linear-gradient(90deg,var(--blue),var(--green)) 1;position:static;z-index:20}
-@media(min-width:1020px){.site-header{position:sticky;top:0}}
+.site-header{background:#fff;border-bottom:5px solid transparent;border-image:linear-gradient(90deg,var(--blue),var(--green)) 1;position:sticky;top:0;z-index:20}
+@media(max-width:1019px){
+  .site-header .bar{padding:4px 12px 0}
+  .brand img{height:34px}
+  .brand span{font-size:1.05rem}
+  .brand small{font-size:.68rem}
+  .nav{gap:2px 2px;padding:0 0 5px}
+  .nav a{padding:5px 8px;font-size:.84rem}
+}
+@media(max-width:1019px){html{scroll-padding-top:150px}}
 .site-header .bar{max-width:1060px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--navy)}
 .brand img{height:50px;width:auto}
