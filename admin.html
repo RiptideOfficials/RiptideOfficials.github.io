@@ -29,7 +29,7 @@
   var R = window.Riptide, esc = R.esc, $ = function (id) { return document.getElementById(id); };
   R.footer();
   var DEFAULT_SCHEDULE = "Warm-ups | \nOfficials meeting | \nTimers meeting | \nMeet starts | ";
-  var DEFAULT_ROLES = "Meet Referee | 1\nAdmin Official | 1\nStarter | 2\nStroke & Turn | 8\nStroke & Turn (shadowing) | 4";
+  var DEFAULT_ROLES = "Meet Referee | 1\nAdmin Official | 1\nStarter\nStroke & Turn\nChief Judge\nDeck Referee";
 
   R.requireAdmin("admin").then(function (ctx) {
     if (!ctx) return;
@@ -43,7 +43,7 @@
       '<label for="m-loc">Location</label><input id="m-loc" placeholder="Pool name and address">' +
       '<label for="m-sessions">Sessions (one per line)</label><textarea id="m-sessions" placeholder="Saturday morning&#10;Saturday afternoon&#10;Sunday morning"></textarea>' +
       '<div class="hint">Leave blank if officials just sign up for the whole meet.</div>' +
-      '<label for="m-roles">Positions and how many you need (one per line, "Position | number")</label><textarea id="m-roles" rows="5"></textarea>' +
+      '<label for="m-roles">Positions people can say they are certified in (one per line; add " | 1" only if you need exactly that many)</label><textarea id="m-roles" rows="5"></textarea>' +
       '<label for="m-sched">Meet details: warm-ups, meetings, etc. (one per line, "Label | time")</label><textarea id="m-sched" rows="5"></textarea>' +
       '<label for="m-notes">Notes for officials (parking, what to wear, food, etc.)</label><textarea id="m-notes"></textarea>' +
       '<div class="btn-row"><button class="btn green" type="submit" id="m-save">Save meet</button>' +

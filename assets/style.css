@@ -229,3 +229,9 @@ details.card[open] summary{margin-bottom:8px}
   .steps3{grid-template-columns:repeat(3,1fr);gap:30px}
   .join{padding:36px 44px}
 }
+
+/* sign-up checklists */
+.checks{display:grid;gap:6px;margin:6px 0 14px}
+.chk{display:flex;align-items:center;gap:10px;font-weight:500;margin:0;padding:10px 12px;border:1px solid var(--line,#d5e0ea);border-radius:10px;background:#fff;cursor:pointer}
+.chk input{width:20px;height:20px;margin:0;flex:none}
+@media (min-width:760px){.checks{grid-template-columns:1fr 1fr}}

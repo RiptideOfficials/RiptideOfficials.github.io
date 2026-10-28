@@ -46,6 +46,8 @@
     function render(ctx, m) {
       var sched = R.parseSchedule(m.schedule), roles = R.parseRoles(m.roles), sessions = R.lines(m.sessions);
       if (!sessions.length) sessions = ["All sessions"];
+      roles = roles.filter(function (r) { return !/shadow/i.test(r.name); });
+      var shadowRoles = roles.filter(function (r) { return !/^meet referee$/i.test(r.name); });
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         "<h1 style=\"margin-top:8px\">" + esc(m.title) + "</h1>" +
         "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
@@ -61,15 +63,22 @@
 
       html += '<div class="card" id="signup-card"><h2>Sign up to work</h2>' +
         '<form id="su" novalidate>' +
-        '<div class="row2"><div><label for="su-name">Your name</label><input id="su-name" autocomplete="name" required></div>' +
-        '<div><label for="su-team">Team / club</label><input id="su-team" placeholder="Riptide"></div></div>' +
+        '<div id="step1"><p class="muted small" style="margin-top:0">Step 1 of 2</p>' +
+        '<label for="su-name">Your name</label><input id="su-name" autocomplete="name" required>' +
+        (sessions.length > 1 ? '<label>Which sessions can you work?</label><div class="checks" id="su-sessions">' +
+          sessions.map(function (x, i) { return '<label class="chk"><input type="checkbox" name="sess" value="' + esc(x) + '"' + (i === 0 && sessions.length === 1 ? " checked" : "") + "> " + esc(x) + "</label>"; }).join("") + "</div>" : "") +
+        '<div class="btn-row"><button class="btn" type="button" id="su-next">Next</button></div></div>' +
+        '<div id="step2" class="hidden"><p class="muted small" style="margin-top:0">Step 2 of 2</p>' +
         '<div class="row2"><div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>' +
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
+        '<label for="su-team">Team / club</label><input id="su-team" placeholder="Riptide">' +
         '<div class="hint">Your email and phone are only seen by the officials coordinators. Other officials see your name and team only.</div>' +
-        '<div class="row2"><div><label for="su-session">Session</label><select id="su-session">' +
-        sessions.map(function (s) { return "<option>" + esc(s) + "</option>"; }).join("") + "</select></div>" +
-        '<div><label for="su-role">Position</label><select id="su-role"></select></div></div>' +
-        '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">Sign me up</button></div>' +
+        '<label>Select everything you are certified in</label><div class="checks" id="su-certs">' +
+        roles.map(function (r) { return '<label class="chk"><input type="checkbox" name="cert" value="' + esc(r.name) + '"> ' + esc(r.name) + "</label>"; }).join("") + "</div>" +
+        '<label>Interested in shadowing? Pick one position</label><div class="checks" id="su-shadow">' +
+        '<label class="chk"><input type="radio" name="shadow" value="" checked> Not shadowing</label>' +
+        shadowRoles.map(function (r) { return '<label class="chk"><input type="radio" name="shadow" value="' + esc(r.name) + '"> ' + esc(r.name) + "</label>"; }).join("") + "</div>" +
+        '<div class="btn-row"><button class="btn ghost" type="button" id="su-back">Back</button><button class="btn green" type="submit" id="su-btn">Sign me up</button></div></div>' +
         '<div id="su-status" role="status"></div></form></div>';
 
       html += '</div><div><div class="card who" id="who"><h2>Who\'s signed up</h2><div id="who-body" class="muted">Loading...</div></div></div></div>';
@@ -87,37 +96,18 @@
       var cl = $("copylink");
       if (cl) cl.onclick = function () { R.copyText(R.meetUrl(meetId)).then(function () { cl.textContent = "Copied!"; setTimeout(function () { cl.textContent = "Copy sign-up link"; }, 1500); }); };
 
-      function count(session, role) {
-        return signups.filter(function (s) { return s.session === session && s.role === role; }).length;
-      }
-      function fillRoles() {
-        var sess = $("su-session").value;
-        $("su-role").innerHTML = roles.map(function (r) {
-          var n = count(sess, r.name), full = r.slots > 0 && n >= r.slots;
-          return '<option value="' + esc(r.name) + '"' + (full ? " disabled" : "") + ">" + esc(r.name) +
-            (r.slots > 0 ? " (" + n + "/" + r.slots + (full ? ", full" : "") + ")" : "") + "</option>";
-        }).join("") || "<option>(no positions set up yet)</option>";
-      }
-      $("su-session").onchange = fillRoles;
-
       function drawWho() {
         var body = $("who-body");
-        if (!signups.length) { body.textContent = "No one yet. Be the first!"; fillRoles(); drawAdmin(); return; }
+        if (!signups.length) { body.textContent = "No one yet. Be the first!"; drawAdmin(); return; }
         body.className = "";
-        var bySession = {};
-        signups.forEach(function (s) { (bySession[s.session] = bySession[s.session] || []).push(s); });
-        body.innerHTML = Object.keys(bySession).map(function (sess) {
-          var byRole = {};
-          bySession[sess].forEach(function (s) { (byRole[s.role] = byRole[s.role] || []).push(s); });
-          return (sessions.length > 1 ? "<h3>" + esc(sess) + "</h3>" : "") + Object.keys(byRole).map(function (role) {
-            return "<div><strong>" + esc(role) + "</strong><ul>" + byRole[role].map(function (s) {
-              var mine = ctx.user && s.uid === ctx.user.uid;
-              return "<li>" + esc(s.name) + (s.team ? ' <span class="muted small">(' + esc(s.team) + ")</span>" : "") +
-                (mine ? ' <button class="btn small ghost" data-cancel="' + esc(s.id) + '">Cancel mine</button>' : "") + "</li>";
-            }).join("") + "</ul></div>";
-          }).join("");
-        }).join("");
-        fillRoles(); drawAdmin();
+        body.innerHTML = "<ul>" + signups.map(function (s) {
+          var mine = ctx.user && s.uid === ctx.user.uid;
+          return "<li><strong>" + esc(s.name) + "</strong>" + (s.team ? ' <span class="muted small">(' + esc(s.team) + ")</span>" : "") +
+            '<br><span class="small">' + (s.certified && s.certified.length ? "Certified: " + esc(s.certified.join(", ")) : (s.role && !s.shadow ? esc(s.role) : "")) +
+            (s.shadow ? (s.certified && s.certified.length ? " &middot; " : "") + "Shadowing: " + esc(s.shadow) : "") + "</span>" +
+            (mine ? ' <button class="btn small ghost" data-cancel="' + esc(s.id) + '">Cancel mine</button>' : "") + "</li>";
+        }).join("") + "</ul>";
+        drawAdmin();
       }
 
       function load() {
@@ -141,9 +131,9 @@
           (emails.length ? '<a class="btn" href="' + mailto + '">Email officials</a>' : '<button class="btn" disabled>Email officials</button>') +
           '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ")</button></div>" +
           '<p class="hint">"Email officials" opens your email app with everyone on blind copy and the meet name as the subject. If your email app cuts off a long list, use Copy all emails instead.</p>' +
-          '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Session</th><th>Position</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>' +
+          '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Sessions</th><th>Certified / shadowing</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>' +
           signups.map(function (s) { var c = contacts[s.id] || {};
-            return "<tr><td>" + esc(s.name) + (s.team ? "<br><span class=\"muted small\">" + esc(s.team) + "</span>" : "") + "</td><td>" + esc(s.session) + "</td><td>" + esc(s.role) +
+            return "<tr><td>" + esc(s.name) + (s.team ? "<br><span class=\"muted small\">" + esc(s.team) + "</span>" : "") + "</td><td>" + esc(s.session) + "</td><td>" + esc(s.certified && s.certified.length ? s.certified.join(", ") : (s.role || "")) + (s.shadow ? "<br><em>Shadowing: " + esc(s.shadow) + "</em>" : "") +
               "</td><td>" + esc(c.email || "") + "</td><td>" + esc(c.phone || "") + '</td><td><button class="btn small danger" data-remove="' + esc(s.id) + '">Remove</button></td></tr>';
           }).join("") + "</tbody></table></div>";
         var ce = $("copyemails");
@@ -159,28 +149,41 @@
           .then(load).catch(function () { alert("Could not remove that sign-up."); });
       });
 
+      function val(sel) { return Array.prototype.map.call(document.querySelectorAll(sel + ":checked"), function (i) { return i.value; }); }
+      $("su-next").onclick = function () {
+        var st = $("su-status");
+        if (!$("su-name").value.trim()) { st.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
+        if (sessions.length > 1 && !val('input[name="sess"]').length) { st.innerHTML = '<div class="msg err">Please pick at least one session.</div>'; return; }
+        st.innerHTML = ""; $("step1").classList.add("hidden"); $("step2").classList.remove("hidden");
+        $("su-email").focus();
+      };
+      $("su-back").onclick = function () { $("step2").classList.add("hidden"); $("step1").classList.remove("hidden"); };
       $("su").addEventListener("submit", function (e) {
         e.preventDefault();
         var st = $("su-status"), btn = $("su-btn");
         var name = $("su-name").value.trim(), email = $("su-email").value.trim(), phone = $("su-phone").value.trim(),
-            team = $("su-team").value.trim(), session = $("su-session").value, role = $("su-role").value;
-        if (!name || !/^\S+@\S+\.\S+$/.test(email) || !phone) { st.innerHTML = '<div class="msg err">Please fill in your name, a valid email, and your phone number.</div>'; return; }
-        if (!roles.length) { st.innerHTML = '<div class="msg err">Positions for this meet haven\'t been set up yet.</div>'; return; }
+            team = $("su-team").value.trim(), certified = val('input[name="cert"]'),
+            shadow = (val('input[name="shadow"]')[0]) || "",
+            session = sessions.length > 1 ? val('input[name="sess"]').join(", ") : sessions[0];
+        if (!name || !/^\S+@\S+\.\S+$/.test(email) || !phone) { st.innerHTML = '<div class="msg err">Please fill in a valid email and your phone number.</div>'; return; }
+        if (!certified.length && !shadow) { st.innerHTML = '<div class="msg err">Please select what you are certified in, or pick a position to shadow.</div>'; return; }
         btn.disabled = true; btn.textContent = "Signing up...";
         var id = R.newId(), ts = firebase.firestore.FieldValue.serverTimestamp(), uid = ctx.user ? ctx.user.uid : null;
+        var role = (certified.join(", ") || "Shadowing").slice(0, 190);
+        var pub = { name: name, team: team, role: role, certified: certified, shadow: shadow, session: session.slice(0, 190), uid: uid, createdAt: ts };
+        var priv = Object.assign({ email: email, phone: phone }, pub);
         var batch = R.db.batch();
-        batch.set(meetRef.collection("signups").doc(id), { name: name, team: team, role: role, session: session, uid: uid, createdAt: ts });
-        batch.set(meetRef.collection("contacts").doc(id), { name: name, email: email, phone: phone, team: team, role: role, session: session, uid: uid, createdAt: ts });
+        batch.set(meetRef.collection("signups").doc(id), pub);
+        batch.set(meetRef.collection("contacts").doc(id), priv);
         batch.commit().then(function () {
-          st.innerHTML = '<div class="msg ok">You\'re signed up as <strong>' + esc(role) + "</strong>" + (sessions.length > 1 ? " for " + esc(session) : "") +
-            ". Thank you! To make a change, email " + esc(window.ADMIN_EMAIL) + ".</div>";
-          if (!ctx.user) { $("su-name").value = ""; $("su-email").value = ""; $("su-phone").value = ""; }
+          st.innerHTML = '<div class="msg ok">You\'re signed up. Thank you! To make a change, email ' + esc(window.ADMIN_EMAIL) + ".</div>";
+          $("su").reset(); $("step2").classList.add("hidden"); $("step1").classList.remove("hidden");
+          if (ctx.user) { var p2 = ctx.profile || {}; $("su-name").value = p2.name || ""; $("su-email").value = p2.email || ctx.user.email || ""; $("su-phone").value = p2.phone || ""; $("su-team").value = "Riptide"; }
           return load();
         }).catch(function () { st.innerHTML = '<div class="msg err">Sorry, that didn\'t go through. Please try again.</div>'; })
           .then(function () { btn.disabled = false; btn.textContent = "Sign me up"; });
       });
 
-      fillRoles();
       load();
     }
   });
