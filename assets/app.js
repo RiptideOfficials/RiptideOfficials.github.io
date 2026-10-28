@@ -215,6 +215,13 @@
     var h = +m[1], ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
     return h + ":" + m[2] + " " + ap;
   };
+  // Meet uniform can differ by day: [{date, text}] (older meets have one text for all days)
+  R.uniformDays = function (info) {
+    var list = Array.isArray(info.uniformByDate) ? info.uniformByDate.filter(function (d) { return d.text; }) : [];
+    if (!list.length && info.uniform) return [{ date: "", text: info.uniform }];
+    var same = list.length > 1 && list.every(function (d) { return d.text === list[0].text; });
+    return same ? [{ date: "", text: list[0].text }] : list;
+  };
   R.sessionWhen = function (x) {
     return [x.date ? R.fmtDate(x.date) : "", x.start ? R.fmtTime(x.start) : ""].filter(Boolean).join(" at ");
   };
@@ -224,11 +231,11 @@
     if (v2) {
       sessions = m.sessionList.map(function (x, i) {
         return { name: x.name || "Session " + (i + 1), date: x.date || "", start: x.start || "",
-          positions: x.positions || [], shadow: x.shadow || [], notes: x.notes || "" };
+          positions: x.positions || [], shadow: x.shadow || [], notes: x.notes || "", details: x.details || "" };
       });
     } else {
       var lines = R.lines(m.sessions); if (!lines.length) lines = ["All sessions"];
-      sessions = lines.map(function (n) { return { name: n, date: "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), notes: "" }; });
+      sessions = lines.map(function (n) { return { name: n, date: "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), notes: "", details: "" }; });
     }
     return { v2: v2, sessions: sessions, whole: Array.isArray(m.wholeMeet) ? m.wholeMeet : R.WHOLE_POS.slice(), info: m.info || {} };
   };
@@ -253,11 +260,13 @@
     if (n.v2) {
       n.sessions.forEach(function (x) {
         lines.push(x.name + (R.sessionWhen(x) ? ": " + R.sessionWhen(x) : ""));
+        R.parseSchedule(x.details).forEach(function (d) { if (d.value) lines.push("  " + d.label + ": " + d.value); });
         if (x.notes) lines.push(x.notes);
       });
-      [["Parking", "parking"], ["Meet uniform", "uniform"], ["Food", "food"], ["Other", "misc"]].forEach(function (k) {
-        if (n.info[k[1]]) lines.push("", k[0] + ": " + n.info[k[1]]);
-      });
+      if (n.info.parking) lines.push("", "Parking: " + n.info.parking);
+      R.uniformDays(n.info).forEach(function (d) { lines.push("", "Meet uniform" + (d.date ? " (" + R.fmtDate(d.date) + ")" : "") + ": " + d.text); });
+      if (n.info.food) lines.push("", "Food: " + n.info.food);
+      if (n.info.misc) lines.push("", "Other: " + n.info.misc);
     } else {
       lines = R.parseSchedule(m.schedule).map(function (x) { return x.label + (x.value ? ": " + x.value : ""); });
       if (m.notes) lines.push("", m.notes);
