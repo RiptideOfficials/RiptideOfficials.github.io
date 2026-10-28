@@ -112,7 +112,7 @@
 
       function drawAssign() {
         var missing = R.WHOLE_GROUPS.filter(function (g) { return !asg.whole[g.key].length; }).map(function (g) { return g.label; });
-        var html = '<div class="card coord-card"><h2>Whole meet</h2>' +
+        var html = '<div class="card coord-card"><h2>All sessions</h2>' +
           (missing.length ? '<div class="msg err">Every meet needs a Meet Referee and an Admin Official. Still needed: ' + esc(missing.join(" and ")) + ".</div>" : "") +
           R.WHOLE_GROUPS.map(function (g) { return groupHtml("w", g, asg.whole[g.key]); }).join("") + "</div>";
         n.sessions.forEach(function (x, i) {

@@ -33,8 +33,21 @@
     if (!ctx) return;
     var app = $("app"), S = [], whole = R.WHOLE_POS.slice(), legacy = false;
 
-    var DETAILS = "Warm-ups | \nOfficials meeting | \nTimers meeting | \nMeet starts | ";
-    function blankSession(i) { return { name: "Session " + (i + 1), date: $("m-date") ? $("m-date").value : "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), details: DETAILS, notes: "" }; }
+    var DKEYS = [["Warm-ups", "warm", /warm/i], ["Officials meeting", "off", /official/i], ["Timers meeting", "timers", /timer/i], ["Meet starts", "start", /start/i]];
+    function parseDetails(text) {   // "Label | time" lines -> the four boxes (+ any other lines kept as they are)
+      var dv = {}, extra = [];
+      R.parseSchedule(text).forEach(function (l) {
+        var k = DKEYS.filter(function (d) { return d[2].test(l.label) && dv[d[1]] == null; })[0];
+        if (k) dv[k[1]] = l.value; else extra.push(l.label + (l.value ? " | " + l.value : ""));
+      });
+      return { dv: dv, extra: extra.join("\n") };
+    }
+    function buildDetails(x) {
+      var lines = DKEYS.filter(function (d) { return (x.dv[d[1]] || "").trim(); }).map(function (d) { return d[0] + " | " + x.dv[d[1]].trim(); });
+      if (x.extra) lines.push(x.extra);
+      return lines.join("\n");
+    }
+    function blankSession(i) { return { name: "Session " + (i + 1), date: $("m-date") ? $("m-date").value : "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), dv: {}, extra: "", notes: "" }; }
     var U = {};   // meet uniform text by date
 
     function load() {
@@ -59,7 +72,7 @@
         info = { parking: "", uniform: uni, food: "", misc: rest.join("\n") };
         n.sessions.forEach(function (x, i) { if (i === 0) x.details = m.schedule || ""; });
       }
-      S = n ? n.sessions.map(function (x) { return Object.assign({}, x); }) : [];
+      S = n ? n.sessions.map(function (x, i) { var p = parseDetails(x.details); return Object.assign({}, x, { dv: p.dv, extra: p.extra, name: (n.v2 && x.name !== "Session " + (i + 1)) ? x.name : "" }); }) : [];
       if (n) whole = n.whole.slice();
       app.innerHTML =
         '<p style="margin:0 0 10px"><a href="admin.html">&larr; Admin</a></p>' +
@@ -71,7 +84,7 @@
         '<div class="row2"><div><label for="m-date">First day</label><input id="m-date" type="date"></div>' +
         '<div><label for="m-end">Last day (if more than one day)</label><input id="m-end" type="date"></div></div>' +
         '<label for="m-loc">Location</label><input id="m-loc" placeholder="Pool name and address"></div>' +
-        '<div class="card coord-card"><h2>Whole meet</h2><p class="muted small" style="margin-top:0">These positions cover every session, so people choose them once.</p>' +
+        '<div class="card coord-card"><h2>All sessions</h2><p class="muted small" style="margin-top:0">These positions cover all sessions, so people choose them once.</p>' +
         '<div class="checks" id="whole">' + R.WHOLE_POS.map(function (p) {
           return '<label class="chk"><input type="checkbox" data-whole="' + esc(p) + '"' + (whole.indexOf(p) >= 0 ? " checked" : "") + "> " + esc(p) + "</label>";
         }).join("") + "</div></div>" +
@@ -101,8 +114,9 @@
         whole = Array.prototype.map.call($("whole").querySelectorAll("input:checked"), function (i) { return i.getAttribute("data-whole"); });
       });
       $("sess").addEventListener("input", function (e) {
-        var t = e.target, i = t.getAttribute("data-i"), f = t.getAttribute("data-f");
+        var t = e.target, i = t.getAttribute("data-i"), f = t.getAttribute("data-f"), dk = t.getAttribute("data-dv");
         if (i != null && f) S[+i][f] = t.value;
+        else if (i != null && dk) S[+i].dv[dk] = t.value;
       });
       $("sess").addEventListener("change", function (e) {
         var t = e.target, i = t.getAttribute("data-i"), f = t.getAttribute("data-list");
@@ -144,12 +158,14 @@
           }).join("") + "</div>";
         }
         return '<div class="card coord-card"><h2>' + esc(x.name || "Session " + (i + 1)) + "</h2>" +
-          '<label>Session name</label><input data-i="' + i + '" data-f="name" value="' + esc(x.name) + '">' +
+          '<label>Session name (optional)</label><input data-i="' + i + '" data-f="name" placeholder="Session ' + (i + 1) + '" value="' + esc(x.name) + '">' +
           '<div class="row2"><div><label>Date</label><input type="date" data-i="' + i + '" data-f="date" value="' + esc(x.date) + '"></div>' +
           '<div><label>Start time</label><input type="time" data-i="' + i + '" data-f="start" value="' + esc(x.start) + '"></div></div>' +
           "<label>Positions people can sign up for in this session</label>" + checks("positions", x.positions) +
           "<label>Positions people can ask to shadow in this session</label>" + checks("shadow", x.shadow) +
-          '<label>Meet details (one per line, "Label | time")</label><textarea rows="4" data-i="' + i + '" data-f="details">' + esc(x.details) + "</textarea>" +
+          "<label>Meet details</label>" + '<div class="row2">' + DKEYS.map(function (d) {
+            return '<div><label class="muted small" style="font-weight:600">' + d[0] + '</label><input data-i="' + i + '" data-dv="' + d[1] + '" placeholder="Time" value="' + esc(x.dv[d[1]] || "") + '"></div>';
+          }).join("") + "</div>" +
           '<label>Notes for officials</label><textarea rows="3" data-i="' + i + '" data-f="notes" placeholder="Warm-ups, officials meeting, timers meeting...">' + esc(x.notes) + "</textarea>" +
           (S.length > 1 ? '<div class="btn-row"><button class="btn small danger" type="button" data-remove="' + i + '">Remove this session</button></div>' : "") + "</div>";
       }).join("");
@@ -164,11 +180,11 @@
       var data = {
         title: title, date: date, endDate: end || "", location: $("m-loc").value.trim(),
         wholeMeet: whole.slice(),
-        sessionList: S.map(function (x, i) { return { name: (x.name || "").trim() || "Session " + (i + 1), date: x.date || "", start: x.start || "",
-          positions: x.positions || [], shadow: x.shadow || [], details: (x.details || "").trim(), notes: (x.notes || "").trim() }; }),
+        sessionList: S.map(function (x, i) { return { name: (x.name || "").trim(), date: x.date || "", start: x.start || "",
+          positions: x.positions || [], shadow: x.shadow || [], details: buildDetails(x), notes: (x.notes || "").trim() }; }),
         info: { parking: $("i-parking").value.trim(), uniform: "", uniformByDate: days().map(function (d) { return { date: d, text: (U[d] || "").trim() }; }).filter(function (d) { return d.text; }), food: $("i-food").value.trim(), misc: $("i-misc").value.trim() }
       };
-      data.sessions = data.sessionList.map(function (x) { return x.name; }).join("\n");
+      data.sessions = data.sessionList.map(function (x, i) { return x.name || "Session " + (i + 1); }).join("\n");
       var ref = meetId ? R.db.collection("meets").doc(meetId) : R.db.collection("meets").doc(R.newId());
       if (!meetId) data.createdAt = FV.serverTimestamp();
       else { data.roles = FV.delete(); data.schedule = FV.delete(); data.notes = FV.delete(); }
