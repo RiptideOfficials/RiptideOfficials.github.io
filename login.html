@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Member Login | Riptide Officials</title>
+<link rel="icon" href="assets/img/riptide-logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app" style="max-width:520px">
+  <div class="card">
+    <div class="btn-row" style="margin:0 0 6px">
+      <button class="btn small" id="tab-in" type="button">Sign in</button>
+      <button class="btn small ghost" id="tab-up" type="button">Create account</button>
+    </div>
+
+    <form id="form-in" novalidate>
+      <h2>Sign in</h2>
+      <label for="in-email">Email</label>
+      <input id="in-email" type="email" autocomplete="username" required>
+      <label for="in-pass">Password</label>
+      <input id="in-pass" type="password" autocomplete="current-password" required>
+      <div class="btn-row"><button class="btn" type="submit">Sign in</button>
+        <button class="btn ghost" type="button" id="forgot">Forgot password</button></div>
+    </form>
+
+    <form id="form-up" class="hidden" novalidate>
+      <h2>Create account</h2>
+      <p class="muted small">For Riptide officials. After you sign up, the coordinator approves your account. Officials from other teams don't need an account: just use the meet sign-up link you were sent.</p>
+      <label for="up-name">Full name</label>
+      <input id="up-name" autocomplete="name" required>
+      <label for="up-email">Email</label>
+      <input id="up-email" type="email" autocomplete="email" required>
+      <label for="up-phone">Phone</label>
+      <input id="up-phone" type="tel" autocomplete="tel">
+      <div class="hint">Only the coordinator can see your email and phone.</div>
+      <label for="up-pass">Password (at least 8 characters)</label>
+      <input id="up-pass" type="password" autocomplete="new-password" required>
+      <div class="btn-row"><button class="btn green" type="submit">Create account</button></div>
+    </form>
+    <div id="status" role="status"></div>
+  </div>
+</main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var R = window.Riptide, $ = function (id) { return document.getElementById(id); };
+  R.footer();
+  R.renderHeader({}, "login");
+  var status = $("status");
+  function show(kind, text) { status.innerHTML = '<div class="msg ' + kind + '">' + R.esc(text) + "</div>"; }
+  if (!R.configured) { status.innerHTML = R.setupBanner(); return; }
+
+  var next = new URLSearchParams(location.search).get("next") || "home.html";
+  if (!/^[\w\-.]+\.html(\?[\w\-=&%.]*)?$/.test(next)) next = "home.html";
+
+  function tab(up) {
+    $("form-in").classList.toggle("hidden", up);
+    $("form-up").classList.toggle("hidden", !up);
+    $("tab-in").classList.toggle("ghost", up);
+    $("tab-up").classList.toggle("ghost", !up);
+    status.innerHTML = "";
+  }
+  $("tab-in").onclick = function () { tab(false); };
+  $("tab-up").onclick = function () { tab(true); };
+
+  function friendly(e) {
+    var c = e && e.code || "";
+    if (/user-not-found|wrong-password|invalid-credential|invalid-login/.test(c)) return "That email or password doesn't match.";
+    if (/email-already-in-use/.test(c)) return "There's already an account with that email. Try signing in.";
+    if (/weak-password/.test(c)) return "Please choose a longer password (at least 8 characters).";
+    if (/too-many-requests/.test(c)) return "Too many tries. Please wait a few minutes and try again.";
+    if (/invalid-email/.test(c)) return "That email address doesn't look right.";
+    return "Something went wrong. Please try again.";
+  }
+
+  $("form-in").addEventListener("submit", function (e) {
+    e.preventDefault();
+    R.auth.signInWithEmailAndPassword($("in-email").value.trim(), $("in-pass").value)
+      .then(function () { location.href = next; })
+      .catch(function (err) { show("err", friendly(err)); });
+  });
+
+  $("forgot").onclick = function () {
+    var em = $("in-email").value.trim();
+    if (!em) return show("info", "Type your email above first, then tap Forgot password.");
+    R.auth.sendPasswordResetEmail(em)
+      .then(function () { show("ok", "If that email has an account, a reset link is on its way."); })
+      .catch(function (err) { show("err", friendly(err)); });
+  };
+
+  $("form-up").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var name = $("up-name").value.trim(), email = $("up-email").value.trim(),
+        phone = $("up-phone").value.trim(), pass = $("up-pass").value;
+    if (!name) return show("err", "Please enter your name.");
+    if (pass.length < 8) return show("err", "Please choose a password with at least 8 characters.");
+    R.auth.createUserWithEmailAndPassword(email, pass).then(function (cred) {
+      var u = cred.user;
+      return R.db.collection("users").doc(u.uid).set({
+        name: name, email: email, phone: phone, approved: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(function () { return u.sendEmailVerification().catch(function () {}); })
+        .then(function () { location.href = "home.html"; });
+    }).catch(function (err) { show("err", friendly(err)); });
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin | Riptide Officials</title>
+<link rel="icon" href="assets/img/riptide-logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var R = window.Riptide, esc = R.esc, $ = function (id) { return document.getElementById(id); };
+  R.footer();
+  var DEFAULT_SCHEDULE = "Warm-ups | \nOfficials meeting | \nTimers meeting | \nMeet starts | ";
+  var DEFAULT_ROLES = "Admin Official | 1\nStarter | 2\nStroke & Turn | 8\nStroke & Turn (shadowing) | 4";
+
+  R.requireAdmin("admin").then(function (ctx) {
+    if (!ctx) return;
+    $("app").innerHTML =
+      "<h1>Admin</h1>" +
+      '<div class="card" id="meet-form-card"><h2 id="form-title">Add a meet</h2>' +
+      '<form id="mf" novalidate>' +
+      '<label for="m-title">Meet name</label><input id="m-title" placeholder="Riptide Fall Invitational" required>' +
+      '<div class="row2"><div><label for="m-date">First day</label><input id="m-date" type="date" required></div>' +
+      '<div><label for="m-end">Last day (if more than one day)</label><input id="m-end" type="date"></div></div>' +
+      '<label for="m-loc">Location</label><input id="m-loc" placeholder="Pool name and address">' +
+      '<label for="m-sessions">Sessions (one per line)</label><textarea id="m-sessions" placeholder="Saturday morning&#10;Saturday afternoon&#10;Sunday morning"></textarea>' +
+      '<div class="hint">Leave blank if officials just sign up for the whole meet.</div>' +
+      '<label for="m-roles">Positions and how many you need (one per line, "Position | number")</label><textarea id="m-roles" rows="5"></textarea>' +
+      '<label for="m-sched">Meet details: warm-ups, meetings, etc. (one per line, "Label | time")</label><textarea id="m-sched" rows="5"></textarea>' +
+      '<label for="m-notes">Notes for officials (parking, what to wear, food, etc.)</label><textarea id="m-notes"></textarea>' +
+      '<div class="btn-row"><button class="btn green" type="submit" id="m-save">Save meet</button>' +
+      '<button class="btn ghost hidden" type="button" id="m-cancel">Cancel editing</button></div>' +
+      '<div id="m-status" role="status"></div></form></div>' +
+      '<div class="card"><h2>Meets</h2><ul class="meet-list" id="meets"><li class="muted">Loading...</li></ul></div>' +
+      '<div class="card"><h2>Private team info</h2><p class="muted small">Only approved members can see this, and it is never stored in the website files.</p>' +
+      '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
+      '<div class="btn-row"><button class="btn green" id="t-save" type="button">Save</button></div><div id="t-status" role="status"></div></div>' +
+      '<div class="card"><h2>Members</h2><p class="muted small">New accounts wait here until you approve them. You are the only one who can see their email and phone.</p><div id="members" class="table-wrap">Loading...</div></div>';
+
+    var editing = null, meets = [];
+    function resetForm() {
+      editing = null;
+      $("form-title").textContent = "Add a meet";
+      $("mf").reset();
+      $("m-roles").value = DEFAULT_ROLES; $("m-sched").value = DEFAULT_SCHEDULE;
+      $("m-cancel").classList.add("hidden");
+    }
+    resetForm();
+
+    function edit(id) {
+      var m = meets.filter(function (x) { return x.id === id; })[0];
+      if (!m) return;
+      editing = id;
+      $("form-title").textContent = "Edit meet";
+      $("m-title").value = m.title || ""; $("m-date").value = m.date || ""; $("m-end").value = m.endDate || "";
+      $("m-loc").value = m.location || ""; $("m-sessions").value = m.sessions || ""; $("m-roles").value = m.roles || "";
+      $("m-sched").value = m.schedule || ""; $("m-notes").value = m.notes || "";
+      $("m-cancel").classList.remove("hidden");
+      $("meet-form-card").scrollIntoView();
+    }
+    $("m-cancel").onclick = resetForm;
+
+    $("mf").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var st = $("m-status");
+      var data = {
+        title: $("m-title").value.trim(), date: $("m-date").value, endDate: $("m-end").value || "",
+        location: $("m-loc").value.trim(), sessions: $("m-sessions").value.trim(), roles: $("m-roles").value.trim(),
+        schedule: $("m-sched").value.trim(), notes: $("m-notes").value.trim()
+      };
+      if (!data.title || !data.date) { st.innerHTML = '<div class="msg err">Please enter a meet name and date.</div>'; return; }
+      if (data.endDate && data.endDate < data.date) { st.innerHTML = '<div class="msg err">The last day is before the first day.</div>'; return; }
+      var ref = editing ? R.db.collection("meets").doc(editing) : R.db.collection("meets").doc(R.newId());
+      if (!editing) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      $("m-save").disabled = true;
+      ref.set(data, { merge: true }).then(function () {
+        st.innerHTML = '<div class="msg ok">Saved. <a href="meet.html?m=' + encodeURIComponent(ref.id) + '">Open the sign-up page</a></div>';
+        resetForm(); loadMeets();
+      }).catch(function () { st.innerHTML = '<div class="msg err">Could not save. Make sure you are signed in with your verified admin email.</div>'; })
+        .then(function () { $("m-save").disabled = false; });
+    });
+
+    function loadMeets() {
+      return R.db.collection("meets").orderBy("date", "desc").get().then(function (snap) {
+        meets = snap.docs.map(function (d) { var m = d.data(); m.id = d.id; return m; });
+        $("meets").innerHTML = meets.length ? meets.map(function (m) {
+          return "<li><div><strong>" + esc(m.title) + "</strong><br><span class=\"muted small\">" + esc(R.fmtRange(m)) + "</span></div>" +
+            '<div class="btn-row" style="margin:0"><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Open</a>' +
+            '<button class="btn small ghost" data-copy="' + esc(m.id) + '">Copy link</button>' +
+            '<button class="btn small ghost" data-edit="' + esc(m.id) + '">Edit</button>' +
+            '<button class="btn small danger" data-del="' + esc(m.id) + '">Delete</button></div></li>';
+        }).join("") : '<li class="muted">No meets yet. Add one above.</li>';
+        var q = new URLSearchParams(location.search).get("edit");
+        if (q && !editing && !loadMeets.done) { loadMeets.done = true; edit(q); }
+      });
+    }
+
+    $("meets").addEventListener("click", function (e) {
+      var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
+      if (g("data-copy")) R.copyText(R.meetUrl(g("data-copy"))).then(function () { t.textContent = "Copied!"; setTimeout(function () { t.textContent = "Copy link"; }, 1500); });
+      if (g("data-edit")) edit(g("data-edit"));
+      if (g("data-del")) {
+        var id = g("data-del"), m = meets.filter(function (x) { return x.id === id; })[0];
+        if (!confirm('Delete "' + (m ? m.title : "this meet") + '" and everyone signed up for it? This cannot be undone.')) return;
+        var ref = R.db.collection("meets").doc(id);
+        Promise.all([ref.collection("signups").get(), ref.collection("contacts").get()]).then(function (r) {
+          var batch = R.db.batch();
+          r[0].docs.concat(r[1].docs).forEach(function (d) { batch.delete(d.ref); });
+          batch.delete(ref);
+          return batch.commit();
+        }).then(loadMeets).catch(function () { alert("Could not delete that meet."); });
+      }
+    });
+
+    function loadMembers() {
+      return R.db.collection("users").orderBy("createdAt", "desc").get().then(function (snap) {
+        var users = snap.docs.map(function (d) { var u = d.data(); u.id = d.id; return u; });
+        $("members").innerHTML = users.length ?
+          '<table class="data"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr></thead><tbody>' +
+          users.map(function (u) {
+            return "<tr><td>" + esc(u.name) + "</td><td>" + esc(u.email) + "</td><td>" + esc(u.phone || "") + "</td><td>" +
+              (u.approved ? '<span class="pill green">Approved</span>' : '<span class="pill">Waiting</span>') + "</td><td>" +
+              (u.approved ? '<button class="btn small ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>'
+                          : '<button class="btn small green" data-approve="' + esc(u.id) + '">Approve</button> <button class="btn small danger" data-deluser="' + esc(u.id) + '">Delete</button>') +
+              "</td></tr>";
+          }).join("") + "</tbody></table>" : '<p class="muted">No accounts yet.</p>';
+      }).catch(function () { $("members").innerHTML = '<div class="msg err">Could not load members.</div>'; });
+    }
+    $("members").addEventListener("click", function (e) {
+      var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
+      var users = R.db.collection("users"), p;
+      if (g("data-approve")) p = users.doc(g("data-approve")).update({ approved: true });
+      else if (g("data-unapprove")) { if (!confirm("Remove this person's access?")) return; p = users.doc(g("data-unapprove")).update({ approved: false }); }
+      else if (g("data-deluser")) { if (!confirm("Delete this account request?")) return; p = users.doc(g("data-deluser")).delete(); }
+      if (p) p.then(loadMembers).catch(function () { alert("That didn't work. Please try again."); });
+    });
+
+    R.db.collection("private").doc("team").get().then(function (snap) {
+      if (snap.exists) $("t-link").value = snap.data().registrationLink || "";
+    }).catch(function () {});
+    $("t-save").onclick = function () {
+      var v = $("t-link").value.trim(), st = $("t-status");
+      if (v && !/^https:\/\/omr\.usaswimming\.org\//.test(v)) { st.innerHTML = '<div class="msg err">That should start with https://omr.usaswimming.org/</div>'; return; }
+      R.db.collection("private").doc("team").set({ registrationLink: v })
+        .then(function () { st.innerHTML = '<div class="msg ok">Saved.</div>'; })
+        .catch(function () { st.innerHTML = '<div class="msg err">Could not save.</div>'; });
+    };
+
+    loadMeets(); loadMembers();
+  });
+})();
+</script>
+</body>
+</html>

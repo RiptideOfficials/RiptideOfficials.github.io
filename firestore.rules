@@ -1,0 +1,86 @@
+rules_version = '2';
+
+// Riptide Officials: Firestore security rules.
+// Paste this whole file into Firebase Console > Firestore Database > Rules > Publish.
+//
+// Who can do what:
+//  - Anyone with a meet's link can read that meet and its sign-up NAMES, and can sign up.
+//    (Meet IDs are long random codes, so they cannot be guessed or browsed.)
+//  - Email and phone are stored in a separate "contacts" collection that ONLY the admin can read.
+//  - Signed-in, approved members can list all meets (for the calendar).
+//  - Only the admin can create/edit/delete meets and approve members.
+//
+// If you ever change the admin email, change it in firebase-config.js AND here.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email == 'whpeterson@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    function isMember() {
+      return isAdmin() || (signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true);
+    }
+
+    // Member profiles. People create their own (always unapproved); only the admin approves.
+    match /users/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'createdAt'])
+        && request.resource.data.approved == false
+        && request.resource.data.name is string && request.resource.data.name.size() <= 80
+        && request.resource.data.email is string && request.resource.data.email.size() <= 120
+        && request.resource.data.phone is string && request.resource.data.phone.size() <= 30;
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
+        && request.resource.data.approved == resource.data.approved
+        && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'createdAt']));
+      allow delete: if isAdmin();
+    }
+
+    // Team-only info (e.g. the team's USA Swimming registration link). Approved members read; only admin writes.
+    match /private/{doc} {
+      allow read: if isMember();
+      allow write: if isAdmin();
+    }
+
+    match /meets/{meetId} {
+      allow get: if true;               // anyone who knows the (unguessable) link
+      allow list: if isMember();        // calendar and meet list
+      allow create, update, delete: if isAdmin();
+
+      // Public part of a sign-up: name, team, position, session. No contact details here.
+      match /signups/{signupId} {
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasOnly(['name', 'team', 'role', 'session', 'uid', 'createdAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+          && request.resource.data.team is string && request.resource.data.team.size() <= 80
+          && request.resource.data.role is string && request.resource.data.role.size() <= 80
+          && request.resource.data.session is string && request.resource.data.session.size() <= 80
+          && (request.resource.data.uid == null || (signedIn() && request.resource.data.uid == request.auth.uid));
+        allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow update: if isAdmin();
+      }
+
+      // Private part: email and phone. Only the admin can ever read these.
+      match /contacts/{signupId} {
+        allow read, update: if isAdmin();
+        allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'team', 'role', 'session', 'uid', 'createdAt'])
+          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+          && request.resource.data.email is string && request.resource.data.email.size() <= 120
+          && request.resource.data.phone is string && request.resource.data.phone.size() <= 30
+          && request.resource.data.team is string && request.resource.data.team.size() <= 80
+          && request.resource.data.role is string && request.resource.data.role.size() <= 80
+          && request.resource.data.session is string && request.resource.data.session.size() <= 80
+          && (request.resource.data.uid == null || (signedIn() && request.resource.data.uid == request.auth.uid));
+        allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      }
+    }
+  }
+}

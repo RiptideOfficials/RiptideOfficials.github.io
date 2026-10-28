@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar | Riptide Officials</title>
+<link rel="icon" href="assets/img/riptide-logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var R = window.Riptide, esc = R.esc;
+  R.footer();
+  R.requireMember("home").then(function (ctx) {
+    if (!ctx) return;
+    var app = document.getElementById("app");
+    var name = ctx.profile && ctx.profile.name ? ctx.profile.name.split(" ")[0] : "";
+    app.innerHTML =
+      '<h1>' + (name ? "Welcome, " + esc(name) : "Meet calendar") + "</h1>" +
+      '<div class="card"><div class="cal-head">' +
+      '<button class="btn small ghost" id="prev" aria-label="Previous month">&larr;</button>' +
+      '<h2 id="month"></h2>' +
+      '<button class="btn small ghost" id="next" aria-label="Next month">&rarr;</button></div>' +
+      '<div class="cal" id="cal"></div>' +
+      '<p class="muted small" style="margin-bottom:0">Tap a meet to see details and sign up.</p></div>' +
+      '<div class="card"><h2>Upcoming meets</h2><ul class="meet-list" id="upcoming"><li class="muted">Loading...</li></ul>' +
+      '<div class="btn-row"><a class="btn ghost small" href="meets.html">All meets</a></div></div>' +
+      '<div class="grid two"><a class="card" href="docs.html" style="text-decoration:none"><h3>Documents</h3><p class="muted" style="margin:0">Briefings, situations and resolutions, counting sheets, pool diagram.</p></a>' +
+      '<a class="card" href="docs.html#training" style="text-decoration:none"><h3>Training and registration</h3><p class="muted" style="margin:0">How to become a USA Swimming official.</p></a></div>';
+
+    var meets = [], view = new Date(); view.setDate(1);
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+
+    function ymd(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+
+    function draw() {
+      document.getElementById("month").textContent = view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+      var first = new Date(view.getFullYear(), view.getMonth(), 1);
+      var start = new Date(first); start.setDate(1 - first.getDay());
+      var html = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(function (d) { return '<div class="dow">' + d + "</div>"; }).join("");
+      for (var i = 0; i < 42; i++) {
+        var d = new Date(start); d.setDate(start.getDate() + i);
+        if (i >= 35 && d.getMonth() !== view.getMonth()) break;
+        var key = ymd(d);
+        var evs = meets.filter(function (m) { return m.date <= key && key <= (m.endDate || m.date); });
+        html += '<div class="day' + (d.getMonth() !== view.getMonth() ? " other" : "") + (+d === +today ? " today" : "") + '">' +
+          '<div class="n">' + d.getDate() + "</div>" +
+          evs.map(function (m) { return '<a class="ev" title="' + esc(m.title) + '" href="meet.html?m=' + encodeURIComponent(m.id) + '">' + esc(m.title) + "</a>"; }).join("") + "</div>";
+      }
+      document.getElementById("cal").innerHTML = html;
+    }
+    document.getElementById("prev").onclick = function () { view.setMonth(view.getMonth() - 1); draw(); };
+    document.getElementById("next").onclick = function () { view.setMonth(view.getMonth() + 1); draw(); };
+    draw();
+
+    R.db.collection("meets").orderBy("date").get().then(function (snap) {
+      meets = snap.docs.map(function (d) { var m = d.data(); m.id = d.id; return m; });
+      draw();
+      var todayKey = ymd(today);
+      var up = meets.filter(function (m) { return (m.endDate || m.date) >= todayKey; }).slice(0, 6);
+      document.getElementById("upcoming").innerHTML = up.length ? up.map(function (m) {
+        return "<li><div><strong>" + esc(m.title) + "</strong><br><span class=\"muted small\">" + esc(R.fmtRange(m)) +
+          (m.location ? " &middot; " + esc(m.location) : "") + '</span></div><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Sign up</a></li>';
+      }).join("") : '<li class="muted">No upcoming meets yet.</li>';
+    }).catch(function () {
+      document.getElementById("upcoming").innerHTML = '<li><div class="msg err">Could not load meets.</div></li>';
+    });
+  });
+})();
+</script>
+</body>
+</html>

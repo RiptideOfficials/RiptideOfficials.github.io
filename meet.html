@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Meet Sign-Up | Riptide Officials</title>
+<link rel="icon" href="assets/img/riptide-logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* Public by link: anyone with this page's URL can view the meet and sign up (no login).
+   Names are shown publicly; email/phone go to a separate admin-only collection. */
+(function () {
+  var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
+  R.footer();
+  var meetId = new URLSearchParams(location.search).get("m");
+  if (!R.configured) { R.renderHeader({}, ""); app.innerHTML = R.setupBanner(); return; }
+
+  R.getContext().then(function (ctx) {
+    R.renderHeader(ctx, "meets");
+    if (!meetId) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is missing its meet code. Please use the full link you were sent.</p></div>'; return; }
+    var meetRef = R.db.collection("meets").doc(meetId);
+    meetRef.get().then(function (snap) {
+      if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This sign-up link is not valid. Please check the link you were sent.</p></div>'; return; }
+      document.title = snap.data().title + " | Riptide Officials";
+      render(ctx, snap.data());
+    }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
+
+    function render(ctx, m) {
+      var sched = R.parseSchedule(m.schedule), roles = R.parseRoles(m.roles), sessions = R.lines(m.sessions);
+      if (!sessions.length) sessions = ["All sessions"];
+      var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
+        "<h1 style=\"margin-top:8px\">" + esc(m.title) + "</h1>" +
+        "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
+        (m.notes ? '<p style="white-space:pre-wrap">' + esc(m.notes) + "</p>" : "") +
+        (ctx.isAdmin ? '<div class="btn-row"><a class="btn small ghost" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
+          '<button class="btn small ghost" id="copylink">Copy sign-up link</button></div>' : "") + "</div>";
+
+      if (sched.length) {
+        html += '<div class="card"><h2>Meet details</h2><table class="sched">' + sched.map(function (s) {
+          return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
+      }
+
+      html += '<div class="card" id="signup-card"><h2>Sign up to work</h2>' +
+        '<form id="su" novalidate>' +
+        '<div class="row2"><div><label for="su-name">Your name</label><input id="su-name" autocomplete="name" required></div>' +
+        '<div><label for="su-team">Team / club</label><input id="su-team" placeholder="Riptide"></div></div>' +
+        '<div class="row2"><div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>' +
+        '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
+        '<div class="hint">Your email and phone are only seen by the officials coordinator. Other officials see your name and team only.</div>' +
+        '<div class="row2"><div><label for="su-session">Session</label><select id="su-session">' +
+        sessions.map(function (s) { return "<option>" + esc(s) + "</option>"; }).join("") + "</select></div>" +
+        '<div><label for="su-role">Position</label><select id="su-role"></select></div></div>' +
+        '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">Sign me up</button></div>' +
+        '<div id="su-status" role="status"></div></form></div>';
+
+      html += '<div class="card who" id="who"><h2>Who\'s signed up</h2><div id="who-body" class="muted">Loading...</div></div>';
+      if (ctx.isAdmin) html += '<div class="card hidden" id="admin-card"></div>';
+      app.innerHTML = html;
+
+      var signups = [], contacts = {};
+      var $ = function (id) { return document.getElementById(id); };
+
+      if (ctx.user) {
+        var p = ctx.profile || {};
+        $("su-name").value = p.name || ""; $("su-email").value = p.email || ctx.user.email || ""; $("su-phone").value = p.phone || "";
+        $("su-team").value = "Riptide";
+      }
+      var cl = $("copylink");
+      if (cl) cl.onclick = function () { R.copyText(R.meetUrl(meetId)).then(function () { cl.textContent = "Copied!"; setTimeout(function () { cl.textContent = "Copy sign-up link"; }, 1500); }); };
+
+      function count(session, role) {
+        return signups.filter(function (s) { return s.session === session && s.role === role; }).length;
+      }
+      function fillRoles() {
+        var sess = $("su-session").value;
+        $("su-role").innerHTML = roles.map(function (r) {
+          var n = count(sess, r.name), full = r.slots > 0 && n >= r.slots;
+          return '<option value="' + esc(r.name) + '"' + (full ? " disabled" : "") + ">" + esc(r.name) +
+            (r.slots > 0 ? " (" + n + "/" + r.slots + (full ? ", full" : "") + ")" : "") + "</option>";
+        }).join("") || "<option>(no positions set up yet)</option>";
+      }
+      $("su-session").onchange = fillRoles;
+
+      function drawWho() {
+        var body = $("who-body");
+        if (!signups.length) { body.textContent = "No one yet. Be the first!"; fillRoles(); drawAdmin(); return; }
+        body.className = "";
+        var bySession = {};
+        signups.forEach(function (s) { (bySession[s.session] = bySession[s.session] || []).push(s); });
+        body.innerHTML = Object.keys(bySession).map(function (sess) {
+          var byRole = {};
+          bySession[sess].forEach(function (s) { (byRole[s.role] = byRole[s.role] || []).push(s); });
+          return (sessions.length > 1 ? "<h3>" + esc(sess) + "</h3>" : "") + Object.keys(byRole).map(function (role) {
+            return "<div><strong>" + esc(role) + "</strong><ul>" + byRole[role].map(function (s) {
+              var mine = ctx.user && s.uid === ctx.user.uid;
+              return "<li>" + esc(s.name) + (s.team ? ' <span class="muted small">(' + esc(s.team) + ")</span>" : "") +
+                (mine ? ' <button class="btn small ghost" data-cancel="' + esc(s.id) + '">Cancel mine</button>' : "") + "</li>";
+            }).join("") + "</ul></div>";
+          }).join("");
+        }).join("");
+        fillRoles(); drawAdmin();
+      }
+
+      function load() {
+        return meetRef.collection("signups").orderBy("createdAt").get().then(function (snap) {
+          signups = snap.docs.map(function (d) { var s = d.data(); s.id = d.id; return s; });
+          if (!ctx.isAdmin) return;
+          return meetRef.collection("contacts").get().then(function (cs) {
+            contacts = {}; cs.docs.forEach(function (d) { contacts[d.id] = d.data(); });
+          });
+        }).then(drawWho).catch(function () { $("who-body").innerHTML = '<div class="msg err">Could not load the sign-up list.</div>'; });
+      }
+
+      function drawAdmin() {
+        if (!ctx.isAdmin) return;
+        var card = $("admin-card"); card.classList.remove("hidden");
+        var emails = [];
+        signups.forEach(function (s) { var c = contacts[s.id]; if (c && c.email && emails.indexOf(c.email) < 0) emails.push(c.email); });
+        var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title);
+        card.innerHTML = '<h2>Coordinator tools</h2><p class="muted small">Only you can see this section.</p>' +
+          '<div class="btn-row" style="margin-top:0">' +
+          (emails.length ? '<a class="btn" href="' + mailto + '">Email officials</a>' : '<button class="btn" disabled>Email officials</button>') +
+          '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ")</button></div>" +
+          '<p class="hint">"Email officials" opens your email app with everyone on blind copy and the meet name as the subject. If your email app cuts off a long list, use Copy all emails instead.</p>' +
+          '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Session</th><th>Position</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>' +
+          signups.map(function (s) { var c = contacts[s.id] || {};
+            return "<tr><td>" + esc(s.name) + (s.team ? "<br><span class=\"muted small\">" + esc(s.team) + "</span>" : "") + "</td><td>" + esc(s.session) + "</td><td>" + esc(s.role) +
+              "</td><td>" + esc(c.email || "") + "</td><td>" + esc(c.phone || "") + '</td><td><button class="btn small danger" data-remove="' + esc(s.id) + '">Remove</button></td></tr>';
+          }).join("") + "</tbody></table></div>";
+        var ce = $("copyemails");
+        if (ce) ce.onclick = function () { R.copyText(emails.join(", ")).then(function () { ce.textContent = "Copied!"; }); };
+      }
+
+      app.addEventListener("click", function (e) {
+        var t = e.target, cancel = t.getAttribute && t.getAttribute("data-cancel"), rem = t.getAttribute && t.getAttribute("data-remove");
+        var id = cancel || rem;
+        if (!id) return;
+        if (!confirm(rem ? "Remove this person from the sign-up?" : "Cancel your sign-up?")) return;
+        Promise.all([meetRef.collection("signups").doc(id).delete(), meetRef.collection("contacts").doc(id).delete()])
+          .then(load).catch(function () { alert("Could not remove that sign-up."); });
+      });
+
+      $("su").addEventListener("submit", function (e) {
+        e.preventDefault();
+        var st = $("su-status"), btn = $("su-btn");
+        var name = $("su-name").value.trim(), email = $("su-email").value.trim(), phone = $("su-phone").value.trim(),
+            team = $("su-team").value.trim(), session = $("su-session").value, role = $("su-role").value;
+        if (!name || !/^\S+@\S+\.\S+$/.test(email) || !phone) { st.innerHTML = '<div class="msg err">Please fill in your name, a valid email, and your phone number.</div>'; return; }
+        if (!roles.length) { st.innerHTML = '<div class="msg err">Positions for this meet haven\'t been set up yet.</div>'; return; }
+        btn.disabled = true; btn.textContent = "Signing up...";
+        var id = R.newId(), ts = firebase.firestore.FieldValue.serverTimestamp(), uid = ctx.user ? ctx.user.uid : null;
+        var batch = R.db.batch();
+        batch.set(meetRef.collection("signups").doc(id), { name: name, team: team, role: role, session: session, uid: uid, createdAt: ts });
+        batch.set(meetRef.collection("contacts").doc(id), { name: name, email: email, phone: phone, team: team, role: role, session: session, uid: uid, createdAt: ts });
+        batch.commit().then(function () {
+          st.innerHTML = '<div class="msg ok">You\'re signed up as <strong>' + esc(role) + "</strong>" + (sessions.length > 1 ? " for " + esc(session) : "") +
+            ". Thank you! To make a change, email " + esc(window.ADMIN_EMAIL) + ".</div>";
+          if (!ctx.user) { $("su-name").value = ""; $("su-email").value = ""; $("su-phone").value = ""; }
+          return load();
+        }).catch(function () { st.innerHTML = '<div class="msg err">Sorry, that didn\'t go through. Please try again.</div>'; })
+          .then(function () { btn.disabled = false; btn.textContent = "Sign me up"; });
+      });
+
+      fillRoles();
+      load();
+    }
+  });
+})();
+</script>
+</body>
+</html>
