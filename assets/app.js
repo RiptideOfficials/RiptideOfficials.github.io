@@ -65,6 +65,7 @@
       links += '<a href="#" id="signout">Sign out</a>';
     } else {
       links += a("index.html", "Home", "index");
+      links += a("interested.html", "Become an Official", "interested");
       links += a("login.html", "Member Login", "login", "cta");
     }
     el.className = "site-header";
