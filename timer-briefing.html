@@ -20,70 +20,66 @@
 <div class="footer" id="site-footer"></div>
 
 <template id="content">
-<div class="guide-head">
+<div class="guide-head" id="head" data-edit-head>
   <p class="crumb"><a href="docs.html">&larr; All documents</a></p>
   <h1>Timer briefing</h1>
-  <p class="muted">A script for the Starter or Meet Ref to run through with the timers before the meet. Check things off as you cover them. Checks aren't saved after you leave the page.</p>
+  <p class="muted">A script for the Starter or Meet Ref to read through with the timers before the meet.</p>
   <div class="btn-row">
     <a class="btn small ghost" href="docs/starter/Timer_Briefing.docx" download>Download as Word</a>
     <button class="btn small ghost" type="button" data-print>Print</button>
-    <button class="btn small ghost" type="button" data-reset>Clear checks</button>
   </div>
 </div>
-<div id="progress"></div>
-<div class="callout"><strong>Thank you for coming today. We cannot run a meet without you!</strong></div>
-<section class="card"><h2 class="group-title">Introductions and ground rules</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t1" aria-label="Covered"><div class="t"><strong>STARTER:</strong> introduce yourself.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t2" aria-label="Covered"><div class="t"><strong>HEAD TIMER:</strong> introduce the head timer.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t3" aria-label="Covered"><div class="t"><strong>No cell phones.</strong> Due to SafeSport, no cell phones are allowed behind the blocks. You can turn it off and put it in your pocket. If there are breaks built into the timeline, you can step off to the side to use your phone.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t4" aria-label="Covered"><div class="t"><strong>Bathrooms.</strong> For Safe Sport, point out which bathrooms the timers can use.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t5" aria-label="Covered"><div class="t"><strong>Any NEW timers?</strong> Thank you!</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t6" aria-label="Covered"><div class="t">Check that each lane has the necessary number of timers, and each timer has a watch and 1 clipboard. Ask them to raise their hands when you call out each lane number.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t7" aria-label="Covered"><div class="t">One person works the plunger and watch.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t8" aria-label="Covered"><div class="t">One person works the watch and writes <strong>both</strong> times down to the 100th (2 decimals).</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t9" aria-label="Covered"><div class="t">Make sure your watch is working! Test it before the meet starts.</div></li>
+<div class="callout" data-editable><strong>Thank you for coming today. We cannot run a meet without you!</strong></div>
+<section class="card timer-doc" data-editable><h2>Introductions and ground rules</h2><ul>
+<li><strong>STARTER:</strong> Introduce yourself.</li>
+<li><strong>HEAD TIMER:</strong> Introduce the head timer.</li>
+<li><strong>No cell phones.</strong> Due to SafeSport, no cell phones are allowed behind the blocks. You can turn it off and put it in your pocket. If there are breaks built into the timeline, you can step off to the side to use your phone.</li>
+<li><strong>Bathrooms.</strong> For Safe Sport, point out which bathrooms the timers can use.</li>
+<li><strong>Any NEW timers?</strong> Thank you!</li>
+<li>Check that each lane has the necessary number of timers, and each timer has a watch and 1 clipboard. Ask them to raise their hands when you call out each lane number.</li>
+<li>One person works the plunger and watch.</li>
+<li>One person works the watch and writes <strong>both</strong> times down to the 100th (2 decimals).</li>
+<li>Make sure your watch is working! Test it before the meet starts.</li>
 </ul></section>
-<section class="card"><h2 class="group-title">Before the race starts</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t10" aria-label="Covered"><div class="t">Verify the swimmer's name matches what is on your sheet and you have the correct swimmer in your lane, even for relays (the order may not matter).</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t11" aria-label="Covered"><div class="t"><strong>FLY-OVER starts</strong> for everything but Backstroke. Remind the swimmers to stay in the water until the next heat is in the water.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t12" aria-label="Covered"><div class="t"><strong>If a swimmer misses their race:</strong> send them to the Meet Ref where the Starter will be standing, and we will try to fit them in.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t13" aria-label="Covered"><div class="t"><strong>If a swimmer shows up in your lane and you don't have a name listed:</strong> ask for their name and write it down.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t14" aria-label="Covered"><div class="t"><strong>If a swimmer shows up late:</strong> ask their name <em>after</em> the race completes.</div></li>
+<section class="card timer-doc" data-editable><h2>Before the race starts</h2><ul>
+<li>Verify the swimmer's name matches what is on your sheet and you have the correct swimmer in your lane, even for relays (the order may not matter).</li>
+<li><strong>FLY-OVER starts</strong> for everything but Backstroke. Remind the swimmers to stay in the water until the next heat is in the water.</li>
+<li><strong>If a swimmer misses their race:</strong> send them to the Meet Ref where the Starter will be standing, and we will try to fit them in.</li>
+<li><strong>If a swimmer shows up in your lane and you don't have a name listed:</strong> ask for their name and write it down.</li>
+<li><strong>If a swimmer shows up late:</strong> ask their name <em>after</em> the race completes.</li>
 </ul></section>
-<section class="card"><h2 class="group-title">Whistle protocol</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t15" aria-label="Covered"><div class="t"><strong>Short whistle blows</strong> mean get ready for the race: clothes off except swimsuit, and goggles ready.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t16" aria-label="Covered"><div class="t"><strong>A long single whistle blow</strong> means get on the blocks and get ready.</div></li>
+<section class="card timer-doc" data-editable><h2>Whistle protocol</h2><ul>
+<li><strong>Short whistle blows</strong> mean get ready for the race: clothes off except swimsuit, and goggles ready.</li>
+<li><strong>A long single whistle blow</strong> means get on the blocks and get ready.</li>
 </ul></section>
-<section class="card"><h2 class="group-title">At the start</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t17" aria-label="Covered"><div class="t">Be quiet.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t18" aria-label="Covered"><div class="t">Make sure you can see the strobe light and use it to start your watch, <strong>not</strong> the sound of the start signal.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t19" aria-label="Covered"><div class="t">Start the watch for <strong>every</strong> heat, even if you don't have a swimmer. This is in case a backup is needed.</div></li>
+<section class="card timer-doc" data-editable><h2>At the start</h2><ul>
+<li>Be quiet.</li>
+<li>Make sure you can see the strobe light and use it to start your watch, <strong>not</strong> the sound of the start signal.</li>
+<li>Start the watch for <strong>every</strong> heat, even if you don't have a swimmer. This is in case a backup is needed.</li>
 </ul></section>
-<section class="card"><h2 class="group-title">Immediately after the start</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t20" aria-label="Covered"><div class="t">Check that your watch started and is working properly.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t21" aria-label="Covered"><div class="t">If you miss the start or your watch malfunctions, raise your watch overhead and signal the Head Timer that you need a backup watch.</div></li>
+<section class="card timer-doc" data-editable><h2>Immediately after the start</h2><ul>
+<li>Check that your watch started and is working properly.</li>
+<li>If you miss the start or your watch malfunctions, raise your watch overhead and signal the Head Timer that you need a backup watch.</li>
 </ul></section>
-<section class="card"><h2 class="group-title">During the race</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t22" aria-label="Covered"><div class="t">Keep track of the race and the distance completed by your swimmer. Know the number of lengths for each race distance.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t23" aria-label="Covered"><div class="t">The timer with the clipboard should be verifying the swimmer for the next heat.</div></li>
+<section class="card timer-doc" data-editable><h2>During the race</h2><ul>
+<li>Keep track of the race and the distance completed by your swimmer. Know the number of lengths for each race distance.</li>
+<li>The timer with the clipboard should be verifying the swimmer for the next heat.</li>
 </ul></section>
-<section class="card"><h2 class="group-title">At the finish</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t24" aria-label="Covered"><div class="t">There could be officials at the start end of the pool. Be considerate and share the space with them. They are officiating legal finishes.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t25" aria-label="Covered"><div class="t">Come forward to the edge of the pool and look directly down the wall.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t26" aria-label="Covered"><div class="t"><strong>DO NOT anticipate the swimmer touching the wall.</strong> ONLY stop your watch and the plunger when the swimmer touches the wall. Any body part can touch the wall.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t27" aria-label="Covered"><div class="t">Mark a <strong>Soft Touch</strong> on the sheet if the swimmer touches the wall but the board doesn't stop right away.</div></li>
+<section class="card timer-doc" data-editable><h2>At the finish</h2><ul>
+<li>There could be officials at the start end of the pool. Be considerate and share the space with them. They are officiating legal finishes.</li>
+<li>Come forward to the edge of the pool and look directly down the wall.</li>
+<li><strong>DO NOT anticipate the swimmer touching the wall.</strong> ONLY stop your watch and the plunger when the swimmer touches the wall. Any body part can touch the wall.</li>
+<li>Mark a <strong>Soft Touch</strong> on the sheet if the swimmer touches the wall but the board doesn't stop right away.</li>
 </ul></section>
-<section class="card"><h2 class="group-title">After the finish</h2><ul class="chk-list">
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t28" aria-label="Covered"><div class="t">Step back to make space for the next swimmer.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t29" aria-label="Covered"><div class="t">The timer with the clipboard records the watch times on the sheet in the same order for each heat.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t30" aria-label="Covered"><div class="t">Record <strong>&ldquo;NS&rdquo; (No Show)</strong> if the swimmer missed the race.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t31" aria-label="Covered"><div class="t">Note any other problems such as a missed pad, or an early, late, or missed watch or button.</div></li>
-<li class="chk-item"><input type="checkbox" class="stepbox sm" data-step="t32" aria-label="Covered"><div class="t"><strong>FLY-OVER starts:</strong> remind swimmers to remain in the pool, except for backstroke.</div></li>
+<section class="card timer-doc" data-editable><h2>After the finish</h2><ul>
+<li>Step back to make space for the next swimmer.</li>
+<li>The timer with the clipboard records the watch times on the sheet in the same order for each heat.</li>
+<li>Record <strong>&ldquo;NS&rdquo; (No Show)</strong> if the swimmer missed the race.</li>
+<li>Note any other problems such as a missed pad, or an early, late, or missed watch or button.</li>
+<li><strong>FLY-OVER starts:</strong> remind swimmers to remain in the pool, except for backstroke.</li>
 </ul></section>
-<div class="callout"><strong>Any questions?</strong><br>Again, thank you for supporting the swimmers today!</div>
-<section class="card"><h2 class="group-title">Lap counting sheets</h2>
-<p class="muted small">For distance events, the Starter's counting sheets are in <a href="docs.html#starter">Documents &rarr; Starter</a>.</p></section>
-
+<div class="callout" data-editable><strong>Any questions?</strong><br>Again, thank you for supporting the swimmers today!</div>
+<p class="muted small">For distance events, the Starter's counting sheets are in <a href="docs.html#starter">Documents &rarr; Starter</a>.</p>
 </template>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -91,7 +87,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/edit.js"></script>
 <script src="assets/guide.js"></script>
-<script>Guide.init({ key: "timer-briefing", persist: false });</script>
+<script>Guide.init({ key: "timer-briefing", persist: false, active: "docs" });</script>
 </body>
 </html>
