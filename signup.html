@@ -86,13 +86,19 @@
           return '<div class="chk2"><label class="pos"><input type="checkbox" ' + attr + ' value="' + esc(v) + '"' + (on ? " checked" : "") + "> " + esc(v) + "</label>" + lvBox(v, on) + "</div>";
         }).join("") + "</div>";
       }
+      function wshadowChecks(list) {   // Meet Referee / Admin Official shadowing sits with the session shadow choices
+        return list.length ? '<div class="checks" style="margin-bottom:6px">' + list.map(function (p) {
+          return '<label class="chk"><input type="checkbox" data-wshadow="1" value="' + esc(p) + '"' + (editing && has(ex.shadow, p) ? " checked" : "") + "> " + esc(p) + "</label>";
+        }).join("") + "</div>" : "";
+      }
       var sessCards = n.sessions.map(function (x, i) {
-        var multi = n.sessions.length > 1 || n.v2;
-        return '<div class="card"><h2>' + esc(multi ? x.name : "Positions") + "</h2>" +
+        var single = n.sessions.length === 1, wsh = (i === 0 ? n.whole : []);
+        var dTitle = single && x.date ? new Date(x.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "";
+        return '<div class="card"><h2>' + esc(single ? (dTitle || "Positions") : x.name) + "</h2>" +
           (R.sessionWhen(x) ? '<p class="when-line" style="margin-top:0">' + esc(R.sessionWhen(x)) + "</p>" : "") +
           (x.positions.length ? "<label>I can work as (select everything you are certified in, then tick N2 and/or N3 for the levels you hold)</label>" + checks("work", x.positions, mine(i, "work"), 'data-s="' + i + '" data-k="work"') : "") +
-          (x.shadow.length ? "<label>I would like to shadow (choose as many as you like)</label>" + checks("shadow", x.shadow, mine(i, "shadow"), 'data-s="' + i + '" data-k="shadow"') : "") +
-          (!x.positions.length && !x.shadow.length ? '<p class="muted">No positions are open for this session.</p>' : "") + "</div>";
+          (x.shadow.length || wsh.length ? "<label>I would like to shadow (choose as many as you like)</label>" + wshadowChecks(wsh) + checks("shadow", x.shadow, mine(i, "shadow"), 'data-s="' + i + '" data-k="shadow"').replace(/^<div class="checks">/, x.shadow.length ? '<div class="checks">' : '<div class="checks" style="display:none">') : "") +
+          (!x.positions.length && !x.shadow.length && !wsh.length ? '<p class="muted">No positions are open for this session.</p>' : "") + "</div>";
       }).join("");
       app.innerHTML =
         '<p style="margin:0 0 10px"><a href="' + detailsUrl + '">&larr; Meet details</a></p>' +
@@ -111,10 +117,7 @@
           var c = claims[WK[p]], isMine = editing && has(ex.certified, p);
           if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + ' &mdash; ' + esc(c.name) + "</div>";
           return '<div class="chk2"><label class="pos"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>" + lvBox(p, isMine) + "</div>";
-        }).join("") + "</div>" +
-          "<label>I would like to shadow (choose as many as you like)</label>" + '<div class="checks">' + n.whole.map(function (p) {
-            return '<label class="chk"><input type="checkbox" data-wshadow="1" value="' + esc(p) + '"' + (editing && has(ex.shadow, p) ? " checked" : "") + "> " + esc(p) + "</label>";
-          }).join("") + "</div></div>" : "") +
+        }).join("") + "</div></div>" : "") +
         sessCards +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
         '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">' + (editing ? "Save changes" : "Sign me up") + "</button>" +
