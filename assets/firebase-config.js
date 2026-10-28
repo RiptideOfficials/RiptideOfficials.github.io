@@ -7,12 +7,12 @@
 //    Firestore security rules (firestore.rules) are what protect data.
 // ---------------------------------------------------------------
 window.FIREBASE_CONFIG = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyA1lEaKRrci_uQ6uVFZMAUBbdoqsHMcDpA",
+  authDomain: "riptideofficials.firebaseapp.com",
+  projectId: "riptideofficials",
+  storageBucket: "riptideofficials.firebasestorage.app",
+  messagingSenderId: "1049001251502",
+  appId: "1:1049001251502:web:9c14378a7accf859f9133f"
 };
 
 // The admin account. Must match the email in firestore.rules.
