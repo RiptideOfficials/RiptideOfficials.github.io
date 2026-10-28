@@ -63,8 +63,6 @@
       links += a("meets.html", "Meet Sign-Ups", "meets");
       links += a("docs.html", "Documents", "docs");
       links += a("docs.html#apparel", "Apparel", "apparel");
-      if (ctx.isAdmin) { links += a("admin.html", "Admin", "admin", "coord"); links += a("assignments.html", "Assignments", "assignments", "coord"); }
-      links += a("account.html", "Account", "account");
     } else if (ctx && ctx.user) {
       links += a("index.html", "Home", "index");
       links += '<a href="#" id="signout">Sign out</a>';
@@ -73,17 +71,28 @@
       links += a("interested.html", "Become an Official", "interested");
       links += a("login.html", "Member Login", "login", "cta");
     }
+    var tools = "";
+    if (member) {
+      var nm = (ctx.profile && ctx.profile.name) || (ctx.user && (ctx.user.displayName || ctx.user.email)) || "?";
+      var ini = String(nm).trim().charAt(0).toUpperCase() || "?";
+      tools = '<div class="hdr-tools">' +
+        (ctx.isAdmin ? '<div class="hdr-menu"><button type="button" class="hamb" id="hamb" aria-label="Coordinator menu" aria-expanded="false">&#9776;<span class="cnt" id="hamb-cnt" hidden></span></button>' +
+          '<div class="hdr-drop" id="hdrdrop" hidden><span class="coord-label">Coordinator</span>' + a("admin.html", "Admin", "admin", "coord") + a("assignments.html", "Assignments", "assignments", "coord") + "</div></div>" : "") +
+        '<a class="avatar' + (active === "account" ? " active" : "") + '" href="account.html" aria-label="My account" title="My account">' + R.esc(ini) + "</a></div>";
+    }
     el.className = "site-header";
     el.innerHTML =
       '<div class="bar">' +
       '<a class="brand" href="' + (member ? "home.html" : "index.html") + '">' +
       '<img src="assets/img/riptide-logo.jpg" alt="Riptide Swimming logo">' +
       "<span>Riptide Officials<small>Riptide Swimming</small></span></a>" +
-      '<button class="nav-toggle" id="navtoggle" aria-label="Menu">Menu</button>' +
+      tools +
       '<nav class="nav" id="nav">' + links + "</nav></div>";
-    document.getElementById("navtoggle").onclick = function () {
-      document.getElementById("nav").classList.toggle("open");
-    };
+    var hb = document.getElementById("hamb"), hd = document.getElementById("hdrdrop");
+    if (hb) {
+      hb.onclick = function (e) { e.stopPropagation(); hd.hidden = !hd.hidden; hb.setAttribute("aria-expanded", String(!hd.hidden)); };
+      document.addEventListener("click", function (e) { if (!hd.hidden && !hd.contains(e.target)) { hd.hidden = true; hb.setAttribute("aria-expanded", "false"); } });
+    }
     if (member && ctx.isAdmin && R.db) R.adminBadge();
     var so = document.getElementById("signout");
     if (so) so.onclick = function (e) {
@@ -94,12 +103,13 @@
 
   // red number on the Admin link = accounts waiting for approval + interested people not yet answered
   R.adminBadge = function () {
-    var adm = document.querySelector('#nav a[href="admin.html"]');
+    var adm = document.querySelector('#hdrdrop a[href="admin.html"]');
     if (!adm || !R.db) return;
     var cnt = 0, left = 2, done = function (add) {
       cnt += add; if (--left) return;
       Array.prototype.forEach.call(adm.querySelectorAll(".cnt"), function (x) { x.remove(); });
       if (cnt > 0) { var b = document.createElement("span"); b.className = "cnt"; b.textContent = cnt > 99 ? "99+" : cnt; b.title = cnt + " waiting"; adm.appendChild(b); }
+      var hc = document.getElementById("hamb-cnt"); if (hc) { hc.textContent = cnt > 99 ? "99+" : cnt; hc.hidden = !(cnt > 0); }
     };
     try {
       R.db.collection("users").get().then(function (q) { var k = 0; q.docs.forEach(function (d) { if (!d.data().approved) k++; }); done(k); }).catch(function () { done(0); });
