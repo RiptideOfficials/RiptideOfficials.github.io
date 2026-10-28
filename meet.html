@@ -48,6 +48,7 @@
         (ctx.isAdmin ? '<div class="btn-row"><a class="btn small ghost" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
           '<button class="btn small ghost" id="copylink">Copy sign-up link</button></div>' : "") + "</div>";
 
+      html += '<div class="meet-grid"><div>';
       if (sched.length) {
         html += '<div class="card"><h2>Meet details</h2><table class="sched">' + sched.map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
@@ -59,14 +60,14 @@
         '<div><label for="su-team">Team / club</label><input id="su-team" placeholder="Riptide"></div></div>' +
         '<div class="row2"><div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>' +
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
-        '<div class="hint">Your email and phone are only seen by the officials coordinator. Other officials see your name and team only.</div>' +
+        '<div class="hint">Your email and phone are only seen by the officials coordinators. Other officials see your name and team only.</div>' +
         '<div class="row2"><div><label for="su-session">Session</label><select id="su-session">' +
         sessions.map(function (s) { return "<option>" + esc(s) + "</option>"; }).join("") + "</select></div>" +
         '<div><label for="su-role">Position</label><select id="su-role"></select></div></div>' +
         '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">Sign me up</button></div>' +
         '<div id="su-status" role="status"></div></form></div>';
 
-      html += '<div class="card who" id="who"><h2>Who\'s signed up</h2><div id="who-body" class="muted">Loading...</div></div>';
+      html += '</div><div><div class="card who" id="who"><h2>Who\'s signed up</h2><div id="who-body" class="muted">Loading...</div></div></div></div>';
       if (ctx.isAdmin) html += '<div class="card hidden" id="admin-card"></div>';
       app.innerHTML = html;
 
@@ -130,7 +131,7 @@
         var emails = [];
         signups.forEach(function (s) { var c = contacts[s.id]; if (c && c.email && emails.indexOf(c.email) < 0) emails.push(c.email); });
         var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title);
-        card.innerHTML = '<h2>Coordinator tools</h2><p class="muted small">Only you can see this section.</p>' +
+        card.innerHTML = '<h2>Coordinator tools</h2><p class="muted small">Only admins can see this section.</p>' +
           '<div class="btn-row" style="margin-top:0">' +
           (emails.length ? '<a class="btn" href="' + mailto + '">Email officials</a>' : '<button class="btn" disabled>Email officials</button>') +
           '<button class="btn ghost" id="copyemails"' + (emails.length ? "" : " disabled") + ">Copy all emails (" + emails.length + ")</button></div>" +

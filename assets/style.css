@@ -132,3 +132,18 @@ table.data th,table.data td{border-top:1px solid var(--line);padding:8px 6px;tex
 table.data th{font-size:.8rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .footer{max-width:1060px;margin:0 auto;padding:0 16px 40px;text-align:center;color:var(--muted);font-size:.9rem}
 .hidden{display:none!important}
+
+/* desktop layouts */
+@media(min-width:900px){
+  body{font-size:18px}
+  main{padding-top:30px}
+  .hero{padding:48px 44px}
+  .hero h1{font-size:3.6rem;max-width:30rem}
+  .hero .logo-chip img{height:110px}
+  .home-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:18px;align-items:start}
+  .doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .doc-grid>.card{margin-bottom:0}
+  .meet-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+  .cal .day{min-height:96px}
+}
+@media(min-width:1200px){main,.site-header .bar,.footer{max-width:1180px}}

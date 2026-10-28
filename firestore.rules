@@ -8,28 +8,46 @@ rules_version = '2';
 //    (Meet IDs are long random codes, so they cannot be guessed or browsed.)
 //  - Email and phone are stored in a separate "contacts" collection that ONLY the admin can read.
 //  - Signed-in, approved members can list all meets (for the calendar).
-//  - Only the admin can create/edit/delete meets and approve members.
+//  - Admins (the owner, plus anyone the owner marks as admin, e.g. another Meet Ref) can create/edit/delete
+//    meets, read contact details, and approve members. Only the owner can grant or remove admin.
 //
-// If you ever change the admin email, change it in firebase-config.js AND here.
+// If you ever change the owner email, change it in firebase-config.js AND here.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
 
-    function isAdmin() {
+    // The owner (main coordinator): identified by verified email. Can also grant admin to others.
+    function isOwner() {
       return signedIn()
         && request.auth.token.email == 'whpeterson@gmail.com'
         && request.auth.token.email_verified == true;
     }
 
-    function isMember() {
-      return isAdmin() || (signedIn()
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.approved == true);
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    // Member profiles. People create their own (always unapproved); only the admin approves.
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Admins = the owner plus any approved member the owner has marked as admin (e.g. another Meet Ref).
+    function isAdmin() {
+      return isOwner() || (hasProfile() && profile().approved == true && profile().get('admin', false) == true);
+    }
+
+    function isMember() {
+      return isOwner() || (hasProfile() && profile().approved == true);
+    }
+
+    function adminUnchanged() {
+      return request.resource.data.get('admin', false) == resource.data.get('admin', false);
+    }
+
+    // Member profiles. People create their own (always unapproved, never admin).
+    // Admins can approve members; only the owner can grant or remove admin.
     match /users/{uid} {
       allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
       allow create: if signedIn() && request.auth.uid == uid
@@ -38,9 +56,12 @@ service cloud.firestore {
         && request.resource.data.name is string && request.resource.data.name.size() <= 80
         && request.resource.data.email is string && request.resource.data.email.size() <= 120
         && request.resource.data.phone is string && request.resource.data.phone.size() <= 30;
-      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
-        && request.resource.data.approved == resource.data.approved
-        && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'createdAt']));
+      allow update: if isOwner()
+        || (isAdmin() && adminUnchanged())
+        || (signedIn() && request.auth.uid == uid
+            && request.resource.data.approved == resource.data.approved
+            && adminUnchanged()
+            && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'admin', 'createdAt']));
       allow delete: if isAdmin();
     }
 

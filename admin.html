@@ -24,7 +24,7 @@
   var R = window.Riptide, esc = R.esc, $ = function (id) { return document.getElementById(id); };
   R.footer();
   var DEFAULT_SCHEDULE = "Warm-ups | \nOfficials meeting | \nTimers meeting | \nMeet starts | ";
-  var DEFAULT_ROLES = "Admin Official | 1\nStarter | 2\nStroke & Turn | 8\nStroke & Turn (shadowing) | 4";
+  var DEFAULT_ROLES = "Meet Referee | 1\nAdmin Official | 1\nStarter | 2\nStroke & Turn | 8\nStroke & Turn (shadowing) | 4";
 
   R.requireAdmin("admin").then(function (ctx) {
     if (!ctx) return;
@@ -48,7 +48,7 @@
       '<div class="card"><h2>Private team info</h2><p class="muted small">Only approved members can see this, and it is never stored in the website files.</p>' +
       '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
       '<div class="btn-row"><button class="btn green" id="t-save" type="button">Save</button></div><div id="t-status" role="status"></div></div>' +
-      '<div class="card"><h2>Members</h2><p class="muted small">New accounts wait here until you approve them. You are the only one who can see their email and phone.</p><div id="members" class="table-wrap">Loading...</div></div>';
+      '<div class="card"><h2>Members</h2><p class="muted small">New accounts wait here until approved. Admins can see members\' email and phone. ' + (ctx.isOwner ? 'To let another Meet Ref (or anyone) help run meets, approve their account and tap <strong>Make admin</strong>. Admins can add and edit meets, email officials, and approve members.' : '') + '</p><div id="members" class="table-wrap">Loading...</div></div>';
 
     var editing = null, meets = [];
     function resetForm() {
@@ -131,9 +131,9 @@
         $("members").innerHTML = users.length ?
           '<table class="data"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr></thead><tbody>' +
           users.map(function (u) {
-            return "<tr><td>" + esc(u.name) + "</td><td>" + esc(u.email) + "</td><td>" + esc(u.phone || "") + "</td><td>" +
+            return "<tr><td>" + esc(u.name) + (u.admin || String(u.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase() ? ' <span class="pill green">Admin</span>' : "") + "</td><td>" + esc(u.email) + "</td><td>" + esc(u.phone || "") + "</td><td>" +
               (u.approved ? '<span class="pill green">Approved</span>' : '<span class="pill">Waiting</span>') + "</td><td>" +
-              (u.approved ? '<button class="btn small ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>'
+              (u.approved ? (ctx.isOwner && String(u.email).toLowerCase() !== String(window.ADMIN_EMAIL).toLowerCase() ? (u.admin ? '<button class="btn small ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button> ' : '<button class="btn small green" data-mkadmin="' + esc(u.id) + '">Make admin</button> ') : "") + '<button class="btn small ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>'
                           : '<button class="btn small green" data-approve="' + esc(u.id) + '">Approve</button> <button class="btn small danger" data-deluser="' + esc(u.id) + '">Delete</button>') +
               "</td></tr>";
           }).join("") + "</tbody></table>" : '<p class="muted">No accounts yet.</p>';
@@ -143,7 +143,9 @@
       var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
       var users = R.db.collection("users"), p;
       if (g("data-approve")) p = users.doc(g("data-approve")).update({ approved: true });
-      else if (g("data-unapprove")) { if (!confirm("Remove this person's access?")) return; p = users.doc(g("data-unapprove")).update({ approved: false }); }
+      else if (g("data-mkadmin")) { if (!confirm("Make this person an admin? They will be able to see everyone's contact info, email officials, and edit meets.")) return; p = users.doc(g("data-mkadmin")).update({ admin: true }); }
+      else if (g("data-unadmin")) p = users.doc(g("data-unadmin")).update({ admin: false });
+      else if (g("data-unapprove")) { if (!confirm("Remove this person's access?")) return; p = users.doc(g("data-unapprove")).update({ approved: false, admin: false }); }
       else if (g("data-deluser")) { if (!confirm("Delete this account request?")) return; p = users.doc(g("data-deluser")).delete(); }
       if (p) p.then(loadMembers).catch(function () { alert("That didn't work. Please try again."); });
     });

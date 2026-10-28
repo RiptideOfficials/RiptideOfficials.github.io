@@ -93,18 +93,19 @@
       var unsub = R.auth.onAuthStateChanged(function (user) {
         unsub();
         if (!user) return resolve({ user: null, member: false, isAdmin: false });
-        var isAdmin = R.isAdminUser(user);
+        var isOwner = R.isAdminUser(user);
         R.db.collection("users").doc(user.uid).get().then(function (snap) {
           var profile = snap.exists ? snap.data() : null;
-          if (isAdmin && profile && !profile.approved) {
+          if (isOwner && profile && !profile.approved) {
             // admin approves themselves once their email is verified
             R.db.collection("users").doc(user.uid).update({ approved: true }).catch(function () {});
             profile.approved = true;
           }
-          resolve({ user: user, profile: profile, isAdmin: isAdmin,
+          var isAdmin = isOwner || !!(profile && profile.approved && profile.admin === true);
+          resolve({ user: user, profile: profile, isOwner: isOwner, isAdmin: isAdmin,
             member: isAdmin || !!(profile && profile.approved) });
         }).catch(function () {
-          resolve({ user: user, profile: null, isAdmin: isAdmin, member: isAdmin });
+          resolve({ user: user, profile: null, isOwner: isOwner, isAdmin: isOwner, member: isOwner });
         });
       });
     });
@@ -125,7 +126,7 @@
       }
       R.renderHeader(ctx, active);
       if (!ctx.member) {
-        var verifyNote = ctx.isAdmin === false && ctx.user.email &&
+        var verifyNote = !ctx.isOwner && ctx.user.email &&
           String(ctx.user.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase() && !ctx.user.emailVerified
           ? "<p>Please verify your email (check your inbox) and sign in again to unlock admin access.</p>" : "";
         app.innerHTML = '<div class="card"><h2>Waiting for approval</h2>' +
