@@ -82,6 +82,19 @@
     document.getElementById("navtoggle").onclick = function () {
       document.getElementById("nav").classList.toggle("open");
     };
+    if (member && ctx.isAdmin && R.db) {   // red number on Admin = people waiting for approval + people interested
+      var adm = document.querySelector('#nav a[href="admin.html"]');
+      if (adm) {
+        var cnt = 0, left = 2, done = function (add) {
+          cnt += add; if (--left) return;
+          if (cnt > 0) { var b = document.createElement("span"); b.className = "badge"; b.textContent = cnt > 99 ? "99+" : cnt; b.title = cnt + " waiting"; adm.appendChild(b); }
+        };
+        try {
+          R.db.collection("users").get().then(function (q) { var k = 0; q.docs.forEach(function (d) { if (!d.data().approved) k++; }); done(k); }).catch(function () { done(0); });
+          R.db.collection("interest").get().then(function (q) { done(q.docs.length); }).catch(function () { done(0); });
+        } catch (x) {}
+      }
+    }
     var so = document.getElementById("signout");
     if (so) so.onclick = function (e) {
       e.preventDefault();
