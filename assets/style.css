@@ -261,3 +261,11 @@ details.card[open] summary{margin-bottom:8px}
 .coord-bar .btn-row{margin-top:8px}
 .card.coord-card{background:#fff8e6;border:2px dashed #e0b94a}
 .nav a.coord{background:#fff1c2;color:#6b4e00;border-radius:9px}
+
+/* collapsible boxes */
+details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;user-select:none}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary::before{content:"";flex:none;width:0;height:0;border-left:10px solid var(--navy);border-top:7px solid transparent;border-bottom:7px solid transparent;transition:transform .15s}
+details.fold[open]>summary::before{transform:rotate(90deg)}
+details.fold>summary h2{margin:0}
+details.fold[open]>summary{margin-bottom:12px}
