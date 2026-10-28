@@ -61,6 +61,7 @@
       links += a("docs.html", "Documents", "docs");
       links += a("apprentice-forms.html", "Apprentice Forms", "forms");
       links += a("how-to.html", "Get Certified", "steps");
+      links += a("register.html", "Register", "register");
       links += a("docs.html#apparel", "Apparel", "apparel");
       links += a("meets.html", "Meet Sign-Ups", "meets");
       if (ctx.isAdmin) links += a("admin.html", "Admin", "admin", "coord");

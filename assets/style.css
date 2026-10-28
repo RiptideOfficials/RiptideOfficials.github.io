@@ -339,3 +339,4 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .cal-head h2{font-size:1.2rem}
 #rules ul,#contacts ul,#news ul{padding-left:20px}
 .has-pencil>h2{padding-right:84px}
+@media(min-width:1020px){.nav a{padding:7px 9px;font-size:.92rem}.nav{gap:0}}

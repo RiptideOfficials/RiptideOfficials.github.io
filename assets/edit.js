@@ -235,12 +235,45 @@
     if (host.tagName === "DETAILS") host.open = true;
   }
 
+  /* ---------- page title + intro line ---------- */
+  function headParts(h) { return [h.querySelector("h1"), h.querySelector("p.muted")]; }
+  function applyHead(h, v) {
+    var p = headParts(h);
+    if (p[0] && v.title) { p[0].textContent = v.title; try { document.title = v.title + " | Riptide Officials"; } catch (x) {} }
+    if (p[1] && typeof v.intro === "string") p[1].textContent = v.intro;
+  }
+  function editHead(h, page, content, original, after) {
+    var cur = (content.heads && content.heads[h.id]) || original, p = headParts(h);
+    var ui = el("div", { class: "edit-ui" }), msg = el("div", { role: "status" });
+    var t = el("input", { value: cur.title || "" }), i = el("input", { value: cur.intro || "" });
+    function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); p.forEach(function (n) { if (n) n.hidden = false; }); }
+    function save() {
+      content.heads = content.heads || {}; content.heads[h.id] = { title: t.value.trim() || original.title, intro: i.value.trim() };
+      msg.textContent = "Saving...";
+      store(page, content).then(function () { close(); applyHead(h, content.heads[h.id]); }).catch(function () { msg.innerHTML = '<div class="msg err">Could not save. Make sure the latest firestore.rules are published.</div>'; });
+    }
+    function restore() {
+      if (!confirm("Go back to the original title? Your changes here will be lost.")) return;
+      delete content.heads[h.id];
+      store(page, content).then(function () { close(); applyHead(h, original); }).catch(function () { msg.innerHTML = '<div class="msg err">Could not save.</div>'; });
+    }
+    ui.appendChild(el("label", { text: "Page title" })); ui.appendChild(t);
+    ui.appendChild(el("label", { text: "Line under the title" })); ui.appendChild(i);
+    ui.appendChild(el("div", { class: "btn-row" }, [btn("Save", "green", save), btn("Cancel", "ghost", close), (content.heads && content.heads[h.id]) ? btn("Restore the original", "danger", restore) : null]));
+    ui.appendChild(msg);
+    p.forEach(function (n) { if (n) n.hidden = true; });
+    var anchor = h.querySelector(".btn-row"); anchor ? h.insertBefore(ui, anchor) : h.appendChild(ui);
+  }
+
   /* ---------- put it all on a page ---------- */
   E.run = function (root, ctx, page) {
     return load(page).then(function (content) {
       var lists = Array.prototype.slice.call(root.querySelectorAll("section.doc-section")).filter(function (s) { return s.querySelector("ul.doc-list"); });
       var blocks = Array.prototype.slice.call(root.querySelectorAll("[data-editable]"));
+      var heads = Array.prototype.slice.call(root.querySelectorAll("[data-edit-head]"));
       var originals = {};
+      heads.forEach(function (h) { var p = headParts(h); originals[h.id] = { title: p[0] ? p[0].textContent : "", intro: p[1] ? p[1].textContent : "" }; });
+      heads.forEach(function (h) { if (content.heads && content.heads[h.id]) applyHead(h, content.heads[h.id]); });
       lists.forEach(function (s) { originals[s.id] = parseList(s); });
       blocks.forEach(function (h) { originals[h.id] = { title: titleOf(h), html: blockHtml(h) }; });
       lists.forEach(function (s) { if (content.lists && content.lists[s.id]) renderList(s, content.lists[s.id]); });
@@ -251,6 +284,7 @@
         p.onclick = function () { if (host.querySelector(".edit-ui")) return; fn(); };
         host.classList.add("has-pencil"); host.insertBefore(p, host.firstChild);
       }
+      heads.forEach(function (h) { pencil(h, function () { editHead(h, page, content, originals[h.id], null); }); });
       lists.forEach(function (s) { pencil(s, function () { editList(s, page, content, originals[s.id], null); }); });
       blocks.forEach(function (h) {
         var host = h.tagName === "DETAILS" ? h : h;
