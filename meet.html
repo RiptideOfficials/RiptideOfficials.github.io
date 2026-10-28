@@ -79,38 +79,45 @@
           '<a class="btn coord" href="meet-edit.html?m=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
           '<button class="btn coord" type="button" id="copylink">Copy link</button></div></div>' : "") + "</div>";
 
-      if (n.v2) {
-        if (n.info.parking) html += '<div class="card"><h2>Parking</h2>' + paras(n.info.parking) + "</div>";
-        var ud = R.uniformDays(n.info);
-        if (ud.length) html += '<div class="card"><h2>Meet uniform</h2>' + ud.map(function (d) {
-          return (d.date ? '<h3 class="uni-day">' + esc(R.fmtDate(d.date)) + "</h3>" : "") + paras(d.text);
-        }).join("") + "</div>";
-        if (n.info.food) html += '<div class="card"><h2>Food</h2>' + paras(n.info.food) + "</div>";
-        if (n.info.misc) html += '<div class="card"><h2>Miscellaneous</h2>' + paras(n.info.misc) + "</div>";
-      } else if (m.schedule) {
-        html += '<div class="card"><h2>Meet details</h2><table class="sched">' + R.parseSchedule(m.schedule).map(function (s) {
-          return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
+      function nonEmpty(o, groups) { return groups.some(function (g) { return o[g.key] && o[g.key].length; }); }
+      function sessionBody(x, i) {
+        var o = asg.sessions[i], out = "";
+        var det = R.parseSchedule(x.details).filter(function (d) { return d.value; });
+        if (det.length) out += "<h3>Meet details</h3>" + '<table class="sched">' + det.map(function (d) {
+          return "<tr><td>" + esc(d.label) + "</td><td>" + esc(d.value) + "</td></tr>"; }).join("") + "</table>";
+        if (x.notes) out += "<h3>Notes for officials</h3>" + paras(x.notes);
+        var ud = R.uniformDays(n.info).filter(function (d) { return !d.date || !x.date || d.date === x.date || n.sessions.length === 1; });
+        if (ud.length) out += "<h3>Meet uniform</h3>" + ud.map(function (d) {
+          return (d.date && (ud.length > 1) ? '<p class="uni-day-line"><strong>' + esc(R.fmtDate(d.date)) + "</strong></p>" : "") + paras(d.text);
+        }).join("");
+        out += "<h3>Meet assignments</h3>";
+        var anyHere = nonEmpty(asg.whole, R.WHOLE_GROUPS) || nonEmpty(o, R.SESSION_GROUPS);
+        out += anyHere ? '<div class="asg-cols">' + R.WHOLE_GROUPS.map(function (g) { return listHtml(g.label, asg.whole[g.key]); }).join("") +
+          R.SESSION_GROUPS.map(function (g) { return listHtml(g.label, o[g.key]); }).join("") + "</div>"
+          : '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>';
+        return out;
       }
 
-      // whole-meet assignments
-      var wholeAny = R.WHOLE_GROUPS.some(function (g) { return asg.whole[g.key].length; });
-      html += '<div class="card" id="assignments"><h2>Meet assignments</h2>';
-      var anyAsg = wholeAny || asg.sessions.some(function (o) { return R.SESSION_GROUPS.some(function (g) { return o[g.key].length; }); });
-      if (!anyAsg) html += '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>';
-      else html += '<div class="asg-cols">' + R.WHOLE_GROUPS.map(function (g) { return listHtml(g.label, asg.whole[g.key]); }).join("") + "</div>";
-      html += "</div>";
-
-      // sessions
-      n.sessions.forEach(function (x, i) {
-        var o = asg.sessions[i], any = R.SESSION_GROUPS.some(function (g) { return o[g.key].length; });
-        if (!n.v2 && !any) return;
-        html += '<div class="card session"><h2>' + esc(x.name) + "</h2>" +
-          (R.sessionWhen(x) ? '<p class="when-line">' + esc(R.sessionWhen(x)) + "</p>" : "") +
-          (R.parseSchedule(x.details).some(function (d) { return d.value; }) ? "<h3>Meet details</h3>" + '<table class="sched">' + R.parseSchedule(x.details).filter(function (d) { return d.value; }).map(function (d) {
-            return "<tr><td>" + esc(d.label) + "</td><td>" + esc(d.value) + "</td></tr>"; }).join("") + "</table>" : "") +
-          (x.notes ? "<h3>Notes for officials</h3>" + paras(x.notes) : "") +
-          (any ? "<h3>Assignments</h3>" + '<div class="asg-cols">' + R.SESSION_GROUPS.map(function (g) { return listHtml(g.label, o[g.key]); }).join("") + "</div>" : "") + "</div>";
-      });
+      if (n.v2) {
+        var single = n.sessions.length === 1;
+        n.sessions.forEach(function (x, i) {
+          var when = R.sessionWhen(x);
+          var title = single ? (when || "Meet details") : x.name;
+          html += '<div class="card session"><h2>' + esc(title) + "</h2>" +
+            (!single && when ? '<p class="when-line">' + esc(when) + "</p>" : "") + sessionBody(x, i) + "</div>";
+        });
+        if (n.info.parking) html += '<div class="card"><h2>Parking</h2>' + paras(n.info.parking) + "</div>";
+        if (n.info.food) html += '<div class="card"><h2>Food</h2>' + paras(n.info.food) + "</div>";
+        if (n.info.misc) html += '<div class="card"><h2>Miscellaneous</h2>' + paras(n.info.misc) + "</div>";
+      } else {
+        if (m.schedule) html += '<div class="card"><h2>Meet details</h2><table class="sched">' + R.parseSchedule(m.schedule).map(function (s) {
+          return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
+        var anyAsg = nonEmpty(asg.whole, R.WHOLE_GROUPS) || asg.sessions.some(function (o) { return nonEmpty(o, R.SESSION_GROUPS); });
+        html += '<div class="card" id="assignments"><h2>Meet assignments</h2>' + (anyAsg
+          ? '<div class="asg-cols">' + R.WHOLE_GROUPS.map(function (g) { return listHtml(g.label, asg.whole[g.key]); }).join("") +
+            R.SESSION_GROUPS.map(function (g) { return listHtml(g.label, asg.sessions[0][g.key]); }).join("") + "</div>"
+          : '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>') + "</div>";
+      }
       app.innerHTML = html;
 
       document.getElementById("cal-btn").onclick = function () { document.getElementById("cal-opts").classList.toggle("hidden"); };
