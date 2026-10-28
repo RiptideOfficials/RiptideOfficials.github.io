@@ -55,6 +55,7 @@
       '<div class="btn-row"><button class="btn green" id="t-save" type="button">Save</button></div><div id="t-status" role="status"></div></div>' +
       '<div class="card"><h2>People interested in becoming officials</h2><p class="muted small">From the "I\'m interested" form on the public pages.</p><div id="interested">Loading...</div></div>' +
       '<div class="card"><h2>Members</h2><p class="muted small">New accounts wait here until approved. Admins can see members\' email and phone. ' + (ctx.isOwner ? 'To let another Meet Ref (or anyone) help run meets, approve their account and tap <strong>Make admin</strong>. Admins can add and edit meets, email officials, and approve members.' : '') + '</p><div id="members" class="table-wrap">Loading...</div></div>';
+    Array.prototype.forEach.call(document.querySelectorAll("#app .card"), function (c) { c.classList.add("coord-card"); });
 
     var editing = null, meets = [];
     function resetForm() {
@@ -105,7 +106,7 @@
         $("meets").innerHTML = meets.length ? meets.map(function (m) {
           return "<li><div><strong>" + esc(m.title) + "</strong><br><span class=\"muted small\">" + esc(R.fmtRange(m)) + "</span></div>" +
             '<div class="btn-row" style="margin:0"><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Open</a>' +
-            '<a class="btn small ghost" href="assignments.html?m=' + encodeURIComponent(m.id) + '">Assignments</a>' +
+            '<a class="btn small coord" href="assignments.html?m=' + encodeURIComponent(m.id) + '">Assignments</a>' +
             '<button class="btn small ghost" data-copy="' + esc(m.id) + '">Copy link</button>' +
             '<button class="btn small ghost" data-edit="' + esc(m.id) + '">Edit</button>' +
             '<button class="btn small danger" data-del="' + esc(m.id) + '">Delete</button></div></li>';

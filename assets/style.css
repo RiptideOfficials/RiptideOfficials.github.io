@@ -63,7 +63,7 @@ main{max-width:1060px;margin:0 auto;padding:22px 16px 60px}
 .logos-strip img{max-height:110px}
 
 /* buttons */
-.btn{white-space:nowrap;display:inline-block;border:0;border-radius:12px;padding:12px 18px;font:600 1rem/1.25 "Barlow",sans-serif;box-sizing:border-box;cursor:pointer;text-decoration:none;background:var(--blue);color:#fff}
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;text-align:center;border:0;border-radius:12px;padding:12px 18px;font:600 1rem/1.25 "Barlow",sans-serif;box-sizing:border-box;cursor:pointer;text-decoration:none;background:var(--blue);color:#fff}
 .btn:hover{background:var(--blue-dark)}
 .btn.green{background:var(--green-dark)}
 .btn.green:hover{background:#4a8210}
@@ -252,3 +252,12 @@ details.card[open] summary{margin-bottom:8px}
 .note-p{margin:0 0 10px}
 .asg-cols{display:grid;gap:4px 30px;grid-template-columns:1fr}
 @media (min-width:760px){.asg-cols{grid-template-columns:1fr 1fr 1fr}}
+
+/* everything for coordinators/admins is shaded gold so it stands out */
+.btn.coord{background:#fff1c2;color:#6b4e00;border:2px dashed #d9a400}
+.btn.coord:hover{background:#ffe79a}
+.coord-bar{background:#fff6dc;border:2px dashed #e0b94a;border-radius:14px;padding:10px 12px 12px;margin-top:16px}
+.coord-bar .coord-label{display:block;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8a6500}
+.coord-bar .btn-row{margin-top:8px}
+.card.coord-card{background:#fff8e6;border:2px dashed #e0b94a}
+.nav a.coord{background:#fff1c2;color:#6b4e00;border-radius:9px}

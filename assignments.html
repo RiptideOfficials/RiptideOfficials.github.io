@@ -54,6 +54,7 @@
         '<div class="card" id="people-card"><h2>Signed up</h2><div id="people" class="muted">Loading...</div></div>' +
         '<div class="card" id="assign-card"></div>' +
         '<div class="card hidden" id="tools-card"></div>';
+      Array.prototype.forEach.call(app.querySelectorAll(".card"), function (c) { c.classList.add("coord-card"); });
       $("copysu").onclick = function () {
         var u = R.meetUrl(meetId).replace("meet.html", "signup.html");
         R.copyText(u).then(function () { $("copysu").textContent = "Copied!"; setTimeout(function () { $("copysu").textContent = "Copy sign-up link"; }, 1500); });

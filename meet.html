@@ -61,12 +61,14 @@
         notesHtml(m.notes) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up to work</a>' +
         '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button>' +
-        (ctx.isAdmin ? '<a class="btn ghost" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
-          '<a class="btn small ghost" href="' + signupUrl + '#assign">Assign positions</a>' +
-          '<button class="btn ghost" type="button" id="copylink">Copy link</button>' : "") + "</div>" +
+        "</div>" +
         '<div id="cal-opts" class="btn-row hidden">' +
         '<a class="btn small" target="_blank" rel="noopener" href="' + esc(R.googleCalUrl(m, url)) + '">Google Calendar</a>' +
-        '<a class="btn small" download="' + esc(m.title.replace(/[^\w]+/g, "-")) + '.ics" href="' + R.icsHref(m, meetId, url) + '">Apple / Outlook (.ics)</a></div></div>';
+        '<a class="btn small" download="' + esc(m.title.replace(/[^\w]+/g, "-")) + '.ics" href="' + R.icsHref(m, meetId, url) + '">Apple / Outlook (.ics)</a></div>' +
+        (ctx.isAdmin ? '<div class="coord-bar"><span class="coord-label">Coordinator only</span><div class="btn-row">' +
+          '<a class="btn coord" href="assignments.html?m=' + encodeURIComponent(meetId) + '">Assigned positions</a>' +
+          '<a class="btn coord" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
+          '<button class="btn coord" type="button" id="copylink">Copy link</button></div></div>' : "") + "</div>";
 
       if (sched.length) {
         html += '<div class="card"><h2>Meet details</h2><table class="sched">' + sched.map(function (s) {
