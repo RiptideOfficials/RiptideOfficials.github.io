@@ -56,6 +56,15 @@
       }
       return out;
     }
+    var ORDER = [["w", "meetRef", "Meet Referee"], ["w", "admin", "Admin Official"], ["s", "deckRef", "Deck Referee"], ["s", "leadStarter", "Lead Starter"], ["s", "starter", "Starters"],
+                 ["s", "reliefDeckRef", "Relief Deck Referee"], ["s", "reliefStarter", "Relief Starter"], ["s", "chiefJudge", "Chief Judge"], ["s", "strokeTurn", "Stroke & Turn"], ["s", "shadow", "Shadowing"]];
+    function asgTable(whole, o) {   // one neat row per position, in a fixed order
+      var rows = ORDER.map(function (r) {
+        var names = (r[0] === "w" ? whole : o)[r[1]] || [];
+        return names.length ? '<div class="asg-row"><div class="asg-pos">' + esc(r[2]) + '</div><div class="asg-names">' + names.map(function (n) { return "<div>" + esc(n) + "</div>"; }).join("") + "</div></div>" : "";
+      }).join("");
+      return '<div class="asg-table">' + rows + "</div>";
+    }
     function listHtml(label, names) {
       if (!names || !names.length) return "";
       return '<div class="asg-show"><h3>' + esc(label) + "</h3><ul>" + names.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
@@ -92,8 +101,7 @@
         }).join("");
         out += "<h3>Meet assignments</h3>";
         var anyHere = nonEmpty(asg.whole, R.WHOLE_GROUPS) || nonEmpty(o, R.SESSION_GROUPS);
-        out += anyHere ? '<div class="asg-cols">' + R.WHOLE_GROUPS.map(function (g) { return listHtml(g.label, asg.whole[g.key]); }).join("") +
-          R.SESSION_GROUPS.map(function (g) { return listHtml(g.label, o[g.key]); }).join("") + "</div>"
+        out += anyHere ? asgTable(asg.whole, o)
           : '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>';
         return out;
       }
@@ -114,8 +122,7 @@
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
         var anyAsg = nonEmpty(asg.whole, R.WHOLE_GROUPS) || asg.sessions.some(function (o) { return nonEmpty(o, R.SESSION_GROUPS); });
         html += '<div class="card" id="assignments"><h2>Meet assignments</h2>' + (anyAsg
-          ? '<div class="asg-cols">' + R.WHOLE_GROUPS.map(function (g) { return listHtml(g.label, asg.whole[g.key]); }).join("") +
-            R.SESSION_GROUPS.map(function (g) { return listHtml(g.label, asg.sessions[0][g.key]); }).join("") + "</div>"
+          ? asgTable(asg.whole, asg.sessions[0])
           : '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>') + "</div>";
       }
       app.innerHTML = html;
