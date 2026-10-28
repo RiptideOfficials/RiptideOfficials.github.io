@@ -73,16 +73,24 @@
         }
         return i === 0 ? (kind === "work" ? (ex.certified || []) : (ex.shadow || [])) : [];   // sign-ups made before sessions existed
       }
+      var CL = ex.certLevels || {};
+      function lvBox(v, on) {   // "N2" / "N3" tickers next to a position the person is certified in
+        return '<span class="lv"' + (on ? "" : ' style="display:none"') + ">" + ["N2", "N3"].map(function (L) {
+          return '<label class="lvl"><input type="checkbox" data-lv="' + L + '" data-pos="' + esc(v) + '"' + (has(CL[v], L) ? " checked" : "") + "> " + L + "</label>";
+        }).join("") + "</span>";
+      }
       function checks(name, list, chosen, attr) {
         return '<div class="checks">' + list.map(function (v) {
-          return '<label class="chk"><input type="checkbox" ' + attr + ' value="' + esc(v) + '"' + (has(chosen, v) ? " checked" : "") + "> " + esc(v) + "</label>";
+          var on = name === "work" && has(chosen, v);
+          if (name !== "work") return '<label class="chk"><input type="checkbox" ' + attr + ' value="' + esc(v) + '"' + (on || has(chosen, v) ? " checked" : "") + "> " + esc(v) + "</label>";
+          return '<div class="chk2"><label class="pos"><input type="checkbox" ' + attr + ' value="' + esc(v) + '"' + (on ? " checked" : "") + "> " + esc(v) + "</label>" + lvBox(v, on) + "</div>";
         }).join("") + "</div>";
       }
       var sessCards = n.sessions.map(function (x, i) {
         var multi = n.sessions.length > 1 || n.v2;
         return '<div class="card"><h2>' + esc(multi ? x.name : "Positions") + "</h2>" +
           (R.sessionWhen(x) ? '<p class="when-line" style="margin-top:0">' + esc(R.sessionWhen(x)) + "</p>" : "") +
-          (x.positions.length ? "<label>I can work as (select everything you are certified in)</label>" + checks("work", x.positions, mine(i, "work"), 'data-s="' + i + '" data-k="work"') : "") +
+          (x.positions.length ? "<label>I can work as (select everything you are certified in, then tick N2 and/or N3 for the levels you hold)</label>" + checks("work", x.positions, mine(i, "work"), 'data-s="' + i + '" data-k="work"') : "") +
           (x.shadow.length ? "<label>I would like to shadow (choose as many as you like)</label>" + checks("shadow", x.shadow, mine(i, "shadow"), 'data-s="' + i + '" data-k="shadow"') : "") +
           (!x.positions.length && !x.shadow.length ? '<p class="muted">No positions are open for this session.</p>' : "") + "</div>";
       }).join("");
@@ -98,12 +106,11 @@
         '<div class="row2"><div><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email" required></div>' +
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
         '<label for="su-team">Team / club</label><input id="su-team" placeholder="Your team or club">' +
-        '<label for="su-level">Certification level</label><input id="su-level" placeholder="For example: Apprentice, N2, N3" maxlength="40">' +
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
         (n.whole.length ? '<div class="card"><h2>Meet Referee and Admin Official</h2><div class="checks">' + n.whole.map(function (p) {
           var c = claims[WK[p]], isMine = editing && has(ex.certified, p);
           if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + ' &mdash; ' + esc(c.name) + "</div>";
-          return '<label class="chk"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>";
+          return '<div class="chk2"><label class="pos"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>" + lvBox(p, isMine) + "</div>";
         }).join("") + "</div></div>" : "") +
         sessCards +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
@@ -114,7 +121,7 @@
       function fillMine() {
         if (editing) {
           $("su-name").value = ex.name || ""; $("su-email").value = ex.email || ""; $("su-phone").value = ex.phone || "";
-          $("su-team").value = ex.team || ""; $("su-comments").value = ex.comments || ""; $("su-level").value = ex.level || "";
+          $("su-team").value = ex.team || ""; $("su-comments").value = ex.comments || "";
           return;
         }
         if (!ctx.user) return;
@@ -122,6 +129,12 @@
         $("su-name").value = p.name || ""; $("su-email").value = p.email || ctx.user.email || ""; $("su-phone").value = p.phone || ""; $("su-team").value = "Riptide";
       }
       fillMine();
+      document.getElementById("su").addEventListener("change", function (e) {
+        var t = e.target;
+        if (t.type === "checkbox" && t.closest && t.closest(".chk2") && !t.hasAttribute("data-lv")) {
+          var lv = t.closest(".chk2").querySelector(".lv"); if (lv) lv.style.display = t.checked ? "" : "none";
+        }
+      });
       function picked(sel) { return Array.prototype.map.call(document.querySelectorAll(sel + ":checked"), function (i) { return i.value; }); }
       function uniq(a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }); }
 
@@ -129,19 +142,26 @@
         e.preventDefault();
         var st = $("su-status"), btn = $("su-btn");
         var name = $("su-name").value.trim(), email = $("su-email").value.trim(), phone = $("su-phone").value.trim(),
-            team = $("su-team").value.trim(), comments = $("su-comments").value.trim(), level = $("su-level").value.trim();
+            team = $("su-team").value.trim(), comments = $("su-comments").value.trim();
         var wholeSel = picked("input[data-whole]"), perSession = [], workAll = [], shadowAll = [], names = [];
         n.sessions.forEach(function (x, i) {
           var w = picked('input[data-s="' + i + '"][data-k="work"]'), sh = picked('input[data-s="' + i + '"][data-k="shadow"]');
           if (w.length || sh.length) { perSession.push({ i: i, work: w, shadow: sh }); names.push(x.name); }
           workAll = workAll.concat(w); shadowAll = shadowAll.concat(sh);
         });
-        var certified = uniq(wholeSel.concat(workAll)), shadow = uniq(shadowAll);
+        var certified = uniq(wholeSel.concat(workAll)), shadow = uniq(shadowAll), certLevels = {};
+        Array.prototype.forEach.call(document.querySelectorAll("input[data-lv]:checked"), function (b) {
+          var pos = b.getAttribute("data-pos"), L = b.getAttribute("data-lv");
+          if (certified.indexOf(pos) < 0) return;
+          certLevels[pos] = certLevels[pos] || [];
+          if (certLevels[pos].indexOf(L) < 0) certLevels[pos].push(L);
+        });
+        var level = Object.keys(certLevels).map(function (p) { return p + " " + certLevels[p].join("/"); }).join("; ");
         if (!name || !/^\S+@\S+\.\S+$/.test(email) || !phone) { st.innerHTML = '<div class="msg err">Please fill in your name, a valid email, and your phone number.</div>'; return; }
         if (!certified.length && !shadow.length) { st.innerHTML = '<div class="msg err">Please select at least one position, or something you would like to shadow.</div>'; return; }
         btn.disabled = true; btn.textContent = "Saving...";
         var data = { name: name, team: team, role: (certified.join(", ") || "Shadowing").slice(0, 190), certified: certified, shadow: shadow,
-                     perSession: perSession, session: (names.join(", ") || "Whole meet").slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500), level: level.slice(0, 40) };
+                     perSession: perSession, session: (names.join(", ") || "Whole meet").slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500), level: level.slice(0, 190), certLevels: certLevels };
         var k = key || R.newId(), ref = meetRef.collection("contacts").doc(k), p;
         var held = editing ? R.WHOLE_POS.filter(function (x) { return has(ex.certified, x); }) : [];
         var toClaim = wholeSel.filter(function (x) { return held.indexOf(x) < 0; }), toRelease = held.filter(function (x) { return wholeSel.indexOf(x) < 0; });

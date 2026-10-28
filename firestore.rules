@@ -117,7 +117,7 @@ service cloud.firestore {
       // so only the person who signed up (who holds their private edit link) or an admin can open one.
       match /contacts/{key} {
         function validSignup(d) {
-          return d.keys().hasOnly(['name', 'email', 'phone', 'comments', 'level', 'team', 'role', 'certified', 'shadow', 'perSession', 'session', 'uid', 'createdAt'])
+          return d.keys().hasOnly(['name', 'email', 'phone', 'comments', 'level', 'team', 'role', 'certified', 'shadow', 'perSession', 'certLevels', 'session', 'uid', 'createdAt'])
             && d.name is string && d.name.size() > 0 && d.name.size() <= 80
             && d.email is string && d.email.size() <= 120
             && d.phone is string && d.phone.size() <= 30
@@ -126,7 +126,8 @@ service cloud.firestore {
             && d.certified is list && d.certified.size() <= 12
             && d.shadow is list && d.shadow.size() <= 12
             && d.session is string && d.session.size() <= 200
-            && (!('level' in d) || (d.level is string && d.level.size() <= 40))
+            && (!('level' in d) || (d.level is string && d.level.size() <= 200))
+            && (!('certLevels' in d) || d.certLevels is map)
             && (!('perSession' in d) || (d.perSession is list && d.perSession.size() <= 20))
             && (!('comments' in d) || (d.comments is string && d.comments.size() <= 500));
         }
