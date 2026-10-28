@@ -28,25 +28,21 @@
         if (form._honey.value) return; // spam trap
         var btn = document.getElementById("i-send");
         btn.disabled = true; btn.textContent = "Sending...";
-        fetch("https://formsubmit.co/ajax/" + encodeURIComponent(window.INTEREST_FORM_EMAIL), {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Accept": "application/json" },
-          body: JSON.stringify({
-            name: name, email: email,
-            phone: form.phone.value.trim(),
-            swimmer: form.swimmer.value.trim(),
-            message: form.message.value.trim(),
-            _subject: "Riptide Officials: new interest form from " + name,
-            _template: "table", _captcha: "false"
-          })
-        }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) {
-          if (!r.ok || j.success === "false") throw new Error(j.message || "Send failed");
+        var data = { name: name, email: email, phone: form.phone.value.trim(),
+          swimmer: form.swimmer.value.trim(), message: form.message.value.trim() };
+        // best-effort email copy (works once FormSubmit is activated); the saved entry below is the real record
+        try {
+          fetch("https://formsubmit.co/ajax/" + encodeURIComponent(window.INTEREST_FORM_EMAIL), {
+            method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify(Object.assign({ _subject: "Riptide Officials: new interest form from " + name, _template: "table", _captcha: "false" }, data))
+          }).catch(function () {});
+        } catch (x) {}
+        R.db.collection("interest").add(Object.assign({ createdAt: Date.now() }, data)).then(function () {
           form.reset();
           status.innerHTML = '<div class="msg ok">Thank you! Your message was sent and we\'ll be in touch soon.</div>';
-        }); }).catch(function (err) {
+        }).catch(function () {
           status.innerHTML = '<div class="msg err">Sorry, that didn\'t send. Please email ' +
-            R.esc(window.INTEREST_FORM_EMAIL) + ' directly.' +
-            (err && err.message ? '<br><span class="small">(' + R.esc(err.message) + ")</span>" : "") + "</div>";
+            R.esc(window.INTEREST_FORM_EMAIL) + ' directly.</div>';
         }).then(function () { btn.disabled = false; btn.textContent = "Send"; });
       });
     }

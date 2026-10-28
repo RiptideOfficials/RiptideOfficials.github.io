@@ -53,6 +53,7 @@
       '<div class="card"><h2>Private team info</h2><p class="muted small">Only approved members can see this, and it is never stored in the website files.</p>' +
       '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
       '<div class="btn-row"><button class="btn green" id="t-save" type="button">Save</button></div><div id="t-status" role="status"></div></div>' +
+      '<div class="card"><h2>People interested in becoming officials</h2><p class="muted small">From the "I\'m interested" form on the public pages.</p><div id="interested">Loading...</div></div>' +
       '<div class="card"><h2>Members</h2><p class="muted small">New accounts wait here until approved. Admins can see members\' email and phone. ' + (ctx.isOwner ? 'To let another Meet Ref (or anyone) help run meets, approve their account and tap <strong>Make admin</strong>. Admins can add and edit meets, email officials, and approve members.' : '') + '</p><div id="members" class="table-wrap">Loading...</div></div>';
 
     var editing = null, meets = [];
@@ -166,7 +167,25 @@
         .catch(function () { st.innerHTML = '<div class="msg err">Could not save.</div>'; });
     };
 
-    loadMeets(); loadMembers();
+    function loadInterested() {
+      return R.db.collection("interest").orderBy("createdAt", "desc").get().then(function (snap) {
+        var rows = snap.docs.map(function (d) { var u = d.data(); u.id = d.id; return u; });
+        $("interested").innerHTML = rows.length ? '<ul class="meet-list">' + rows.map(function (u) {
+          return "<li><div><strong>" + esc(u.name) + '</strong> <span class="muted small">' + esc(new Date(u.createdAt).toLocaleDateString()) + "</span><br>" +
+            '<a href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" + (u.phone ? " &middot; " + esc(u.phone) : "") +
+            (u.swimmer ? '<br><span class="small">Swimmer: ' + esc(u.swimmer) + "</span>" : "") +
+            (u.message ? '<br><span class="small">' + esc(u.message) + "</span>" : "") +
+            '</div><button class="btn small danger" data-delint="' + esc(u.id) + '">Delete</button></li>';
+        }).join("") + "</ul>" : '<p class="muted">No one yet.</p>';
+      }).catch(function () { $("interested").innerHTML = '<div class="msg err">Could not load. Make sure the latest firestore.rules are published.</div>'; });
+    }
+    $("interested").addEventListener("click", function (e) {
+      var id = e.target.getAttribute && e.target.getAttribute("data-delint");
+      if (!id || !confirm("Delete this entry?")) return;
+      R.db.collection("interest").doc(id).delete().then(loadInterested).catch(function () { alert("Could not delete."); });
+    });
+
+    loadMeets(); loadMembers(); loadInterested();
   });
 })();
 </script>

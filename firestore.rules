@@ -79,6 +79,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // "Interested in becoming an official" form: anyone can submit; only admins can read or delete.
+    match /interest/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['name','email','phone','swimmer','message','createdAt'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 200
+        && request.resource.data.email is string && request.resource.data.email.size() > 3 && request.resource.data.email.size() < 200
+        && (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() < 60))
+        && (!('swimmer' in request.resource.data) || (request.resource.data.swimmer is string && request.resource.data.swimmer.size() < 200))
+        && (!('message' in request.resource.data) || (request.resource.data.message is string && request.resource.data.message.size() < 3000));
+      allow read, update, delete: if isAdmin();
+    }
+
     match /meets/{meetId} {
       allow get: if true;               // anyone who knows the (unguessable) link
       allow list: if isMember();        // calendar and meet list
