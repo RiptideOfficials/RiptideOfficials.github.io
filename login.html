@@ -111,6 +111,21 @@
         name: name, email: email, phone: phone, approved: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       }).then(function () { return u.sendEmailVerification().catch(function () {}); })
+        .then(function () {
+          // Best-effort heads-up email to the coordinator (name and email only, no phone).
+          if (String(email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase()) return;
+          return fetch("https://formsubmit.co/ajax/" + encodeURIComponent(window.INTEREST_FORM_EMAIL), {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify({
+              name: name, email: email,
+              message: "New Riptide Officials account is waiting for your approval. Approve it at " +
+                location.href.replace(/login\.html.*$/, "admin.html"),
+              _subject: "Riptide Officials: " + name + " is waiting for approval",
+              _template: "table", _captcha: "false"
+            })
+          }).catch(function () {});
+        })
         .then(function () { location.href = "home.html"; });
     }).catch(function (err) { show("err", friendly(err)); });
   });
