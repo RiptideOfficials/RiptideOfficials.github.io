@@ -58,8 +58,9 @@
 
     function render(m, key, ex, badLink) {
       var editing = !!key; ex = ex || {};
-      var roles = R.parseRoles(m.roles).filter(function (r) { return !/shadow/i.test(r.name); });
-      var shadowRoles = roles.filter(function (r) { return !/^meet referee$/i.test(r.name); });
+      // The same list for every meet, for both "certified in" and "shadowing"
+      var roles = ["Meet Referee", "Admin Official", "Starter", "Stroke & Turn", "Deck Referee", "Chief Judge"].map(function (n) { return { name: n }; });
+      var shadowRoles = roles;
       var sessions = R.lines(m.sessions); if (!sessions.length) sessions = ["All sessions"];
       var detailsUrl = "meet.html?m=" + encodeURIComponent(meetId);
       function has(list, v) { return (Array.isArray(list) ? list : []).indexOf(v) >= 0; }
