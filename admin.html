@@ -123,9 +123,9 @@
         var id = g("data-del"), m = meets.filter(function (x) { return x.id === id; })[0];
         if (!confirm('Delete "' + (m ? m.title : "this meet") + '" and everyone signed up for it? This cannot be undone.')) return;
         var ref = R.db.collection("meets").doc(id);
-        Promise.all([ref.collection("signups").get(), ref.collection("contacts").get()]).then(function (r) {
+        Promise.all([ref.collection("contacts").get()]).then(function (r) {
           var batch = R.db.batch();
-          r[0].docs.concat(r[1].docs).forEach(function (d) { batch.delete(d.ref); });
+          r[0].docs.forEach(function (d) { batch.delete(d.ref); });
           batch.delete(ref);
           return batch.commit();
         }).then(loadMeets).catch(function () { alert("Could not delete that meet."); });

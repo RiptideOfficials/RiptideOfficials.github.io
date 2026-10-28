@@ -128,17 +128,15 @@
         } else if (g("data-remove")) {
           var id = g("data-remove");
           if (!confirm("Remove this person's sign-up?")) return;
-          Promise.all([meetRef.collection("signups").doc(id).delete(), meetRef.collection("contacts").doc(id).delete()]).then(load)
+          meetRef.collection("contacts").doc(id).delete().then(load)
             .catch(function () { alert("Could not remove that sign-up."); });
         }
       });
 
       function load() {
-        return meetRef.collection("signups").orderBy("createdAt").get().then(function (snap) {
-          signups = snap.docs.map(function (d) { var s = d.data(); s.id = d.id; return s; });
-          return meetRef.collection("contacts").get();
-        }).then(function (cs) {
-          contacts = {}; cs.docs.forEach(function (d) { contacts[d.id] = d.data(); });
+        return meetRef.collection("contacts").orderBy("createdAt").get().then(function (cs) {
+          signups = []; contacts = {};
+          cs.docs.forEach(function (d) { var s = d.data(); s.id = d.id; signups.push(s); contacts[d.id] = s; });
           drawPeople(); drawAssign(); drawTools();
         }).catch(function () { $("people").innerHTML = '<div class="msg err">Could not load the sign-ups.</div>'; });
       }

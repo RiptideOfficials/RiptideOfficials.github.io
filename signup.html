@@ -37,26 +37,45 @@
     R.renderHeader(ctx, "meets");
     if (!meetId) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is missing its meet code. Please use the full link you were sent.</p></div>'; return; }
     var meetRef = R.db.collection("meets").doc(meetId);
+    function findKey() {
+      var q = new URLSearchParams(location.search).get("e"), ls = null;
+      if (q) return Promise.resolve(q);
+      try { ls = localStorage.getItem("ro_su_" + meetId); } catch (x) {}
+      if (ctx.user) return R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).get()
+        .then(function (sn) { return sn.exists ? sn.data().key : ls; }).catch(function () { return ls; });
+      return Promise.resolve(ls);
+    }
     meetRef.get().then(function (snap) {
       if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This sign-up link is not valid. Please check the link you were sent.</p></div>'; return; }
       document.title = "Sign up: " + snap.data().title + " | Riptide Officials";
-      render(snap.data());
+      return findKey().then(function (key) {
+        if (!key) return render(snap.data(), null, null);
+        return meetRef.collection("contacts").doc(key).get().then(function (c) {
+          if (c.exists) render(snap.data(), key, c.data()); else render(snap.data(), null, null, !!new URLSearchParams(location.search).get("e"));
+        }).catch(function () { render(snap.data(), null, null); });
+      });
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
 
-    function render(m) {
+    function render(m, key, ex, badLink) {
+      var editing = !!key; ex = ex || {};
       var roles = R.parseRoles(m.roles).filter(function (r) { return !/shadow/i.test(r.name); });
       var shadowRoles = roles.filter(function (r) { return !/^meet referee$/i.test(r.name); });
       var sessions = R.lines(m.sessions); if (!sessions.length) sessions = ["All sessions"];
       var detailsUrl = "meet.html?m=" + encodeURIComponent(meetId);
-      function checks(name, list) {
+      function has(list, v) { return (Array.isArray(list) ? list : []).indexOf(v) >= 0; }
+      function checks(name, list, chosen) {
         return '<div class="checks">' + list.map(function (r) {
-          return '<label class="chk"><input type="checkbox" name="' + name + '" value="' + esc(r.name || r) + '"> ' + esc(r.name || r) + "</label>";
+          var v = r.name || r;
+          return '<label class="chk"><input type="checkbox" name="' + name + '" value="' + esc(v) + '"' + (has(chosen, v) ? " checked" : "") + "> " + esc(v) + "</label>";
         }).join("") + "</div>";
       }
+      var chosenSess = String(ex.session || "").split(", ");
       app.innerHTML =
         '<p style="margin:0 0 10px"><a href="' + detailsUrl + '">&larr; Meet details</a></p>' +
-        '<div class="card"><span class="pill green">Sign up to work</span><h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
+        '<div class="card"><span class="pill green">' + (editing ? "Your sign-up" : "Sign up to work") + '</span><h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         "<p style=\"margin-bottom:0\"><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p></div>" +
+        (editing ? '<div class="msg info">You already signed up for this meet. Make your changes below and tap <strong>Save changes</strong>.</div>' : "") +
+        (badLink ? '<div class="msg err">That edit link did not work, so you can sign up again below.</div>' : "") +
         '<form id="su" novalidate>' +
         '<div class="card"><h2>Your information</h2>' +
         '<label for="su-name">Name</label><input id="su-name" autocomplete="name" required>' +
@@ -64,14 +83,20 @@
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
         '<label for="su-team">Team / club</label><input id="su-team" placeholder="Riptide">' +
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
-        (sessions.length > 1 ? '<div class="card"><h2>Sessions you can work</h2>' + checks("sess", sessions) + "</div>" : "") +
-        '<div class="card"><h2>Select everything you are certified in</h2>' + checks("cert", roles) + "</div>" +
-        '<div class="card"><h2>Interested in shadowing?</h2><p class="muted small" style="margin-top:0">Choose as many positions as you like.</p>' + checks("shadow", shadowRoles) + "</div>" +
+        (sessions.length > 1 ? '<div class="card"><h2>Sessions you can work</h2>' + checks("sess", sessions, chosenSess) + "</div>" : "") +
+        '<div class="card"><h2>Select everything you are certified in</h2>' + checks("cert", roles, ex.certified) + "</div>" +
+        '<div class="card"><h2>Interested in shadowing?</h2><p class="muted small" style="margin-top:0">Choose as many positions as you like.</p>' + checks("shadow", shadowRoles, ex.shadow) + "</div>" +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
-        '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">Sign me up</button></div><div id="su-status" role="status"></div></form>';
+        '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">' + (editing ? "Save changes" : "Sign me up") + "</button>" +
+        (editing ? '<button class="btn danger" type="button" id="su-cancel">Cancel my sign-up</button>' : "") + '</div><div id="su-status" role="status"></div></form>';
 
       var $ = function (id) { return document.getElementById(id); };
       function fillMine() {
+        if (editing) {
+          $("su-name").value = ex.name || ""; $("su-email").value = ex.email || ""; $("su-phone").value = ex.phone || "";
+          $("su-team").value = ex.team || ""; $("su-comments").value = ex.comments || "";
+          return;
+        }
         if (!ctx.user) return;
         var p = ctx.profile || {};
         $("su-name").value = p.name || ""; $("su-email").value = p.email || ctx.user.email || ""; $("su-phone").value = p.phone || ""; $("su-team").value = "Riptide";
@@ -88,23 +113,44 @@
         if (!name || !/^\S+@\S+\.\S+$/.test(email) || !phone) { st.innerHTML = '<div class="msg err">Please fill in your name, a valid email, and your phone number.</div>'; return; }
         if (sessions.length > 1 && !session) { st.innerHTML = '<div class="msg err">Please pick at least one session.</div>'; return; }
         if (!certified.length && !shadow.length) { st.innerHTML = '<div class="msg err">Please select what you are certified in, or what you would like to shadow.</div>'; return; }
-        btn.disabled = true; btn.textContent = "Signing up...";
-        var id = R.newId(), ts = firebase.firestore.FieldValue.serverTimestamp(), uid = ctx.user ? ctx.user.uid : null;
-        var pub = { name: name, team: team, role: (certified.join(", ") || "Shadowing").slice(0, 190), certified: certified, shadow: shadow,
-                    session: session.slice(0, 190), uid: uid, createdAt: ts };
-        var batch = R.db.batch();
-        batch.set(meetRef.collection("signups").doc(id), pub);
-        batch.set(meetRef.collection("contacts").doc(id), Object.assign({ email: email, phone: phone, comments: comments.slice(0, 500) }, pub));
-        batch.commit().then(function () {
-          app.innerHTML = '<div class="card"><span class="pill green">All set</span><h1 style="margin-top:8px">Thank you, ' + esc(name.split(" ")[0]) + '!</h1>' +
-            "<p>You're signed up for <strong>" + esc(m.title) + "</strong>. The coordinator will post assignments on the meet page. To make a change, email " +
-            '<a href="mailto:' + esc(window.ADMIN_EMAIL) + '">' + esc(window.ADMIN_EMAIL) + '</a>.</p><div class="btn-row"><a class="btn" href="' + detailsUrl + '">See meet details</a></div></div>';
+        btn.disabled = true; btn.textContent = "Saving...";
+        var data = { name: name, team: team, role: (certified.join(", ") || "Shadowing").slice(0, 190), certified: certified, shadow: shadow,
+                     session: session.slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500) };
+        var k = key || R.newId(), ref = meetRef.collection("contacts").doc(k), p;
+        if (editing) p = ref.update(data);
+        else {
+          data.uid = ctx.user ? ctx.user.uid : null; data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+          p = ref.set(data);
+        }
+        p.then(function () {
+          try { localStorage.setItem("ro_su_" + meetId, k); } catch (x) {}
+          if (ctx.user) R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).set({ key: k }).catch(function () {});
+          var link = location.href.split("#")[0].split("?")[0] + "?m=" + encodeURIComponent(meetId) + "&e=" + encodeURIComponent(k);
+          var mail = "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent("Your sign-up for " + m.title) +
+            "&body=" + encodeURIComponent("Use this private link any time to change or cancel your sign-up for " + m.title + ":\n\n" + link);
+          app.innerHTML = '<div class="card"><span class="pill green">' + (editing ? "Saved" : "All set") + '</span><h1 style="margin-top:8px">' +
+            (editing ? "Your changes are saved" : "Thank you, " + esc(name.split(" ")[0]) + "!") + "</h1>" +
+            "<p>You're signed up for <strong>" + esc(m.title) + "</strong>. The coordinator will post assignments on the meet page.</p>" +
+            "<h3>Need to change something later?</h3><p>Come back to this meet's sign-up page on this phone or computer and your sign-up will open for editing" +
+            (ctx.user ? " (it is also saved to your account)" : "") + ". To open it anywhere else, save your private link:</p>" +
+            '<div class="btn-row"><button class="btn" type="button" id="cp">Copy my edit link</button><a class="btn ghost" href="' + mail + '">Email me my edit link</a>' +
+            '<a class="btn ghost" href="' + detailsUrl + '">See meet details</a></div></div>';
+          $("cp").onclick = function () { R.copyText(link).then(function () { $("cp").textContent = "Copied!"; }); };
           window.scrollTo(0, 0);
         }).catch(function () {
           st.innerHTML = '<div class="msg err">Sorry, that didn\'t go through. Please try again.</div>';
-          btn.disabled = false; btn.textContent = "Sign me up";
+          btn.disabled = false; btn.textContent = editing ? "Save changes" : "Sign me up";
         });
       });
+      var cancel = $("su-cancel");
+      if (cancel) cancel.onclick = function () {
+        if (!confirm("Cancel your sign-up for this meet?")) return;
+        meetRef.collection("contacts").doc(key).delete().then(function () {
+          try { localStorage.removeItem("ro_su_" + meetId); } catch (x) {}
+          if (ctx.user) R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).delete().catch(function () {});
+          app.innerHTML = '<div class="card"><h1>Your sign-up was cancelled</h1><p>You can sign up again any time from the meet page.</p><div class="btn-row"><a class="btn" href="' + detailsUrl + '">Meet details</a></div></div>';
+        }).catch(function () { $("su-status").innerHTML = '<div class="msg err">Could not cancel. Please try again.</div>'; });
+      };
     }
   });
 })();

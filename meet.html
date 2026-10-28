@@ -62,7 +62,7 @@
         html += '<div class="card"><h2>Meet details</h2><table class="sched">' + sched.map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
       }
-      html += '<div class="card"><h2>Want to work this meet?</h2><p>Sign up and tell us what you are certified in.</p><div class="btn-row" style="margin-top:0"><a class="btn green" href="' + signupUrl + '">Sign up to work</a></div></div>';
+      html += '<div class="card"><h2>Want to work this meet?</h2><p>Sign up and tell us what you are certified in. Already signed up? Use the same button to change or cancel your sign-up.</p><div class="btn-row" style="margin-top:0"><a class="btn green" href="' + signupUrl + '">Sign up to work</a></div></div>';
       html += "</div><div>";
       var any = R.ASSIGN_GROUPS.some(function (g) { return (a[g.key] || []).length; });
       html += '<div class="card" id="assignments"><h2>Meet assignments</h2>';

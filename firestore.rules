@@ -64,6 +64,13 @@ service cloud.firestore {
             && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'admin', 'createdAt']));
       allow delete: if isAdmin();
 
+      // The private edit codes for sign-ups this member made (one per meet).
+      match /mysignups/{meetId} {
+        allow read, delete: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['key']);
+      }
+
       // Each member's checklist progress on the how-to pages. Only that member can read or write it.
       match /progress/{pageKey} {
         allow read: if signedIn() && request.auth.uid == uid;
@@ -95,32 +102,29 @@ service cloud.firestore {
       allow list: if isMember();        // calendar and meet list
       allow create, update, delete: if isAdmin();
 
-      // Public part of a sign-up: name, team, position, session. No contact details here.
-      match /signups/{signupId} {
-        allow read: if true;
-        allow create: if request.resource.data.keys().hasOnly(['name', 'team', 'role', 'certified', 'shadow', 'session', 'uid', 'createdAt'])
-          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
-          && request.resource.data.team is string && request.resource.data.team.size() <= 80
-          && request.resource.data.role is string && request.resource.data.role.size() <= 200 && request.resource.data.certified is list && request.resource.data.certified.size() <= 12 && request.resource.data.shadow is list && request.resource.data.shadow.size() <= 12
-          && request.resource.data.session is string && request.resource.data.session.size() <= 200
+      // One document per sign-up, keyed by a random secret code. Nobody can list them (only admins can),
+      // so only the person who signed up (who holds their private edit link) or an admin can open one.
+      match /contacts/{key} {
+        function validSignup(d) {
+          return d.keys().hasOnly(['name', 'email', 'phone', 'comments', 'team', 'role', 'certified', 'shadow', 'session', 'uid', 'createdAt'])
+            && d.name is string && d.name.size() > 0 && d.name.size() <= 80
+            && d.email is string && d.email.size() <= 120
+            && d.phone is string && d.phone.size() <= 30
+            && d.team is string && d.team.size() <= 80
+            && d.role is string && d.role.size() <= 200
+            && d.certified is list && d.certified.size() <= 12
+            && d.shadow is list && d.shadow.size() <= 12
+            && d.session is string && d.session.size() <= 200
+            && (!('comments' in d) || (d.comments is string && d.comments.size() <= 500));
+        }
+        allow get: if true;
+        allow list: if isAdmin();
+        allow create: if validSignup(request.resource.data)
           && (request.resource.data.uid == null || (signedIn() && request.resource.data.uid == request.auth.uid));
-        allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
-        allow update: if isAdmin();
-      }
-
-      // Private part: email and phone. Only the admin can ever read these.
-      match /contacts/{signupId} {
-        allow read, update: if isAdmin();
-        allow create: if request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'comments', 'team', 'role', 'certified', 'shadow', 'session', 'uid', 'createdAt'])
-          && (!('comments' in request.resource.data) || (request.resource.data.comments is string && request.resource.data.comments.size() <= 500))
-          && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
-          && request.resource.data.email is string && request.resource.data.email.size() <= 120
-          && request.resource.data.phone is string && request.resource.data.phone.size() <= 30
-          && request.resource.data.team is string && request.resource.data.team.size() <= 80
-          && request.resource.data.role is string && request.resource.data.role.size() <= 200 && request.resource.data.certified is list && request.resource.data.certified.size() <= 12 && request.resource.data.shadow is list && request.resource.data.shadow.size() <= 12
-          && request.resource.data.session is string && request.resource.data.session.size() <= 200
-          && (request.resource.data.uid == null || (signedIn() && request.resource.data.uid == request.auth.uid));
-        allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+        allow update: if isAdmin() || (validSignup(request.resource.data)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.createdAt == resource.data.createdAt);
+        allow delete: if true;
       }
     }
   }
