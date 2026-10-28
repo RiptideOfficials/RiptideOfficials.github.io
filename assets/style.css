@@ -356,3 +356,10 @@ details.has-pencil>.pencil{top:8px;right:40px}
   .home-layout{grid-template-columns:300px 1fr;gap:22px;align-items:start;grid-template-areas:"side main"}
   .home-side{grid-area:side}.home-main{grid-area:main}
 }
+/* Rule changes: tight heading + text, space between headings */
+#rules h3,#rules h4{margin:16px 0 2px;padding:0}
+#rules h3:first-of-type,#rules h4:first-of-type{margin-top:8px}
+#rules h2+h3,#rules h2+h4{margin-top:6px}
+#rules h3+p,#rules h4+p,#rules h3+div,#rules h4+div{margin-top:0}
+#rules p{margin:0 0 4px}
+#rules div{margin-top:0;margin-bottom:0}
