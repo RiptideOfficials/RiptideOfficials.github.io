@@ -180,7 +180,7 @@
     if (host.tagName === "DETAILS") {
       Array.prototype.forEach.call(host.children, function (n) { (n.tagName === "SUMMARY" || n.classList.contains("pencil") || n.classList.contains("edit-ui") ? top : rest).push(n); });
     } else {
-      var body = host.querySelector(".body"), seenH2 = false;
+      var body = host.querySelector(".body") || host, seenH2 = false;
       Array.prototype.forEach.call(body.children, function (n) {
         if (n.classList.contains("pencil") || n.classList.contains("edit-ui")) return;
         if (!seenH2) { top.push(n); if (n.tagName === "H2") seenH2 = true; } else rest.push(n);
@@ -188,19 +188,19 @@
     }
     return [top, rest];
   }
-  function titleOf(host) { var t = host.tagName === "DETAILS" ? host.querySelector("summary") : host.querySelector(".body h2"); return t ? t.textContent : ""; }
+  function titleOf(host) { var t = host.tagName === "DETAILS" ? host.querySelector("summary") : host.querySelector("h2"); return t ? t.textContent : ""; }
   function blockHtml(host) { return E.clean(blockParts(host)[1].map(function (n) { return n.outerHTML; }).join("")); }
   function applyBlock(host, b) {
-    var parts = blockParts(host), titleEl = host.tagName === "DETAILS" ? host.querySelector("summary") : host.querySelector(".body h2");
+    var parts = blockParts(host), titleEl = host.tagName === "DETAILS" ? host.querySelector("summary") : host.querySelector("h2");
     if (titleEl && b.title) titleEl.textContent = b.title;
-    var holder = host.tagName === "DETAILS" ? host : host.querySelector(".body");
+    var holder = host.tagName === "DETAILS" ? host : (host.querySelector(".body") || host);
     parts[1].forEach(function (n) { holder.removeChild(n); });
     var tmp = document.createElement("div"); tmp.innerHTML = E.clean(b.html || "");
     Array.prototype.slice.call(tmp.childNodes).forEach(function (n) { holder.appendChild(n); });
   }
   function editBlock(host, page, content, original, after) {
     var id = host.id, cur = (content.blocks && content.blocks[id]) || original;
-    var holder = host.tagName === "DETAILS" ? host : host.querySelector(".body"), parts = blockParts(host);
+    var holder = host.tagName === "DETAILS" ? host : (host.querySelector(".body") || host), parts = blockParts(host);
     var ui = el("div", { class: "edit-ui" }), msg = el("div", { role: "status" });
     var title = el("input", { value: cur.title || "", "aria-label": "Title" });
     var tools = el("div", { class: "rt-tools" });

@@ -23,6 +23,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/edit.js"></script>
 <script>
 (function () {
   var R = window.Riptide, esc = R.esc;
@@ -32,15 +33,25 @@
     var app = document.getElementById("app");
     var name = ctx.profile && ctx.profile.name ? ctx.profile.name.split(" ")[0] : "";
     app.innerHTML =
-      '<h1>' + (name ? "Welcome, " + esc(name) : "Meet calendar") + "</h1>" +
+      '<h1>' + (name ? "Welcome, " + esc(name) : "Riptide Officials") + "</h1>" +
+      '<div class="home-grid"><div class="home-col">' +
       '<div class="card"><h2>Upcoming meets</h2><ul class="meet-list" id="upcoming"><li class="muted">Loading...</li></ul>' +
       '<div class="btn-row"><a class="btn ghost small" href="meets.html">All meets</a></div></div>' +
       '<div class="card"><div class="cal-head">' +
       '<button class="btn small ghost" id="prev" aria-label="Previous month">&larr;</button>' +
       '<h2 id="month"></h2>' +
       '<button class="btn small ghost" id="next" aria-label="Next month">&rarr;</button></div>' +
-      '<div class="cal" id="cal"></div>' +
-      '<p class="muted small" style="margin-bottom:0">Tap a meet to see details and sign up.</p></div>';
+      '<div class="cal compact" id="cal"></div>' +
+      '<p class="muted small" style="margin-bottom:0">Tap a meet to see details and sign up.</p></div>' +
+      '</div><div class="home-col">' +
+      '<div class="card" id="rules" data-editable><h2>Rule changes</h2><p class="muted">New and changed rules will be posted here.</p></div>' +
+      '<div class="card" id="contacts" data-editable><h2>Who to contact</h2>' +
+      '<p><strong>Riptide Officials Coordinator</strong><br>Wendy Peterson<br><a href="mailto:whpeterson@gmail.com">whpeterson@gmail.com</a> &middot; <a href="tel:+16127087227">612-708-7227</a></p>' +
+      '<p><strong>Minnesota Swimming Officials Committee Chair</strong><br><span class="muted">Name and email to be added.</span></p>' +
+      '<p style="margin-bottom:0"><a href="https://www.teamunify.com/team/czmnlsc/page/officials2" target="_blank" rel="noopener">Minnesota Swimming officials page</a><br><a href="https://www.usaswimming.org/" target="_blank" rel="noopener">USA Swimming officials website</a></p></div>' +
+      '<div class="card" id="news" data-editable><h2>Weekly committee email</h2><p class="muted">The highlights from the weekly officials email will be posted here.</p></div>' +
+      '</div></div>';
+    if (R.Edit) R.Edit.run(app, ctx, "home").catch(function () {});
 
     var meets = [], view = new Date(); view.setDate(1);
     var today = new Date(); today.setHours(0, 0, 0, 0);

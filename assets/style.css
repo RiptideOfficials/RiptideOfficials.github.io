@@ -327,3 +327,15 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .rt-box:focus{outline:3px solid #bfe0f7}
 .rt-ph{padding:8px 10px;margin:8px 0;border:1px dashed var(--line);border-radius:8px;color:var(--muted);background:#f4f8fb}
 @media print{.pencil,.edit-ui{display:none!important}}
+
+/* home page layout */
+.home-grid{display:grid;gap:0}
+.home-col>.card{margin-bottom:18px}
+@media (min-width:900px){.home-grid{grid-template-columns:1.15fr 1fr;gap:20px;align-items:start}}
+.cal.compact{gap:2px}
+.cal.compact .day{min-height:38px;padding:2px 3px;font-size:.72rem}
+.cal.compact .dow{font-size:.68rem;padding:2px 0}
+.cal.compact .ev{font-size:0;height:6px;padding:0;margin-top:3px;border-radius:3px}
+.cal-head h2{font-size:1.2rem}
+#rules ul,#contacts ul,#news ul{padding-left:20px}
+.has-pencil>h2{padding-right:84px}
