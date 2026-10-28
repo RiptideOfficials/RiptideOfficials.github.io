@@ -197,9 +197,53 @@
     });
   };
 
+  /* ---------- footer: version time + refresh ---------- */
+  function fmt(ms) {
+    return new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+
+  // Re-download this page and its scripts/styles (bypassing the browser cache), then reload.
+  R.refreshLatest = function (btn) {
+    if (btn) { btn.disabled = true; btn.textContent = "Refreshing..."; }
+    var urls = [location.href.split("#")[0]];
+    Array.prototype.forEach.call(document.querySelectorAll("script[src],link[rel=stylesheet][href]"), function (el) {
+      var u = el.src || el.href;
+      if (u && u.indexOf(location.origin) === 0) urls.push(u);
+    });
+    Promise.all(urls.map(function (u) { return fetch(u, { cache: "reload" }).catch(function () {}); }))
+      .then(function () { location.reload(); });
+  };
+
+  // Compares the version of this page in your browser with the newest one on the server.
+  R.checkForUpdate = function () {
+    var loaded = Date.parse(document.lastModified);
+    return fetch(location.href.split("#")[0], { method: "HEAD", cache: "no-store" }).then(function (r) {
+      var lm = r.headers.get("Last-Modified"), latest = lm ? Date.parse(lm) : NaN;
+      var note = document.getElementById("ver-note");
+      if (isNaN(latest)) return;
+      var newer = !isNaN(loaded) && latest - loaded > 2000;
+      if (note) note.textContent = "Latest version: " + fmt(latest) + (newer ? "" : " \u2713 you have it");
+      var old = document.getElementById("update-banner");
+      if (newer && !old) {
+        var b = document.createElement("div");
+        b.id = "update-banner"; b.className = "update-banner";
+        b.innerHTML = 'A newer version of this site is available. <button type="button" class="btn small light">Refresh now</button>';
+        b.querySelector("button").onclick = function () { R.refreshLatest(this); };
+        var h = document.getElementById("site-header");
+        h.parentNode.insertBefore(b, h.nextSibling);
+      }
+    }).catch(function () {});
+  };
+
   R.footer = function () {
     var f = document.getElementById("site-footer");
-    if (f) f.innerHTML = "Riptide Swimming Officials &middot; Questions? Email the coordinator at " +
-      '<a href="mailto:' + R.esc(window.ADMIN_EMAIL) + '">' + R.esc(window.ADMIN_EMAIL) + "</a>";
+    if (!f) return;
+    var loaded = Date.parse(document.lastModified);
+    f.innerHTML = "Riptide Swimming Officials &middot; Questions? Email the coordinator at " +
+      '<a href="mailto:' + R.esc(window.ADMIN_EMAIL) + '">' + R.esc(window.ADMIN_EMAIL) + "</a>" +
+      '<div class="ver"><span id="ver-note">Page version: ' + (isNaN(loaded) ? "unknown" : fmt(loaded)) + "</span> " +
+      '<button type="button" class="btn small ghost" id="ver-refresh">&#8635; Refresh</button></div>';
+    document.getElementById("ver-refresh").onclick = function () { R.refreshLatest(this); };
+    R.checkForUpdate();
   };
 })();
