@@ -57,7 +57,7 @@
       return '<a href="' + href + '" class="' + (cls || "") + (active === key ? " active" : "") + '">' + label + "</a>";
     }
     if (member) {
-      links += a("home.html", "Calendar", "home");
+      links += a("home.html", "Home", "home");
       links += a("docs.html", "Documents", "docs");
       links += a("apprentice-forms.html", "Apprentice Forms", "forms");
       links += a("how-to.html", "Get Certified", "steps");
