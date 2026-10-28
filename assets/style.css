@@ -39,7 +39,7 @@ img{max-width:100%;height:auto}
 .nav a:hover,.nav a.active{background:var(--sky)}
 .nav a.cta{background:var(--blue);color:#fff}
 .site-header .bar{flex-wrap:wrap}
-@media(min-width:820px){
+@media(min-width:1020px){
   .nav-toggle{display:none}
   .nav{display:flex;flex-direction:row;width:auto;margin-left:auto;padding:0;align-items:center}
 }

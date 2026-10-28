@@ -57,6 +57,7 @@
     if (member) {
       links += a("home.html", "Calendar", "home");
       links += a("docs.html", "Documents", "docs");
+      links += a("apprentice-forms.html", "Apprentice Forms", "forms");
       links += a("meets.html", "Meet Sign-Ups", "meets");
       if (ctx.isAdmin) links += a("admin.html", "Admin", "admin");
       links += '<a href="#" id="signout">Sign out</a>';
