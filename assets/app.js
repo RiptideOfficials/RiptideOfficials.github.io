@@ -268,6 +268,16 @@
     var f = document.getElementById("site-footer");
     if (!f) return;
     var loaded = Date.parse(document.lastModified);
+    var appEl = document.getElementById("app");
+    if (appEl && /^\s*Loading\.\.\.\s*$/.test(appEl.textContent)) {
+      f.classList.add("pending");
+      var reveal = function () { f.classList.remove("pending"); if (mo) mo.disconnect(); };
+      var mo = window.MutationObserver ? new MutationObserver(function () {
+        if (!/^\s*Loading\.\.\.\s*$/.test(appEl.textContent)) reveal();
+      }) : null;
+      if (mo) mo.observe(appEl, { childList: true, subtree: true, characterData: true });
+      setTimeout(reveal, 6000);
+    }
     f.innerHTML = "Riptide Swimming Officials &middot; Questions? Email the coordinator at " +
       '<a href="mailto:' + R.esc(window.ADMIN_EMAIL) + '">' + R.esc(window.ADMIN_EMAIL) + "</a>" +
       '<div class="ver"><span id="ver-note">Page version: ' + (isNaN(loaded) ? "unknown" : fmt(loaded)) + "</span> " +
