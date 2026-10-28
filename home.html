@@ -74,7 +74,7 @@
       var up = meets.filter(function (m) { return (m.endDate || m.date) >= todayKey; }).slice(0, 6);
       document.getElementById("upcoming").innerHTML = up.length ? up.map(function (m) {
         return "<li><div><strong>" + esc(m.title) + "</strong><br><span class=\"muted small\">" + esc(R.fmtRange(m)) +
-          (m.location ? " &middot; " + esc(m.location) : "") + '</span></div><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Sign up</a></li>';
+          (m.location ? " &middot; " + esc(m.location) : "") + '</span></div><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Meet details and sign up</a></li>';
       }).join("") : '<li class="muted">No upcoming meets yet.</li>';
     }).catch(function () {
       document.getElementById("upcoming").innerHTML = '<li><div class="msg err">Could not load meets.</div></li>';
