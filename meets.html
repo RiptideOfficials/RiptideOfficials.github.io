@@ -31,7 +31,7 @@
     if (!ctx) return;
     var app = document.getElementById("app");
     app.innerHTML = "<h1>Meet sign-ups</h1>" +
-      (ctx.isAdmin ? '<div class="btn-row" style="margin:0 0 14px"><a class="btn coord" href="admin.html#new">Add a meet</a></div>' : "") +
+      (ctx.isAdmin ? '<div class="btn-row" style="margin:0 0 14px"><a class="btn coord" href="meet-edit.html">Add a meet</a></div>' : "") +
       '<div class="card"><h2>Upcoming</h2><ul class="meet-list" id="up"><li class="muted">Loading...</li></ul></div>' +
       '<div class="card"><h2>Past meets</h2><ul class="meet-list" id="past"></ul></div>';
     var now = new Date(), key = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");

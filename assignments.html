@@ -25,7 +25,7 @@
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
 <script>
-/* Admin-only: see everyone who signed up and assign positions. */
+/* Admin-only: see everyone who signed up and assign positions, session by session. */
 (function () {
   var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
   R.footer();
@@ -42,8 +42,7 @@
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
 
     function render(m) {
-      var signups = [], contacts = {}, asg = {};
-      R.ASSIGN_GROUPS.forEach(function (g) { asg[g.key] = ((m.assignments || {})[g.key] || []).slice(); });
+      var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length), signups = [];
       var detailsUrl = "meet.html?m=" + encodeURIComponent(meetId), signupUrl = "signup.html?m=" + encodeURIComponent(meetId);
       app.innerHTML =
         '<p style="margin:0 0 10px"><a href="' + detailsUrl + '">&larr; Meet details (what officials see)</a></p>' +
@@ -52,8 +51,9 @@
         '<div class="btn-row"><a class="btn small ghost" href="' + signupUrl + '">Sign-up page</a>' +
         '<button class="btn small ghost" id="copysu" type="button">Copy sign-up link</button></div></div>' +
         '<div class="card" id="people-card"><h2>Signed up</h2><div id="people" class="muted">Loading...</div></div>' +
-        '<div class="card" id="assign-card"></div>' +
-        '<div class="card hidden" id="tools-card"></div>';
+        '<div id="assign-area"></div>' +
+        '<div class="card hidden" id="tools-card"></div>' +
+        '<div class="btn-row"><button class="btn green" type="button" id="asg-save">Save and publish</button></div><div id="asg-status" role="status"></div>';
       Array.prototype.forEach.call(app.querySelectorAll(".card"), function (c) { c.classList.add("coord-card"); });
       $("copysu").onclick = function () {
         var u = R.meetUrl(meetId).replace("meet.html", "signup.html");
@@ -61,47 +61,66 @@
       };
 
       function label(s) { return s.name + (s.team && !/^riptide$/i.test(s.team) ? " (" + s.team + ")" : ""); }
-      function asArr(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
+      function arr(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
+      function picks(s, i, kind) {
+        if (Array.isArray(s.perSession)) { var f = s.perSession.filter(function (x) { return x.i === i; })[0]; return f ? arr(f[kind]) : []; }
+        return i === 0 ? arr(kind === "work" ? s.certified : s.shadow) : [];
+      }
+      function wholeCerts(s) { return arr(s.certified).filter(function (x) { return R.WHOLE_POS.indexOf(x) >= 0; }); }
 
       function drawPeople() {
         var el = $("people");
         if (!signups.length) { el.textContent = "No sign-ups yet."; return; }
         el.className = "";
-        el.innerHTML = '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Certified in</th><th>Shadowing</th><th>Comments</th><th>Email / phone</th><th></th></tr></thead><tbody>' +
-          signups.map(function (s) { var c = contacts[s.id] || {};
-            return "<tr><td>" + esc(label(s)) + (s.session && s.session !== "All sessions" ? '<br><span class="muted small">' + esc(s.session) + "</span>" : "") +
-              "</td><td>" + esc(asArr(s.certified).join(", ") || (s.role || "")) + "</td><td>" + esc(asArr(s.shadow).join(", ")) +
-              "</td><td>" + esc(c.comments || "") + "</td><td>" + esc(c.email || "") + "<br>" + esc(c.phone || "") +
+        el.innerHTML = '<div class="table-wrap"><table class="data"><thead><tr><th>Name</th><th>Signed up for</th><th>Comments</th><th>Email / phone</th><th></th></tr></thead><tbody>' +
+          signups.map(function (s) {
+            var lines = [];
+            var w = wholeCerts(s); if (w.length) lines.push("<strong>Whole meet:</strong> " + esc(w.join(", ")));
+            n.sessions.forEach(function (x, i) {
+              var wk = picks(s, i, "work").filter(function (p) { return R.WHOLE_POS.indexOf(p) < 0 || !n.v2; }), sh = picks(s, i, "shadow");
+              if (wk.length || sh.length) lines.push("<strong>" + esc(x.name) + ":</strong> " + esc(wk.join(", ")) + (sh.length ? (wk.length ? "; " : "") + "<em>shadow " + esc(sh.join(", ")) + "</em>" : ""));
+            });
+            return "<tr><td>" + esc(label(s)) + "</td><td>" + (lines.join("<br>") || "") + "</td><td>" + esc(s.comments || "") +
+              "</td><td>" + esc(s.email || "") + "<br>" + esc(s.phone || "") +
               '</td><td><button class="btn small danger" data-remove="' + esc(s.id) + '">Remove</button></td></tr>';
           }).join("") + "</tbody></table></div>";
       }
 
+      function groupHtml(scope, g, list, sessionIndex) {
+        var first = [], rest = [];
+        signups.forEach(function (s) {
+          var ok, info;
+          if (scope === "w") { ok = arr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? g.cert : ""; }
+          else if (g.key === "shadow") { var sh = picks(s, sessionIndex, "shadow"); ok = sh.length > 0; info = ok ? "shadow " + sh.join(", ") : ""; }
+          else { var wk = picks(s, sessionIndex, "work"); ok = wk.some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ok ? wk.join(", ") : ""; }
+          var o = '<option value="' + esc(label(s)) + '">' + esc(label(s)) + (info ? " \u2014 " + esc(info) : "") + "</option>";
+          (ok ? first : rest).push(o);
+        });
+        var opts = (first.length ? '<optgroup label="' + (g.key === "shadow" ? "Wants to shadow" : "Signed up for this") + '">' + first.join("") + "</optgroup>" : "") +
+                   (rest.length ? '<optgroup label="Everyone else">' + rest.join("") + "</optgroup>" : "");
+        var id = scope + ":" + g.key;
+        return '<div class="asg-group"><h3>' + esc(g.label) + '</h3><div class="chips">' +
+          (list.length ? list.map(function (nm, i) {
+            return '<span class="chip">' + esc(nm) + ' <button type="button" aria-label="Remove ' + esc(nm) + '" data-asg-rm="' + id + ":" + i + '">&times;</button></span>';
+          }).join("") : '<span class="muted small">No one yet</span>') + "</div>" +
+          '<div class="asg-add"><select data-asg-sel="' + id + '"><option value="">Add from sign-ups...</option>' + opts + "</select>" +
+          '<input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
+      }
+      function listFor(scope) { return scope === "w" ? asg.whole : asg.sessions[+scope.slice(1)]; }
+
       function drawAssign() {
-        var card = $("assign-card");
-        card.innerHTML = '<h2>Assign positions</h2><p class="muted small">Pick people who signed up, or type a name. People certified for a position are listed first. Tap <strong>Save and publish</strong> when you are done and everyone can see the assignments on the meet details page.</p>' +
-          R.ASSIGN_GROUPS.map(function (g) {
-            var first = [], rest = [];
-            signups.forEach(function (s) {
-              var ok = g.key === "shadow" ? asArr(s.shadow).length : asArr(s.certified).some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); });
-              var info = g.key === "shadow" ? "wants to shadow " + asArr(s.shadow).join(", ") : asArr(s.certified).join(", ");
-              var o = '<option value="' + esc(label(s)) + '">' + esc(label(s)) + (info ? " \u2014 " + esc(info) : "") + "</option>";
-              (ok ? first : rest).push(o);
-            });
-            var opts = (first.length ? '<optgroup label="' + (g.key === "shadow" ? "Interested in shadowing" : "Certified") + '">' + first.join("") + "</optgroup>" : "") +
-                       (rest.length ? '<optgroup label="Everyone else">' + rest.join("") + "</optgroup>" : "");
-            return '<div class="asg-group"><h3>' + esc(g.label) + '</h3><div class="chips">' +
-              (asg[g.key].length ? asg[g.key].map(function (n, i) {
-                return '<span class="chip">' + esc(n) + ' <button type="button" aria-label="Remove ' + esc(n) + '" data-asg-rm="' + g.key + ":" + i + '">&times;</button></span>';
-              }).join("") : '<span class="muted small">No one yet</span>') + "</div>" +
-              '<div class="asg-add"><select data-asg-sel="' + g.key + '"><option value="">Add from sign-ups...</option>' + opts + "</select>" +
-              '<input data-asg-txt="' + g.key + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + g.key + '">Add</button></div></div>';
-          }).join("") +
-          '<div class="btn-row"><button class="btn green" type="button" id="asg-save">Save and publish</button></div><div id="asg-status" role="status"></div>';
+        var html = '<div class="card coord-card"><h2>Whole meet</h2>' +
+          R.WHOLE_GROUPS.map(function (g) { return groupHtml("w", g, asg.whole[g.key]); }).join("") + "</div>";
+        n.sessions.forEach(function (x, i) {
+          html += '<div class="card coord-card"><h2>' + esc(x.name) + "</h2>" + (R.sessionWhen(x) ? '<p class="muted" style="margin-top:0">' + esc(R.sessionWhen(x)) + "</p>" : "") +
+            R.SESSION_GROUPS.map(function (g) { return groupHtml("s" + i, g, asg.sessions[i][g.key], i); }).join("") + "</div>";
+        });
+        $("assign-area").innerHTML = html;
       }
 
       function drawTools() {
         var emails = [];
-        signups.forEach(function (s) { var c = contacts[s.id]; if (c && c.email && emails.indexOf(c.email) < 0) emails.push(c.email); });
+        signups.forEach(function (s) { if (s.email && emails.indexOf(s.email) < 0) emails.push(s.email); });
         var mailto = "mailto:?bcc=" + encodeURIComponent(emails.join(",")).replace(/%2C/g, ",") + "&subject=" + encodeURIComponent(m.title);
         var card = $("tools-card"); card.classList.remove("hidden");
         card.innerHTML = '<h2>Email officials</h2><div class="btn-row" style="margin-top:0">' +
@@ -114,11 +133,13 @@
 
       app.addEventListener("click", function (e) {
         var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
-        if (g("data-asg-rm")) { var pr = g("data-asg-rm").split(":"); asg[pr[0]].splice(+pr[1], 1); drawAssign(); }
-        else if (g("data-asg-add")) {
-          var k = g("data-asg-add"), sel = document.querySelector('[data-asg-sel="' + k + '"]'), txt = document.querySelector('[data-asg-txt="' + k + '"]');
-          var v = txt.value.trim() || sel.value;
-          if (v && asg[k].indexOf(v) < 0) asg[k].push(v);
+        if (g("data-asg-rm")) {
+          var pr = g("data-asg-rm").split(":"); listFor(pr[0])[pr[1]].splice(+pr[2], 1); drawAssign();
+        } else if (g("data-asg-add")) {
+          var id = g("data-asg-add"), pr2 = id.split(":");
+          var sel = document.querySelector('[data-asg-sel="' + id + '"]'), txt = document.querySelector('[data-asg-txt="' + id + '"]');
+          var v = txt.value.trim() || sel.value, list = listFor(pr2[0])[pr2[1]];
+          if (v && list.indexOf(v) < 0) list.push(v);
           drawAssign();
         } else if (t.id === "asg-save") {
           var st = $("asg-status"); t.disabled = true;
@@ -127,17 +148,15 @@
           }).catch(function () { st.innerHTML = '<div class="msg err">Could not save. Please try again.</div>'; })
             .then(function () { t.disabled = false; });
         } else if (g("data-remove")) {
-          var id = g("data-remove");
+          var rid = g("data-remove");
           if (!confirm("Remove this person's sign-up?")) return;
-          meetRef.collection("contacts").doc(id).delete().then(load)
-            .catch(function () { alert("Could not remove that sign-up."); });
+          meetRef.collection("contacts").doc(rid).delete().then(load).catch(function () { alert("Could not remove that sign-up."); });
         }
       });
 
       function load() {
         return meetRef.collection("contacts").orderBy("createdAt").get().then(function (cs) {
-          signups = []; contacts = {};
-          cs.docs.forEach(function (d) { var s = d.data(); s.id = d.id; signups.push(s); contacts[d.id] = s; });
+          signups = cs.docs.map(function (d) { var s = d.data(); s.id = d.id; return s; });
           drawPeople(); drawAssign(); drawTools();
         }).catch(function () { $("people").innerHTML = '<div class="msg err">Could not load the sign-ups.</div>'; });
       }

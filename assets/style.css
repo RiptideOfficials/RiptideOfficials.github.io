@@ -269,3 +269,6 @@ details.fold>summary::before{content:"";flex:none;width:0;height:0;border-left:1
 details.fold[open]>summary::before{transform:rotate(90deg)}
 details.fold>summary h2{margin:0}
 details.fold[open]>summary{margin-bottom:12px}
+
+.when-line{font-weight:600;color:var(--blue-dark);margin:-4px 0 10px;font-size:1.1rem}
+.card.session h3{margin:14px 0 4px;color:var(--blue-dark)}

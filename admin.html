@@ -35,21 +35,7 @@
     if (!ctx) return;
     $("app").innerHTML =
       "<h1>Admin</h1>" +
-      '<div class="card" id="meet-form-card"><h2 id="form-title">Add a meet</h2>' +
-      '<form id="mf" novalidate>' +
-      '<label for="m-title">Meet name</label><input id="m-title" placeholder="Riptide Fall Invitational" required>' +
-      '<div class="row2"><div><label for="m-date">First day</label><input id="m-date" type="date" required></div>' +
-      '<div><label for="m-end">Last day (if more than one day)</label><input id="m-end" type="date"></div></div>' +
-      '<label for="m-loc">Location</label><input id="m-loc" placeholder="Pool name and address">' +
-      '<label for="m-sessions">Sessions (one per line)</label><textarea id="m-sessions" placeholder="Saturday morning&#10;Saturday afternoon&#10;Sunday morning"></textarea>' +
-      '<div class="hint">Leave blank if officials just sign up for the whole meet.</div>' +
-      '<label for="m-roles">Positions people can say they are certified in (one per line; add " | 1" only if you need exactly that many)</label><textarea id="m-roles" rows="5"></textarea>' +
-      '<label for="m-sched">Meet details: warm-ups, meetings, etc. (one per line, "Label | time")</label><textarea id="m-sched" rows="5"></textarea>' +
-      '<label for="m-notes">Notes for officials (parking, what to wear, food, etc.)</label><textarea id="m-notes"></textarea>' +
-      '<div class="btn-row"><button class="btn green" type="submit" id="m-save">Save meet</button>' +
-      '<button class="btn ghost hidden" type="button" id="m-cancel">Cancel editing</button></div>' +
-      '<div id="m-status" role="status"></div></form></div>' +
-      '<div class="card" id="meets-card"><h2>Meets</h2><ul class="meet-list" id="meets"><li class="muted">Loading...</li></ul></div>' +
+      '<div class="card" id="meets-card"><h2>Meets</h2><div class="btn-row" style="margin:0 0 10px"><a class="btn coord" href="meet-edit.html">+ Add a meet</a></div><ul class="meet-list" id="meets"><li class="muted">Loading...</li></ul></div>' +
       '<div class="card"><h2>Private team info</h2><p class="muted small">Only approved members can see this, and it is never stored in the website files.</p>' +
       '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
       '<div class="btn-row"><button class="btn green" id="t-save" type="button">Save</button></div><div id="t-status" role="status"></div></div>' +
@@ -67,57 +53,13 @@
       if (c.id === "meets-card") d.open = true;
     });
     var bar = document.createElement("div"); bar.className = "btn-row"; bar.style.margin = "0 0 14px";
-    bar.innerHTML = '<button class="btn small coord" type="button" id="exp-all">Expand all</button><button class="btn small coord" type="button" id="col-all">Collapse all</button>';
+    bar.innerHTML = '<button class="btn small coord" type="button" id="exp-all" title="Expand all" aria-label="Expand all boxes">&#9660; All</button><button class="btn small coord" type="button" id="col-all" title="Collapse all" aria-label="Collapse all boxes">&#9654; All</button>';
     $("app").insertBefore(bar, $("app").querySelector(".card"));
     function setAll(v) { Array.prototype.forEach.call(document.querySelectorAll("#app details.fold"), function (d) { d.open = v; }); }
     $("exp-all").onclick = function () { setAll(true); };
     $("col-all").onclick = function () { setAll(false); };
-    window.openAdminCard = function (id) { var d = $(id).querySelector("details.fold"); if (d) d.open = true; };
-    if (location.hash === "#new" || new URLSearchParams(location.search).get("edit")) window.openAdminCard("meet-form-card");
 
-    var editing = null, meets = [];
-    function resetForm() {
-      editing = null;
-      $("form-title").textContent = "Add a meet";
-      $("mf").reset();
-      $("m-roles").value = DEFAULT_ROLES; $("m-sched").value = DEFAULT_SCHEDULE;
-      $("m-cancel").classList.add("hidden");
-    }
-    resetForm();
-
-    function edit(id) {
-      var m = meets.filter(function (x) { return x.id === id; })[0];
-      if (!m) return;
-      editing = id;
-      $("form-title").textContent = "Edit meet";
-      $("m-title").value = m.title || ""; $("m-date").value = m.date || ""; $("m-end").value = m.endDate || "";
-      $("m-loc").value = m.location || ""; $("m-sessions").value = m.sessions || ""; $("m-roles").value = m.roles || "";
-      $("m-sched").value = m.schedule || ""; $("m-notes").value = m.notes || "";
-      $("m-cancel").classList.remove("hidden");
-      window.openAdminCard("meet-form-card");
-      $("meet-form-card").scrollIntoView();
-    }
-    $("m-cancel").onclick = resetForm;
-
-    $("mf").addEventListener("submit", function (e) {
-      e.preventDefault();
-      var st = $("m-status");
-      var data = {
-        title: $("m-title").value.trim(), date: $("m-date").value, endDate: $("m-end").value || "",
-        location: $("m-loc").value.trim(), sessions: $("m-sessions").value.trim(), roles: $("m-roles").value.trim(),
-        schedule: $("m-sched").value.trim(), notes: $("m-notes").value.trim()
-      };
-      if (!data.title || !data.date) { st.innerHTML = '<div class="msg err">Please enter a meet name and date.</div>'; return; }
-      if (data.endDate && data.endDate < data.date) { st.innerHTML = '<div class="msg err">The last day is before the first day.</div>'; return; }
-      var ref = editing ? R.db.collection("meets").doc(editing) : R.db.collection("meets").doc(R.newId());
-      if (!editing) data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-      $("m-save").disabled = true;
-      ref.set(data, { merge: true }).then(function () {
-        st.innerHTML = '<div class="msg ok">Saved. <a href="meet.html?m=' + encodeURIComponent(ref.id) + '">Open the sign-up page</a></div>';
-        resetForm(); loadMeets();
-      }).catch(function () { st.innerHTML = '<div class="msg err">Could not save. Make sure you are signed in with your verified admin email.</div>'; })
-        .then(function () { $("m-save").disabled = false; });
-    });
+    var meets = [];
 
     function loadMeets() {
       return R.db.collection("meets").orderBy("date", "desc").get().then(function (snap) {
@@ -127,18 +69,15 @@
             '<div class="btn-row" style="margin:0"><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Open</a>' +
             '<a class="btn small coord" href="assignments.html?m=' + encodeURIComponent(m.id) + '">Assignments</a>' +
             '<button class="btn small ghost" data-copy="' + esc(m.id) + '">Copy link</button>' +
-            '<button class="btn small ghost" data-edit="' + esc(m.id) + '">Edit</button>' +
+            '<a class="btn small ghost" href="meet-edit.html?m=' + encodeURIComponent(m.id) + '">Edit</a>' +
             '<button class="btn small danger" data-del="' + esc(m.id) + '">Delete</button></div></li>';
-        }).join("") : '<li class="muted">No meets yet. Add one above.</li>';
-        var q = new URLSearchParams(location.search).get("edit");
-        if (q && !editing && !loadMeets.done) { loadMeets.done = true; edit(q); }
+        }).join("") : '<li class="muted">No meets yet.</li>';
       });
     }
 
     $("meets").addEventListener("click", function (e) {
       var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
       if (g("data-copy")) R.copyText(R.meetUrl(g("data-copy"))).then(function () { t.textContent = "Copied!"; setTimeout(function () { t.textContent = "Copy link"; }, 1500); });
-      if (g("data-edit")) edit(g("data-edit"));
       if (g("data-del")) {
         var id = g("data-del"), m = meets.filter(function (x) { return x.id === id; })[0];
         if (!confirm('Delete "' + (m ? m.title : "this meet") + '" and everyone signed up for it? This cannot be undone.')) return;

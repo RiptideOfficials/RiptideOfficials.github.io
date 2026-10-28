@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meet setup | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var R = window.Riptide, esc = R.esc, $ = function (id) { return document.getElementById(id); };
+  R.footer();
+  var meetId = new URLSearchParams(location.search).get("m");
+
+  R.requireAdmin("admin").then(function (ctx) {
+    if (!ctx) return;
+    var app = $("app"), S = [], whole = R.WHOLE_POS.slice(), legacy = false;
+
+    function blankSession(i) { return { name: "Session " + (i + 1), date: $("m-date") ? $("m-date").value : "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), notes: "" }; }
+
+    function load() {
+      if (!meetId) return Promise.resolve({ data: {}, norm: null });
+      return R.db.collection("meets").doc(meetId).get().then(function (snap) {
+        if (!snap.exists) throw new Error("missing");
+        var m = snap.data();
+        return { data: m, norm: R.normMeet(m) };
+      });
+    }
+
+    load().then(function (r) { draw(r.data, r.norm); }).catch(function () {
+      app.innerHTML = '<div class="card coord-card"><h2>Meet not found</h2><p><a href="admin.html">Back to Admin</a></p></div>';
+    });
+
+    function draw(m, n) {
+      var info = n ? n.info : {};
+      if (n && !n.v2) { // older meet: keep its text so nothing is lost
+        legacy = true;
+        var parts = [];
+        if (m.notes) parts.push(m.notes);
+        if (m.schedule) parts.push(R.parseSchedule(m.schedule).map(function (x) { return x.label + (x.value ? ": " + x.value : ""); }).join("\n"));
+        info = { parking: "", uniform: "", food: "", misc: parts.join("\n\n") };
+      }
+      S = n ? n.sessions.map(function (x) { return Object.assign({}, x); }) : [];
+      if (n) whole = n.whole.slice();
+      app.innerHTML =
+        '<p style="margin:0 0 10px"><a href="admin.html">&larr; Admin</a></p>' +
+        "<h1>" + (meetId ? "Edit meet" : "Add a meet") + "</h1>" +
+        (legacy ? '<div class="msg info">This meet was set up the older way. Its notes and times were copied into <strong>Miscellaneous</strong>. Sort them into the right boxes, then save.</div>' : "") +
+        '<form id="mf" novalidate>' +
+        '<div class="card coord-card"><h2>Meet</h2>' +
+        '<label for="m-title">Meet name</label><input id="m-title" placeholder="Jingle Bell Invite">' +
+        '<div class="row2"><div><label for="m-date">First day</label><input id="m-date" type="date"></div>' +
+        '<div><label for="m-end">Last day (if more than one day)</label><input id="m-end" type="date"></div></div>' +
+        '<label for="m-loc">Location</label><input id="m-loc" placeholder="Pool name and address"></div>' +
+        '<div class="card coord-card"><h2>Whole meet</h2><p class="muted small" style="margin-top:0">These positions cover every session, so people choose them once.</p>' +
+        '<div class="checks" id="whole">' + R.WHOLE_POS.map(function (p) {
+          return '<label class="chk"><input type="checkbox" data-whole="' + esc(p) + '"' + (whole.indexOf(p) >= 0 ? " checked" : "") + "> " + esc(p) + "</label>";
+        }).join("") + "</div></div>" +
+        '<div id="sess"></div>' +
+        '<div class="btn-row" style="margin:0 0 16px"><button class="btn coord" type="button" id="add-sess">+ Add another session</button></div>' +
+        '<div class="card coord-card"><h2>Information for officials</h2><p class="muted small" style="margin-top:0">Each box becomes its own section on the meet page. Leave a box empty to hide it.</p>' +
+        '<label for="i-parking">Parking</label><textarea id="i-parking" rows="3"></textarea>' +
+        '<label for="i-uniform">Meet uniform</label><textarea id="i-uniform" rows="3"></textarea>' +
+        '<label for="i-food">Food</label><textarea id="i-food" rows="3"></textarea>' +
+        '<label for="i-misc">Miscellaneous</label><textarea id="i-misc" rows="3"></textarea></div>' +
+        '<div class="btn-row"><button class="btn green" type="submit" id="m-save">Save meet</button><a class="btn ghost" href="admin.html">Cancel</a></div>' +
+        '<div id="m-status" role="status"></div></form>';
+      $("m-title").value = m.title || ""; $("m-date").value = m.date || ""; $("m-end").value = m.endDate || ""; $("m-loc").value = m.location || "";
+      $("i-parking").value = info.parking || ""; $("i-uniform").value = info.uniform || ""; $("i-food").value = info.food || ""; $("i-misc").value = info.misc || "";
+      if (!S.length) S.push(blankSession(0));
+      drawSessions();
+
+      $("add-sess").onclick = function () { S.push(blankSession(S.length)); drawSessions(); };
+      $("whole").addEventListener("change", function () {
+        whole = Array.prototype.map.call($("whole").querySelectorAll("input:checked"), function (i) { return i.getAttribute("data-whole"); });
+      });
+      $("sess").addEventListener("input", function (e) {
+        var t = e.target, i = t.getAttribute("data-i"), f = t.getAttribute("data-f");
+        if (i != null && f) S[+i][f] = t.value;
+      });
+      $("sess").addEventListener("change", function (e) {
+        var t = e.target, i = t.getAttribute("data-i"), f = t.getAttribute("data-list");
+        if (i == null || !f) return;
+        S[+i][f] = Array.prototype.map.call(document.querySelectorAll('#sess input[data-i="' + i + '"][data-list="' + f + '"]:checked'), function (x) { return x.value; });
+      });
+      $("sess").addEventListener("click", function (e) {
+        var i = e.target.getAttribute && e.target.getAttribute("data-remove");
+        if (i == null) return;
+        if (S.length === 1) { alert("A meet needs at least one session."); return; }
+        if (!confirm("Remove this session?")) return;
+        S.splice(+i, 1); drawSessions();
+      });
+      $("mf").addEventListener("submit", save);
+    }
+
+    function drawSessions() {
+      $("sess").innerHTML = S.map(function (x, i) {
+        function checks(list, chosen) {
+          return '<div class="checks">' + R.SESSION_POS.map(function (p) {
+            return '<label class="chk"><input type="checkbox" data-i="' + i + '" data-list="' + list + '" value="' + esc(p) + '"' + (chosen.indexOf(p) >= 0 ? " checked" : "") + "> " + esc(p) + "</label>";
+          }).join("") + "</div>";
+        }
+        return '<div class="card coord-card"><h2>' + esc(x.name || "Session " + (i + 1)) + "</h2>" +
+          '<label>Session name</label><input data-i="' + i + '" data-f="name" value="' + esc(x.name) + '">' +
+          '<div class="row2"><div><label>Date</label><input type="date" data-i="' + i + '" data-f="date" value="' + esc(x.date) + '"></div>' +
+          '<div><label>Start time</label><input type="time" data-i="' + i + '" data-f="start" value="' + esc(x.start) + '"></div></div>' +
+          "<label>Positions people can sign up for in this session</label>" + checks("positions", x.positions) +
+          "<label>Positions people can ask to shadow in this session</label>" + checks("shadow", x.shadow) +
+          '<label>Notes for officials</label><textarea rows="3" data-i="' + i + '" data-f="notes" placeholder="Warm-ups, officials meeting, timers meeting...">' + esc(x.notes) + "</textarea>" +
+          (S.length > 1 ? '<div class="btn-row"><button class="btn small danger" type="button" data-remove="' + i + '">Remove this session</button></div>' : "") + "</div>";
+      }).join("");
+    }
+
+    function save(e) {
+      e.preventDefault();
+      var st = $("m-status"), title = $("m-title").value.trim(), date = $("m-date").value, end = $("m-end").value;
+      if (!title || !date) { st.innerHTML = '<div class="msg err">Please enter a meet name and the first day.</div>'; return; }
+      if (end && end < date) { st.innerHTML = '<div class="msg err">The last day is before the first day.</div>'; return; }
+      var FV = firebase.firestore.FieldValue;
+      var data = {
+        title: title, date: date, endDate: end || "", location: $("m-loc").value.trim(),
+        wholeMeet: whole.slice(),
+        sessionList: S.map(function (x, i) { return { name: (x.name || "").trim() || "Session " + (i + 1), date: x.date || "", start: x.start || "",
+          positions: x.positions || [], shadow: x.shadow || [], notes: (x.notes || "").trim() }; }),
+        info: { parking: $("i-parking").value.trim(), uniform: $("i-uniform").value.trim(), food: $("i-food").value.trim(), misc: $("i-misc").value.trim() }
+      };
+      data.sessions = data.sessionList.map(function (x) { return x.name; }).join("\n");
+      var ref = meetId ? R.db.collection("meets").doc(meetId) : R.db.collection("meets").doc(R.newId());
+      if (!meetId) data.createdAt = FV.serverTimestamp();
+      else { data.roles = FV.delete(); data.schedule = FV.delete(); data.notes = FV.delete(); }
+      $("m-save").disabled = true;
+      ref.set(data, { merge: true }).then(function () {
+        location.href = "meet.html?m=" + encodeURIComponent(ref.id);
+      }).catch(function () {
+        st.innerHTML = '<div class="msg err">Could not save. Make sure you are signed in with your verified admin email.</div>';
+        $("m-save").disabled = false;
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>

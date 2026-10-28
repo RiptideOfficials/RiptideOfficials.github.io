@@ -58,19 +58,28 @@
 
     function render(m, key, ex, badLink) {
       var editing = !!key; ex = ex || {};
-      // The same list for every meet, for both "certified in" and "shadowing"
-      var roles = ["Meet Referee", "Admin Official", "Starter", "Stroke & Turn", "Deck Referee", "Chief Judge"].map(function (n) { return { name: n }; });
-      var shadowRoles = roles;
-      var sessions = R.lines(m.sessions); if (!sessions.length) sessions = ["All sessions"];
-      var detailsUrl = "meet.html?m=" + encodeURIComponent(meetId);
+      var n = R.normMeet(m), detailsUrl = "meet.html?m=" + encodeURIComponent(meetId);
       function has(list, v) { return (Array.isArray(list) ? list : []).indexOf(v) >= 0; }
-      function checks(name, list, chosen) {
-        return '<div class="checks">' + list.map(function (r) {
-          var v = r.name || r;
-          return '<label class="chk"><input type="checkbox" name="' + name + '" value="' + esc(v) + '"' + (has(chosen, v) ? " checked" : "") + "> " + esc(v) + "</label>";
+      function mine(i, kind) {   // what this person chose for session i
+        if (Array.isArray(ex.perSession)) {
+          var f = ex.perSession.filter(function (x) { return x.i === i; })[0];
+          return f ? (f[kind] || []) : [];
+        }
+        return i === 0 ? (kind === "work" ? (ex.certified || []) : (ex.shadow || [])) : [];   // sign-ups made before sessions existed
+      }
+      function checks(name, list, chosen, attr) {
+        return '<div class="checks">' + list.map(function (v) {
+          return '<label class="chk"><input type="checkbox" ' + attr + ' value="' + esc(v) + '"' + (has(chosen, v) ? " checked" : "") + "> " + esc(v) + "</label>";
         }).join("") + "</div>";
       }
-      var chosenSess = String(ex.session || "").split(", ");
+      var sessCards = n.sessions.map(function (x, i) {
+        var multi = n.sessions.length > 1 || n.v2;
+        return '<div class="card"><h2>' + esc(multi ? x.name : "Positions") + "</h2>" +
+          (R.sessionWhen(x) ? '<p class="when-line" style="margin-top:0">' + esc(R.sessionWhen(x)) + "</p>" : "") +
+          (x.positions.length ? "<label>I can work as (select everything you are certified in)</label>" + checks("work", x.positions, mine(i, "work"), 'data-s="' + i + '" data-k="work"') : "") +
+          (x.shadow.length ? "<label>I would like to shadow (choose as many as you like)</label>" + checks("shadow", x.shadow, mine(i, "shadow"), 'data-s="' + i + '" data-k="shadow"') : "") +
+          (!x.positions.length && !x.shadow.length ? '<p class="muted">No positions are open for this session.</p>' : "") + "</div>";
+      }).join("");
       app.innerHTML =
         '<p style="margin:0 0 10px"><a href="' + detailsUrl + '">&larr; Meet details</a></p>' +
         '<div class="card"><span class="pill green">' + (editing ? "Your sign-up" : "Sign up to work") + '</span><h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
@@ -84,9 +93,9 @@
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
         '<label for="su-team">Team / club</label><input id="su-team" placeholder="Your team or club">' +
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
-        (sessions.length > 1 ? '<div class="card"><h2>Sessions you can work</h2>' + checks("sess", sessions, chosenSess) + "</div>" : "") +
-        '<div class="card"><h2>Select everything you are certified in</h2>' + checks("cert", roles, ex.certified) + "</div>" +
-        '<div class="card"><h2>Interested in shadowing?</h2><p class="muted small" style="margin-top:0">Choose as many positions as you like.</p>' + checks("shadow", shadowRoles, ex.shadow) + "</div>" +
+        (n.whole.length ? '<div class="card"><h2>Whole meet</h2><p class="muted small" style="margin-top:0">These cover every session. Select any you are certified in.</p>' +
+          checks("whole", n.whole, ex.certified, 'data-whole="1"') + "</div>" : "") +
+        sessCards +
         '<div class="card"><h2>Comments</h2><label for="su-comments" class="muted small" style="font-weight:400">Arriving late, leaving early, or anything else we should know.</label><textarea id="su-comments" rows="3"></textarea></div>' +
         '<div class="btn-row"><button class="btn green" type="submit" id="su-btn">' + (editing ? "Save changes" : "Sign me up") + "</button>" +
         (editing ? '<button class="btn danger" type="button" id="su-cancel">Cancel my sign-up</button>' : "") + '</div><div id="su-status" role="status"></div></form>';
@@ -103,20 +112,26 @@
         $("su-name").value = p.name || ""; $("su-email").value = p.email || ctx.user.email || ""; $("su-phone").value = p.phone || ""; $("su-team").value = "Riptide";
       }
       fillMine();
-      function val(sel) { return Array.prototype.map.call(document.querySelectorAll(sel + ":checked"), function (i) { return i.value; }); }
+      function picked(sel) { return Array.prototype.map.call(document.querySelectorAll(sel + ":checked"), function (i) { return i.value; }); }
+      function uniq(a) { return a.filter(function (v, i) { return a.indexOf(v) === i; }); }
 
       $("su").addEventListener("submit", function (e) {
         e.preventDefault();
         var st = $("su-status"), btn = $("su-btn");
         var name = $("su-name").value.trim(), email = $("su-email").value.trim(), phone = $("su-phone").value.trim(),
-            team = $("su-team").value.trim(), certified = val('input[name="cert"]'), shadow = val('input[name="shadow"]'),
-            session = sessions.length > 1 ? val('input[name="sess"]').join(", ") : sessions[0], comments = $("su-comments").value.trim();
+            team = $("su-team").value.trim(), comments = $("su-comments").value.trim();
+        var wholeSel = picked("input[data-whole]"), perSession = [], workAll = [], shadowAll = [], names = [];
+        n.sessions.forEach(function (x, i) {
+          var w = picked('input[data-s="' + i + '"][data-k="work"]'), sh = picked('input[data-s="' + i + '"][data-k="shadow"]');
+          if (w.length || sh.length) { perSession.push({ i: i, work: w, shadow: sh }); names.push(x.name); }
+          workAll = workAll.concat(w); shadowAll = shadowAll.concat(sh);
+        });
+        var certified = uniq(wholeSel.concat(workAll)), shadow = uniq(shadowAll);
         if (!name || !/^\S+@\S+\.\S+$/.test(email) || !phone) { st.innerHTML = '<div class="msg err">Please fill in your name, a valid email, and your phone number.</div>'; return; }
-        if (sessions.length > 1 && !session) { st.innerHTML = '<div class="msg err">Please pick at least one session.</div>'; return; }
-        if (!certified.length && !shadow.length) { st.innerHTML = '<div class="msg err">Please select what you are certified in, or what you would like to shadow.</div>'; return; }
+        if (!certified.length && !shadow.length) { st.innerHTML = '<div class="msg err">Please select at least one position, or something you would like to shadow.</div>'; return; }
         btn.disabled = true; btn.textContent = "Saving...";
         var data = { name: name, team: team, role: (certified.join(", ") || "Shadowing").slice(0, 190), certified: certified, shadow: shadow,
-                     session: session.slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500) };
+                     perSession: perSession, session: (names.join(", ") || "Whole meet").slice(0, 190), email: email, phone: phone, comments: comments.slice(0, 500) };
         var k = key || R.newId(), ref = meetRef.collection("contacts").doc(k), p;
         if (editing) p = ref.update(data);
         else {

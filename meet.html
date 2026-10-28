@@ -41,7 +41,10 @@
       render(snap.data());
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
 
-    function notesHtml(t) {
+    function paras(t) {
+      return String(t || "").split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean).map(function (x) { return '<p class="note-p">' + esc(x) + "</p>"; }).join("");
+    }
+    function notesHtml(t) {   // older meets: a short first line is treated as a heading
       var L = String(t || "").split(/\r?\n/).map(function (x) { return x.trim(); }), out = "";
       for (var i = 0; i < L.length; i++) {
         if (!L[i]) continue;
@@ -51,37 +54,53 @@
       }
       return out;
     }
+    function listHtml(label, names) {
+      if (!names || !names.length) return "";
+      return '<div class="asg-show"><h3>' + esc(label) + "</h3><ul>" + names.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
+    }
 
     function render(m) {
-      var sched = R.parseSchedule(m.schedule), a = m.assignments || {};
+      var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length);
       var url = R.meetUrl(meetId), signupUrl = "signup.html?m=" + encodeURIComponent(meetId);
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         '<div class="meet-when"><span class="when">' + esc(R.fmtRange(m)) + "</span>" + (m.location ? '<span class="where">' + esc(m.location) + "</span>" : "") + "</div>" +
-        notesHtml(m.notes) +
+        (n.v2 ? "" : notesHtml(m.notes)) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up to work</a>' +
-        '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button>' +
-        "</div>" +
+        '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button></div>' +
         '<div id="cal-opts" class="btn-row hidden">' +
         '<a class="btn small" target="_blank" rel="noopener" href="' + esc(R.googleCalUrl(m, url)) + '">Google Calendar</a>' +
         '<a class="btn small" download="' + esc(m.title.replace(/[^\w]+/g, "-")) + '.ics" href="' + R.icsHref(m, meetId, url) + '">Apple / Outlook (.ics)</a></div>' +
         (ctx.isAdmin ? '<div class="coord-bar"><span class="coord-label">Coordinator only</span><div class="btn-row">' +
           '<a class="btn coord" href="assignments.html?m=' + encodeURIComponent(meetId) + '">Assigned positions</a>' +
-          '<a class="btn coord" href="admin.html?edit=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
+          '<a class="btn coord" href="meet-edit.html?m=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
           '<button class="btn coord" type="button" id="copylink">Copy link</button></div></div>' : "") + "</div>";
 
-      if (sched.length) {
-        html += '<div class="card"><h2>Meet details</h2><table class="sched">' + sched.map(function (s) {
+      if (n.v2) {
+        [["Parking", "parking"], ["Meet uniform", "uniform"], ["Food", "food"], ["Miscellaneous", "misc"]].forEach(function (k) {
+          if (n.info[k[1]]) html += '<div class="card"><h2>' + k[0] + "</h2>" + paras(n.info[k[1]]) + "</div>";
+        });
+      } else if (m.schedule) {
+        html += '<div class="card"><h2>Meet details</h2><table class="sched">' + R.parseSchedule(m.schedule).map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
       }
-      var any = R.ASSIGN_GROUPS.some(function (g) { return (a[g.key] || []).length; });
+
+      // whole-meet assignments
+      var wholeAny = R.WHOLE_GROUPS.some(function (g) { return asg.whole[g.key].length; });
       html += '<div class="card" id="assignments"><h2>Meet assignments</h2>';
-      if (!any) html += '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>';
-      else html += '<div class="asg-cols">' + R.ASSIGN_GROUPS.map(function (g) {
-        var list = a[g.key] || []; if (!list.length) return "";
-        return '<div class="asg-show"><h3>' + esc(g.label) + "</h3><ul>" + list.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
-      }).join("") + "</div>";
+      var anyAsg = wholeAny || asg.sessions.some(function (o) { return R.SESSION_GROUPS.some(function (g) { return o[g.key].length; }); });
+      if (!anyAsg) html += '<p class="muted">Assignments will be posted here once the coordinator has filled them in.</p>';
+      else html += '<div class="asg-cols">' + R.WHOLE_GROUPS.map(function (g) { return listHtml(g.label, asg.whole[g.key]); }).join("") + "</div>";
       html += "</div>";
+
+      // sessions
+      n.sessions.forEach(function (x, i) {
+        var o = asg.sessions[i], any = R.SESSION_GROUPS.some(function (g) { return o[g.key].length; });
+        html += '<div class="card session"><h2>' + esc(x.name) + "</h2>" +
+          (R.sessionWhen(x) ? '<p class="when-line">' + esc(R.sessionWhen(x)) + "</p>" : "") +
+          (x.notes ? "<h3>Notes for officials</h3>" + paras(x.notes) : "") +
+          (any ? "<h3>Assignments</h3>" + '<div class="asg-cols">' + R.SESSION_GROUPS.map(function (g) { return listHtml(g.label, o[g.key]); }).join("") + "</div>" : "") + "</div>";
+      });
       app.innerHTML = html;
 
       document.getElementById("cal-btn").onclick = function () { document.getElementById("cal-opts").classList.toggle("hidden"); };

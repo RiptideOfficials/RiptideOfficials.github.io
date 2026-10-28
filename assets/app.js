@@ -193,9 +193,14 @@
     return String(text || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
   };
 
-  R.ASSIGN_GROUPS = [
+  /* ---------- meets: sessions, positions, assignments ---------- */
+  R.WHOLE_POS = ["Meet Referee", "Admin Official"];                       // cover the whole meet
+  R.SESSION_POS = ["Starter", "Stroke & Turn", "Deck Referee", "Chief Judge"]; // chosen per session
+  R.WHOLE_GROUPS = [
     { key: "meetRef", label: "Meet Referee", cert: "Meet Referee" },
-    { key: "admin", label: "Admin Official", cert: "Admin Official" },
+    { key: "admin", label: "Admin Official", cert: "Admin Official" }
+  ];
+  R.SESSION_GROUPS = [
     { key: "deckRef", label: "Deck Referee", cert: "Deck Referee" },
     { key: "reliefDeckRef", label: "Relief Deck Referee", cert: "Deck Referee" },
     { key: "leadStarter", label: "Lead Starter", cert: "Starter" },
@@ -205,6 +210,38 @@
     { key: "strokeTurn", label: "Stroke & Turn", cert: "Stroke & Turn" },
     { key: "shadow", label: "Shadowing", cert: "" }
   ];
+  R.fmtTime = function (t) {
+    var m = /^(\d{1,2}):(\d{2})/.exec(t || ""); if (!m) return "";
+    var h = +m[1], ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+    return h + ":" + m[2] + " " + ap;
+  };
+  R.sessionWhen = function (x) {
+    return [x.date ? R.fmtDate(x.date) : "", x.start ? R.fmtTime(x.start) : ""].filter(Boolean).join(" at ");
+  };
+  // One shape for new meets and older ones.
+  R.normMeet = function (m) {
+    var v2 = Array.isArray(m.sessionList), sessions;
+    if (v2) {
+      sessions = m.sessionList.map(function (x, i) {
+        return { name: x.name || "Session " + (i + 1), date: x.date || "", start: x.start || "",
+          positions: x.positions || [], shadow: x.shadow || [], notes: x.notes || "" };
+      });
+    } else {
+      var lines = R.lines(m.sessions); if (!lines.length) lines = ["All sessions"];
+      sessions = lines.map(function (n) { return { name: n, date: "", start: "", positions: R.SESSION_POS.slice(), shadow: R.SESSION_POS.slice(), notes: "" }; });
+    }
+    return { v2: v2, sessions: sessions, whole: Array.isArray(m.wholeMeet) ? m.wholeMeet : R.WHOLE_POS.slice(), info: m.info || {} };
+  };
+  R.normAssign = function (m, n) {
+    var a = m.assignments || {}, out = { whole: {}, sessions: [] };
+    R.WHOLE_GROUPS.forEach(function (g) { out.whole[g.key] = ((a.whole || {})[g.key] || a[g.key] || []).slice(); });
+    for (var i = 0; i < n; i++) {
+      var src = (a.sessions && a.sessions[i]) || (i === 0 && !a.sessions ? a : {}), o = {};
+      R.SESSION_GROUPS.forEach(function (g) { o[g.key] = (src[g.key] || []).slice(); });
+      out.sessions.push(o);
+    }
+    return out;
+  };
 
   /* ---------- add to calendar ---------- */
   function addDays(iso, n) {
@@ -212,8 +249,19 @@
     return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10);
   }
   R.meetDescription = function (m, url) {
-    var lines = R.parseSchedule(m.schedule).map(function (x) { return x.label + (x.value ? ": " + x.value : ""); });
-    if (m.notes) lines.push("", m.notes);
+    var n = R.normMeet(m), lines = [];
+    if (n.v2) {
+      n.sessions.forEach(function (x) {
+        lines.push(x.name + (R.sessionWhen(x) ? ": " + R.sessionWhen(x) : ""));
+        if (x.notes) lines.push(x.notes);
+      });
+      [["Parking", "parking"], ["Meet uniform", "uniform"], ["Food", "food"], ["Other", "misc"]].forEach(function (k) {
+        if (n.info[k[1]]) lines.push("", k[0] + ": " + n.info[k[1]]);
+      });
+    } else {
+      lines = R.parseSchedule(m.schedule).map(function (x) { return x.label + (x.value ? ": " + x.value : ""); });
+      if (m.notes) lines.push("", m.notes);
+    }
     lines.push("", "Details and sign-up: " + url);
     return lines.join("\n");
   };
