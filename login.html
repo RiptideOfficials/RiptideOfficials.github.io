@@ -23,8 +23,8 @@
       <input id="in-email" type="email" autocomplete="username" required>
       <label for="in-pass">Password</label>
       <input id="in-pass" type="password" autocomplete="current-password" required>
-      <div class="btn-row"><button class="btn" type="submit">Sign in</button>
-        <button class="btn ghost" type="button" id="forgot">Forgot password</button></div>
+      <p class="small" style="margin:8px 0 0"><a href="#" id="forgot">Forgot your password?</a></p>
+      <div class="btn-row"><button class="btn" type="submit">Sign in</button></div>
     </form>
 
     <form id="form-up" class="hidden" novalidate>
@@ -90,9 +90,10 @@
       .catch(function (err) { show("err", friendly(err)); });
   });
 
-  $("forgot").onclick = function () {
+  $("forgot").onclick = function (e) {
+    e.preventDefault();
     var em = $("in-email").value.trim();
-    if (!em) return show("info", "Type your email above first, then tap Forgot password.");
+    if (!em) { $("in-email").focus(); return show("info", "Type your email address above first, then tap \"Forgot your password?\" again."); }
     R.auth.sendPasswordResetEmail(em)
       .then(function () { show("ok", "If that email has an account, a reset link is on its way."); })
       .catch(function (err) { show("err", friendly(err)); });
