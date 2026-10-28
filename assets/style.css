@@ -295,3 +295,6 @@ h2 .badge{font-size:.8rem;vertical-align:middle;margin-left:8px}
 .asg-names div{font-weight:600;color:var(--navy)}
 @media (min-width:760px){.asg-row{grid-template-columns:200px 1fr}}
 .asg-pos.shadow{color:#47660f}.shadow-h{color:#47660f}
+.asg-shadow{margin-top:16px;border-left:5px solid #7cb518;background:#f1f8e4;border-radius:0 10px 10px 0;padding:8px 14px 4px}
+.asg-shadow h4{margin:0 0 4px;font-size:1.1rem;color:#3d5c0a}
+.asg-shadow .asg-table{border-top:1px solid #cfe3a8}.asg-shadow .asg-row{border-bottom-color:#cfe3a8}

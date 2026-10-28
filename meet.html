@@ -57,13 +57,20 @@
       return out;
     }
     var ORDER = [["w", "meetRef", "Meet Referee"], ["w", "admin", "Admin Official"], ["s", "deckRef", "Deck Referee"], ["s", "leadStarter", "Lead Starter"],
-                 ["s", "reliefDeckRef", "Relief Deck Referee"], ["s", "reliefStarter", "Relief Starter"], ["s", "strokeTurn", "Stroke & Turn"], ["s", "shadow", "Shadowing"]];
+                 ["s", "reliefDeckRef", "Relief Deck Referee"], ["s", "reliefStarter", "Relief Starter"], ["s", "strokeTurn", "Stroke & Turn"]];
     function asgTable(whole, o) {   // one neat row per position, in a fixed order
       var rows = ORDER.map(function (r) {
         var names = (r[0] === "w" ? whole : o)[r[1]] || [];
         return names.length ? '<div class="asg-row"><div class="asg-pos' + (r[1] === "shadow" ? " shadow" : "") + '">' + esc(r[2]) + '</div><div class="asg-names">' + names.map(function (n) { return "<div>" + esc(n) + "</div>"; }).join("") + "</div></div>" : "";
       }).join("");
-      return '<div class="asg-table">' + rows + "</div>";
+      var sh = (o.shadow || []).map(function (e) { var i = e.indexOf(" | "); return i > 0 ? { pos: e.slice(0, i), name: e.slice(i + 3) } : { pos: "Position not listed", name: e }; });
+      var order = ["Meet Referee", "Admin Official", "Deck Referee", "Starter", "Stroke & Turn", "Chief Judge", "Position not listed"];
+      var byPos = {}; sh.forEach(function (x) { (byPos[x.pos] = byPos[x.pos] || []).push(x.name); });
+      var poss = Object.keys(byPos).sort(function (a, b) { return (order.indexOf(a) < 0 ? 99 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 99 : order.indexOf(b)); });
+      var shHtml = poss.length ? '<div class="asg-shadow"><h4>Shadowing</h4><div class="asg-table">' + poss.map(function (p) {
+        return '<div class="asg-row"><div class="asg-pos">' + esc(p) + '</div><div class="asg-names">' + byPos[p].map(function (n) { return "<div>" + esc(n) + "</div>"; }).join("") + "</div></div>";
+      }).join("") + "</div></div>" : "";
+      return '<div class="asg-table">' + rows + "</div>" + shHtml;
     }
     function listHtml(label, names) {
       if (!names || !names.length) return "";

@@ -96,18 +96,26 @@
           else if (g.key === "shadow") { var sh = picks(s, sessionIndex, "shadow"); if (sessionIndex === 0) sh = sh.concat(arr(s.shadow).filter(function (x) { return R.WHOLE_POS.indexOf(x) >= 0 && sh.indexOf(x) < 0; })); ok = sh.length > 0; info = ok ? "shadow " + sh.join(", ") : ""; }
           else { var wk = picks(s, sessionIndex, "work"); ok = wk.some(function (x) { return x.toLowerCase() === g.cert.toLowerCase(); }); info = ""; }
           if (!ok) return;
+          if (g.key === "shadow") {   // one tick per position this person wants to shadow
+            var shp = picks(s, sessionIndex, "shadow"); if (sessionIndex === 0) shp = shp.concat(arr(s.shadow).filter(function (x) { return R.WHOLE_POS.indexOf(x) >= 0 && shp.indexOf(x) < 0; }));
+            shp.forEach(function (p) {
+              var val = p + " | " + label(s); names[val] = 1;
+              cands.push('<label class="chk"><input type="checkbox" data-asg-tick="' + esc(id) + '" data-v="' + esc(val) + '"' + (list.indexOf(val) >= 0 ? " checked" : "") + "> " + esc(label(s)) + ' <span class="muted small">shadow ' + esc(p) + "</span></label>");
+            });
+            return;
+          }
           var lab = label(s); names[lab] = 1;
           var lv = s.certLevels && Object.keys(s.certLevels).filter(function (k) { return k.toLowerCase() === (g.cert || "").toLowerCase(); })[0];
           var lvTxt = lv && (s.certLevels[lv] || []).length ? s.certLevels[lv].join("/") : "";
           cands.push('<label class="chk"><input type="checkbox" data-asg-tick="' + esc(id) + '" data-v="' + esc(lab) + '"' + (list.indexOf(lab) >= 0 ? " checked" : "") + "> " + esc(lab) +
             (lvTxt ? ' <span class="chip" style="margin-left:4px">' + esc(lvTxt) + "</span>" : "") + (info && info !== "certified" ? ' <span class="muted small">' + esc(info) + "</span>" : "") + "</label>");
         });
-        var typed = list.map(function (nm, i) { return names[nm] ? "" : '<span class="chip">' + esc(nm) + ' <button type="button" aria-label="Remove ' + esc(nm) + '" data-asg-rm="' + id + ":" + i + '">&times;</button></span>'; }).join("");
+        var typed = list.map(function (nm, i) { var shown = g.key === "shadow" && nm.indexOf(" | ") > 0 ? nm.split(" | ")[1] + " \u2014 shadow " + nm.split(" | ")[0] : nm; return names[nm] ? "" : '<span class="chip">' + esc(shown) + ' <button type="button" aria-label="Remove ' + esc(nm) + '" data-asg-rm="' + id + ":" + i + '">&times;</button></span>'; }).join("");
         var claim = scope === "w" && claims[g.key] ? '<p class="small" style="margin:0 0 6px">Signed up on the sign-up page: <strong>' + esc(claims[g.key].name) + '</strong> <button type="button" class="btn small ghost" data-clear-claim="' + g.key + '">Clear</button></p>' : "";
         return '<div class="asg-group"><h3' + (g.key === "shadow" ? ' class="shadow-h"' : "") + ">" + esc(g.label) + "</h3>" + claim +
           (cands.length ? '<div class="checks">' + cands.join("") + "</div>" : '<p class="muted small" style="margin:0 0 6px">No one has signed up for this yet.</p>') +
           (typed ? '<div class="chips" style="margin-bottom:6px">' + typed + "</div>" : "") +
-          '<div class="asg-add"><input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
+          '<div class="asg-add">' + (g.key === "shadow" ? '<select data-asg-pos="' + id + '">' + R.WHOLE_POS.concat(R.SESSION_POS).map(function (p) { return "<option>" + esc(p) + "</option>"; }).join("") + "</select>" : "") + '<input data-asg-txt="' + id + '" placeholder="or type a name"><button type="button" class="btn small" data-asg-add="' + id + '">Add</button></div></div>';
       }
       function listFor(scope) { return scope === "w" ? asg.whole : asg.sessions[+scope.slice(1)]; }
 
@@ -143,7 +151,7 @@
         } else if (g("data-asg-add")) {
           var id = g("data-asg-add"), pr2 = id.split(":");
           var txt = document.querySelector('[data-asg-txt="' + id + '"]');
-          var v = txt.value.trim(), list = listFor(pr2[0])[pr2[1]];
+          var v = txt.value.trim(), ps = document.querySelector('[data-asg-pos="' + id + '"]'); if (v && ps) v = ps.value + " | " + v; var list = listFor(pr2[0])[pr2[1]];
           if (v && list.indexOf(v) < 0) list.push(v);
           drawAssign();
         } else if (t.id === "asg-save") {
