@@ -73,6 +73,43 @@
   }
   function store(page, content) { return R.db.collection("pagecontent").doc(page).set(content); }
 
+  /* ---------- uploading files (saved into the website's GitHub repo, so they get a normal link) ---------- */
+  var GH_REPO = window.GH_REPO || "RiptideOfficials/RiptideOfficials.github.io";
+  function ghToken() { try { return localStorage.getItem("ro_gh_token") || ""; } catch (x) { return ""; } }
+  function uploadFile(file, onDone, setMsg) {
+    var tok = ghToken();
+    if (!tok) { setMsg('<div class="msg err">Add your GitHub upload key first (the box at the bottom of this editor).</div>'); return; }
+    if (file.size > 25 * 1024 * 1024) { setMsg('<div class="msg err">That file is over 25 MB. Please use a smaller file.</div>'); return; }
+    var d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+    var safe = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "_");
+    var path = "docs/uploads/" + stamp + "-" + safe;
+    setMsg("Uploading " + R.esc(file.name) + "...");
+    var fr = new FileReader();
+    fr.onload = function () {
+      var b64 = String(fr.result).split(",")[1];
+      fetch("https://api.github.com/repos/" + GH_REPO + "/contents/" + path, {
+        method: "PUT",
+        headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github+json", "Content-Type": "application/json" },
+        body: JSON.stringify({ message: "Upload " + file.name + " from the website", content: b64, branch: "main" })
+      }).then(function (r) {
+        if (r.status === 201 || r.status === 200) { setMsg('<div class="msg ok">Uploaded. It can take a minute or two before people can open it.</div>'); onDone(path, file.name); }
+        else if (r.status === 401 || r.status === 403) setMsg('<div class="msg err">GitHub did not accept the upload key. Check that it has Contents: Read and write for this site.</div>');
+        else setMsg('<div class="msg err">The upload did not go through (error ' + r.status + ").</div>");
+      }).catch(function () { setMsg('<div class="msg err">Could not reach GitHub. Check your connection.</div>'); });
+    };
+    fr.readAsDataURL(file);
+  }
+  function tokenBox() {
+    var box = el("details", { class: "token-box" });
+    box.appendChild(el("summary", { text: "Upload key (one-time setup for uploading files)" }));
+    box.appendChild(el("div", { class: "small muted", html: "To upload files, this device needs a GitHub key. On GitHub: Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens &rarr; Generate new token. Pick only the <strong>RiptideOfficials.github.io</strong> repository, set <strong>Contents</strong> to <strong>Read and write</strong>, then paste the key here. It stays on this device only." }));
+    var inp = el("input", { type: "password", placeholder: "Paste your GitHub key here", value: ghToken(), autocomplete: "off" });
+    var note = el("span", { class: "small muted", text: ghToken() ? "A key is saved on this device." : "" });
+    box.appendChild(inp);
+    box.appendChild(el("div", { class: "btn-row" }, [btn("Save key", "ghost", function () { try { localStorage.setItem("ro_gh_token", inp.value.trim()); note.textContent = inp.value.trim() ? "Saved on this device." : "Key removed."; } catch (x) { note.textContent = "Could not save on this device."; } }), note]));
+    return box;
+  }
+
   /* ---------- link lists (Documents / Apprentice forms) ---------- */
   function parseList(sec) {   // the page's own markup -> groups [{heading, items:[{title,desc,url,tag,dl,dlLabel}]}]
     var groups = [], cur = null;
@@ -129,7 +166,13 @@
             inp.oninput = function () { it[f[0]] = inp.value; if (f[0] === "url") it.tag = ""; };
             row.appendChild(inp);
           });
+          var fileIn = el("input", { type: "file", style: "display:none" });
+          fileIn.onchange = function () {
+            if (!fileIn.files[0]) return;
+            uploadFile(fileIn.files[0], function (path, name) { it.url = path; it.tag = ""; it.dl = ""; if (!(it.title || "").trim()) it.title = name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " "); draw(); msg.innerHTML = '<div class="msg ok">Uploaded. It can take a minute or two before people can open it. Tap Save to finish.</div>'; }, function (h) { msg.innerHTML = h; });
+          };
           var tools = el("div", { class: "edit-tools" }, [
+            btn(it.url ? "Replace file" : "Upload file", "", function () { fileIn.click(); }), fileIn,
             btn("↑", "ghost", function () { if (ii > 0) { g.items.splice(ii - 1, 0, g.items.splice(ii, 1)[0]); draw(); } }),
             btn("↓", "ghost", function () { if (ii < g.items.length - 1) { g.items.splice(ii + 1, 0, g.items.splice(ii, 1)[0]); draw(); } }),
             btn("Remove", "danger", function () { g.items.splice(ii, 1); draw(); })
@@ -145,7 +188,7 @@
         btn("Save", "green", save), btn("Cancel", "ghost", close),
         (content.lists && content.lists[sec.id]) ? btn("Restore the original list", "danger", restore) : null
       ]);
-      ui.appendChild(bar); ui.appendChild(msg);
+      ui.appendChild(bar); ui.appendChild(msg); ui.appendChild(tokenBox());
     }
     function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); view.forEach(function (n) { n.hidden = false; }); }
     function save() {
@@ -285,7 +328,17 @@
         host.classList.add("has-pencil"); host.insertBefore(p, host.firstChild);
       }
       heads.forEach(function (h) { pencil(h, function () { editHead(h, page, content, originals[h.id], null); }); });
-      lists.forEach(function (s) { pencil(s, function () { editList(s, page, content, originals[s.id], null); }); });
+      if (lists.length) {
+        var wrap = el("div", { class: "edit-page-bar" });
+        var eb = el("button", { type: "button", class: "pencil static", html: "\u270E <span>Edit or upload files in this tab</span>" });
+        eb.onclick = function () {
+          var s = lists.filter(function (x) { return !x.hidden; })[0] || lists[0];
+          if (s.querySelector(".edit-ui")) return;
+          editList(s, page, content, originals[s.id], null);
+        };
+        wrap.appendChild(eb);
+        var g = root.querySelector(".doc-grid"); if (g) g.parentNode.insertBefore(wrap, g);
+      }
       blocks.forEach(function (h) {
         var host = h.tagName === "DETAILS" ? h : h;
         pencil(host, function () { editBlock(h, page, content, originals[h.id], null); });

@@ -340,3 +340,7 @@ details.has-pencil>.pencil{top:8px;right:40px}
 #rules ul,#contacts ul,#news ul{padding-left:20px}
 .has-pencil>h2{padding-right:84px}
 @media(min-width:1020px){.nav a{padding:7px 9px;font-size:.92rem}.nav{gap:0}}
+.edit-page-bar{display:flex;justify-content:flex-end;margin:6px 0 0}
+.pencil.static{position:static}
+.token-box{margin-top:12px;border-top:1px solid #ecd98a;padding-top:8px}
+.token-box summary{cursor:pointer;font-weight:600}
