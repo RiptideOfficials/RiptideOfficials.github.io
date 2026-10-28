@@ -62,7 +62,7 @@
       links += a("apprentice-forms.html", "Apprentice Forms", "forms");
       links += a("meets.html", "Meet Sign-Ups", "meets");
       if (ctx.isAdmin) links += a("admin.html", "Admin", "admin", "coord");
-      links += '<a href="#" id="signout">Sign out</a>';
+      links += a("account.html", "Account", "account");
     } else if (ctx && ctx.user) {
       links += a("index.html", "Home", "index");
       links += '<a href="#" id="signout">Sign out</a>';

@@ -133,7 +133,7 @@
             (editing ? "Your changes are saved" : "Thank you, " + esc(name.split(" ")[0]) + "!") + "</h1>" +
             "<p>You're signed up for <strong>" + esc(m.title) + "</strong>. The coordinator will post assignments on the meet page.</p>" +
             "<h3>Need to change something later?</h3><p>Come back to this meet's sign-up page on this phone or computer and your sign-up will open for editing" +
-            (ctx.user ? " (it is also saved to your account)" : "") + ". To open it anywhere else, save your private link:</p>" +
+            (ctx.user ? " (it is also listed under Account)" : "") + ". To open it anywhere else, save your private link:</p>" +
             '<div class="btn-row"><button class="btn" type="button" id="cp">Copy my edit link</button><a class="btn ghost" href="' + mail + '">Email me my edit link</a>' +
             '<a class="btn ghost" href="' + detailsUrl + '">See meet details</a></div></div>';
           $("cp").onclick = function () { R.copyText(link).then(function () { $("cp").textContent = "Copied!"; }); };

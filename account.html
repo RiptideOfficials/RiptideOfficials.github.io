@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Account | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var R = window.Riptide, esc = R.esc;
+  R.footer();
+  R.requireMember("account").then(function (ctx) {
+    if (!ctx) return;
+    var app = document.getElementById("app"), $ = function (id) { return document.getElementById(id); };
+    var p = ctx.profile || {};
+    app.innerHTML =
+      "<h1>My account</h1>" +
+      '<div class="card"><h2>My meets</h2><div id="mine" class="muted">Loading...</div></div>' +
+      '<div class="card"><h2>My details</h2><form id="prof" novalidate>' +
+      '<label for="a-name">Name</label><input id="a-name" autocomplete="name">' +
+      '<label for="a-phone">Phone</label><input id="a-phone" type="tel" autocomplete="tel">' +
+      '<label>Email</label><div class="muted" style="margin-bottom:10px">' + esc(ctx.user.email) + "</div>" +
+      '<div class="btn-row"><button class="btn" type="submit">Save details</button></div><div id="prof-st" role="status"></div></form></div>' +
+      '<div class="card"><h2>Change password</h2><form id="pw" novalidate>' +
+      '<label for="pw-cur">Current password</label><input id="pw-cur" type="password" autocomplete="current-password">' +
+      '<label for="pw-new">New password</label><input id="pw-new" type="password" autocomplete="new-password">' +
+      '<label for="pw-new2">Type the new password again</label><input id="pw-new2" type="password" autocomplete="new-password">' +
+      '<div class="btn-row"><button class="btn" type="submit">Change password</button></div><div id="pw-st" role="status"></div></form></div>' +
+      '<div class="btn-row"><button class="btn ghost" id="so" type="button">Sign out</button></div>';
+    $("a-name").value = p.name || ""; $("a-phone").value = p.phone || "";
+    $("so").onclick = function () { R.auth.signOut().then(function () { location.href = "index.html"; }); };
+
+    // meets I've signed up for
+    R.db.collection("users").doc(ctx.user.uid).collection("mysignups").get().then(function (snap) {
+      var ids = snap.docs.map(function (d) { return d.id; });
+      if (!ids.length) { $("mine").textContent = "You haven't signed up for a meet yet. Find one on the Calendar or Meet Sign-Ups page."; return; }
+      return Promise.all(ids.map(function (id) {
+        return R.db.collection("meets").doc(id).get().then(function (m) { return m.exists ? Object.assign({ id: id }, m.data()) : null; }).catch(function () { return null; });
+      })).then(function (meets) {
+        meets = meets.filter(Boolean).sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+        if (!meets.length) { $("mine").textContent = "You haven't signed up for a meet yet."; return; }
+        $("mine").className = "";
+        $("mine").innerHTML = '<ul class="meet-list">' + meets.map(function (m) {
+          return "<li><div><strong>" + esc(m.title) + '</strong><br><span class="muted small">' + esc(R.fmtRange(m)) + (m.location ? " &middot; " + esc(m.location) : "") + "</span></div>" +
+            '<div class="btn-row" style="margin:0"><a class="btn small" href="meet.html?m=' + encodeURIComponent(m.id) + '">Meet details</a>' +
+            '<a class="btn small ghost" href="signup.html?m=' + encodeURIComponent(m.id) + '">My sign-up</a></div></li>';
+        }).join("") + "</ul>";
+      });
+    }).catch(function () { $("mine").innerHTML = '<div class="msg err">Could not load your meets.</div>'; });
+
+    $("prof").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var name = $("a-name").value.trim(), st = $("prof-st");
+      if (!name) { st.innerHTML = '<div class="msg err">Please enter your name.</div>'; return; }
+      R.db.collection("users").doc(ctx.user.uid).update({ name: name, phone: $("a-phone").value.trim() })
+        .then(function () { st.innerHTML = '<div class="msg ok">Saved.</div>'; })
+        .catch(function () { st.innerHTML = '<div class="msg err">Could not save. Please try again.</div>'; });
+    });
+
+    $("pw").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var st = $("pw-st"), cur = $("pw-cur").value, n1 = $("pw-new").value, n2 = $("pw-new2").value;
+      if (!cur) { st.innerHTML = '<div class="msg err">Please type your current password.</div>'; return; }
+      if (n1.length < 6) { st.innerHTML = '<div class="msg err">The new password needs at least 6 characters.</div>'; return; }
+      if (n1 !== n2) { st.innerHTML = '<div class="msg err">The two new passwords don\'t match.</div>'; return; }
+      var u = R.auth.currentUser;
+      u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, cur))
+        .then(function () { return u.updatePassword(n1); })
+        .then(function () { $("pw").reset(); st.innerHTML = '<div class="msg ok">Your password was changed.</div>'; })
+        .catch(function (err) {
+          var c = err && err.code, msg = "Sorry, that didn't work. Please try again.";
+          if (c === "auth/wrong-password" || c === "auth/invalid-credential" || c === "auth/invalid-login-credentials") msg = "Your current password isn't right.";
+          else if (c === "auth/weak-password") msg = "That new password is too weak. Try a longer one.";
+          else if (c === "auth/too-many-requests") msg = "Too many tries. Please wait a few minutes and try again.";
+          st.innerHTML = '<div class="msg err">' + msg + "</div>";
+        });
+    });
+  });
+})();
+</script>
+</body>
+</html>
