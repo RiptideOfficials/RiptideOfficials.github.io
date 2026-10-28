@@ -349,3 +349,10 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .home-grid{display:grid;gap:0;grid-template-columns:1fr}
 .home-grid>.card{margin-bottom:18px}
 @media (min-width:900px){.home-grid{grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}.home-grid>.card{margin-bottom:0}}
+
+.home-layout{display:grid;gap:0;grid-template-columns:1fr}
+.home-layout .card{margin-bottom:18px}
+@media (min-width:900px){
+  .home-layout{grid-template-columns:300px 1fr;gap:22px;align-items:start;grid-template-areas:"side main"}
+  .home-side{grid-area:side}.home-main{grid-area:main}
+}
