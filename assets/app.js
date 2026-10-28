@@ -8,6 +8,8 @@
     firebase.initializeApp(cfg);
     R.auth = firebase.auth();
     R.db = firebase.firestore();
+    // helps phones/networks where the default connection stalls
+    try { R.db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
   }
 
   R.esc = function (s) {
@@ -92,11 +94,18 @@
   R.getContext = function () {
     return new Promise(function (resolve) {
       if (!configured) return resolve({ user: null, member: false, isAdmin: false });
+      var timer = setTimeout(function () {
+        resolve({ user: null, member: false, isAdmin: false, timedOut: true });
+      }, 15000);
       var unsub = R.auth.onAuthStateChanged(function (user) {
-        unsub();
+        unsub(); clearTimeout(timer);
         if (!user) return resolve({ user: null, member: false, isAdmin: false });
         var isOwner = R.isAdminUser(user);
+        var gt = setTimeout(function () {
+          resolve({ user: user, profile: null, isOwner: isOwner, isAdmin: isOwner, member: isOwner, timedOut: true });
+        }, 12000);
         R.db.collection("users").doc(user.uid).get().then(function (snap) {
+          clearTimeout(gt);
           var profile = snap.exists ? snap.data() : null;
           if (isOwner && profile && !profile.approved) {
             // admin approves themselves once their email is verified
@@ -107,6 +116,7 @@
           resolve({ user: user, profile: profile, isOwner: isOwner, isAdmin: isAdmin,
             member: isAdmin || !!(profile && profile.approved) });
         }).catch(function () {
+          clearTimeout(gt);
           resolve({ user: user, profile: null, isOwner: isOwner, isAdmin: isOwner, member: isOwner });
         });
       });
@@ -127,6 +137,10 @@
         return null;
       }
       R.renderHeader(ctx, active);
+      if (!ctx.member && ctx.timedOut) {
+        app.innerHTML = '<div class="card"><h2>Having trouble connecting</h2><p>The site could not reach the server. Check your connection, then tap Refresh below.</p></div>';
+        return null;
+      }
       if (!ctx.member) {
         var verifyNote = !ctx.isOwner && ctx.user.email &&
           String(ctx.user.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase() && !ctx.user.emailVerified
@@ -196,6 +210,21 @@
       document.body.removeChild(t); res();
     });
   };
+
+  /* ---------- never leave a page stuck on "Loading..." ---------- */
+  function stuckGuard(detail) {
+    var app = document.getElementById("app");
+    if (!app || !/^\s*Loading\.\.\.\s*$/.test(app.textContent)) return;
+    app.innerHTML = '<div class="card"><h2>This page did not finish loading</h2>' +
+      "<p>Tap Refresh below, or sign in again. If it keeps happening, email the coordinator.</p>" +
+      '<div class="btn-row"><a class="btn" href="login.html">Sign in</a> <a class="btn ghost" href="home.html">Calendar</a></div>' +
+      (detail ? '<p class="muted small">' + R.esc(detail) + "</p>" : "") + "</div>";
+  }
+  window.addEventListener("error", function (e) { stuckGuard(e && e.message); });
+  window.addEventListener("unhandledrejection", function (e) {
+    stuckGuard(e && e.reason && (e.reason.message || String(e.reason)));
+  });
+  setTimeout(function () { stuckGuard("Timed out waiting for the page."); }, 20000);
 
   /* ---------- footer: version time + refresh ---------- */
   function fmt(ms) {
