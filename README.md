@@ -20,6 +20,7 @@ Live at https://riptideofficials.github.io once published.
 - **Email everyone for a meet:** open the meet > Coordinator tools > Email officials.
 - **Team registration link (private):** Admin > Private team info. It lives in the database, not in the website files, and only approved members can see it.
 - **Add another admin (e.g. a second Meet Ref):** they create an account, then Admin > Members > Approve > **Make admin**. Admins can add/edit meets, email officials, see contact details, and approve members. Only you (the owner) can make or remove admins.
+- **How-to pages:** Documents > Training has checklist pages (How to become an official, Register with USA Swimming) that save each member's progress, plus a Timer briefing checklist. Each has a Word download and a Print button.
 - **Approve new members:** Admin > Members > Approve.
 - **Interest form:** goes to whpeterson@gmail.com through formsubmit.co. The first submission sends you a one-time activation email; click it.
 

@@ -63,6 +63,14 @@ service cloud.firestore {
             && adminUnchanged()
             && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'admin', 'createdAt']));
       allow delete: if isAdmin();
+
+      // Each member's checklist progress on the how-to pages. Only that member can read or write it.
+      match /progress/{pageKey} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow write: if signedIn() && request.auth.uid == uid && isMember()
+          && request.resource.data.keys().hasOnly(['done', 'updatedAt'])
+          && request.resource.data.done is list && request.resource.data.done.size() <= 100;
+      }
     }
 
     // Team-only info (e.g. the team's USA Swimming registration link). Approved members read; only admin writes.
