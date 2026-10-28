@@ -114,7 +114,7 @@
         body.textContent = "The coordinator hasn't added the link yet. Email " + window.ADMIN_EMAIL + ".";
       }
     }).catch(function () { document.getElementById("team-link-body").textContent = "Could not load the link."; });
-    if (location.hash) { var t = document.querySelector(location.hash); if (t) t.scrollIntoView(); }
+    R.docTabs(app);
   });
 })();
 </script>

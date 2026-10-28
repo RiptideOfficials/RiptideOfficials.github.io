@@ -286,9 +286,9 @@ details.fold[open]>summary{margin-bottom:12px}
 .chk2 .lv{display:inline-flex;gap:8px}
 .chk2 .lvl{display:inline-flex;align-items:center;gap:5px;margin:0;font-weight:700;font-size:.9rem;padding:4px 9px;border-radius:8px;background:var(--sky);color:var(--navy);cursor:pointer}
 .chk2 .lvl input{width:18px;height:18px}
-.badge{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:#d63a2f;color:#fff;font-size:.78rem;font-weight:700;line-height:1.35;text-align:center;vertical-align:middle}
-.badge[hidden]{display:none}
-h2 .badge{font-size:.8rem;vertical-align:middle;margin-left:8px}
+.cnt{display:inline-block;min-width:20px;padding:1px 6px;margin-left:6px;border-radius:999px;background:#d63a2f;color:#fff;font-size:.78rem;font-weight:700;line-height:1.35;text-align:center;vertical-align:middle}
+.cnt[hidden]{display:none}
+h2 .cnt{font-size:.8rem;vertical-align:middle;margin-left:8px}
 .asg-table{margin:4px 0 0;border-top:1px solid var(--line)}
 .asg-row{display:grid;grid-template-columns:130px 1fr;gap:4px 14px;padding:9px 0;border-bottom:1px solid var(--line);align-items:start}
 .asg-pos{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
@@ -298,3 +298,14 @@ h2 .badge{font-size:.8rem;vertical-align:middle;margin-left:8px}
 .asg-shadow{margin-top:16px;border-left:5px solid #7cb518;background:#f1f8e4;border-radius:0 10px 10px 0;padding:8px 14px 4px}
 .asg-shadow h4{margin:0 0 4px;font-size:1.1rem;color:#3d5c0a}
 .asg-shadow .asg-table{border-top:1px solid #cfe3a8}.asg-shadow .asg-row{border-bottom-color:#cfe3a8}
+
+/* tabbed document pages */
+.doc-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 16px}
+.doc-tabs button{font:inherit;font-weight:600;padding:9px 16px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--navy);cursor:pointer}
+.doc-tabs button:hover{background:var(--sky)}
+.doc-tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.doc-grid.tabbed{display:block}
+.doc-grid.tabbed>.card{margin-bottom:0}
+.doc-grid.tabbed>.card[hidden]{display:none}
+.doc-grid.tabbed .doc-list li:nth-child(even){background:#f7fafc}
+.doc-grid.tabbed h2{margin-top:0}

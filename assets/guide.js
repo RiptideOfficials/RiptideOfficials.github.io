@@ -10,6 +10,7 @@
       var app = document.getElementById("app");
       app.innerHTML = "";
       app.appendChild(document.getElementById("content").content.cloneNode(true));
+      if (R.docTabs) R.docTabs(app);
 
       var boxes = Array.prototype.slice.call(app.querySelectorAll("input.stepbox"));
       var progress = document.getElementById("progress");

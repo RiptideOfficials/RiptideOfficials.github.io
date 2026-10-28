@@ -96,13 +96,37 @@
     if (!adm || !R.db) return;
     var cnt = 0, left = 2, done = function (add) {
       cnt += add; if (--left) return;
-      Array.prototype.forEach.call(adm.querySelectorAll(".badge"), function (x) { x.remove(); });
-      if (cnt > 0) { var b = document.createElement("span"); b.className = "badge"; b.textContent = cnt > 99 ? "99+" : cnt; b.title = cnt + " waiting"; adm.appendChild(b); }
+      Array.prototype.forEach.call(adm.querySelectorAll(".cnt"), function (x) { x.remove(); });
+      if (cnt > 0) { var b = document.createElement("span"); b.className = "cnt"; b.textContent = cnt > 99 ? "99+" : cnt; b.title = cnt + " waiting"; adm.appendChild(b); }
     };
     try {
       R.db.collection("users").get().then(function (q) { var k = 0; q.docs.forEach(function (d) { if (!d.data().approved) k++; }); done(k); }).catch(function () { done(0); });
       R.db.collection("interest").get().then(function (q) { var k = 0; q.docs.forEach(function (d) { if (!d.data().responded) k++; }); done(k); }).catch(function () { done(0); });
     } catch (x) {}
+  };
+
+  // Turn a page's stack of document boxes into one tab per box (only one shows at a time)
+  R.docTabs = function (root) {
+    var grid = root.querySelector(".doc-grid"); if (!grid) return;
+    var secs = Array.prototype.slice.call(grid.querySelectorAll(":scope > section.doc-section"));
+    if (secs.length < 2) return;
+    var NAMES = { training: "Getting started", "stroke-turn": "Stroke & Turn", starter: "Starter", "deck-referee": "Deck Referee", apparel: "Apparel", general: "General", "meet-referee": "Meet Ref / Deck Ref", admin: "Admin Official", "chief-judge": "Chief Judge", reference: "Reference" };
+    var bar = document.createElement("div"); bar.className = "doc-tabs"; bar.setAttribute("role", "tablist");
+    function show(id) {
+      secs.forEach(function (s) { s.hidden = s.id !== id; });
+      Array.prototype.forEach.call(bar.children, function (b) { b.classList.toggle("on", b.getAttribute("data-t") === id); b.setAttribute("aria-selected", b.getAttribute("data-t") === id); });
+      try { history.replaceState(null, "", "#" + id); } catch (e) {}
+    }
+    secs.forEach(function (s) {
+      var b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("data-t", s.id);
+      b.textContent = NAMES[s.id] || (s.querySelector("h2") ? s.querySelector("h2").textContent : s.id);
+      b.onclick = function () { show(s.id); };
+      bar.appendChild(b);
+    });
+    grid.classList.add("tabbed"); grid.parentNode.insertBefore(bar, grid);
+    var jump = root.querySelector("p.muted a[href^='#']"); if (jump) jump.parentNode.hidden = true;   // old "Jump to" line
+    var want = (location.hash || "").slice(1);
+    show(secs.some(function (s) { return s.id === want; }) ? want : secs[0].id);
   };
 
   /* ---------- auth context ---------- */
