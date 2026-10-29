@@ -115,7 +115,7 @@
       return R.db.collection("users").doc(u.uid).set({
         name: name, email: email, phone: phone, approved: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(function () { if (String(email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase()) return u.sendEmailVerification().catch(function () {}); })   // only the owner account needs a verified email
+      }).then(function () { return u.sendEmailVerification().catch(function () {}); })
         .then(function () {
           // Best-effort heads-up email to the coordinator (name and email only, no phone).
           if (String(email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase()) return;
