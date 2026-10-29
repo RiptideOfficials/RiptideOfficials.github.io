@@ -202,6 +202,7 @@
         app.innerHTML = '<div class="card"><h2>Waiting for approval</h2>' +
           "<p>Your account has been created. The Riptide officials coordinator needs to approve it before you can see the meets, documents, and sign-ups.</p>" +
           verifyNote +
+          (ctx.user.emailVerified ? "" : "<p><strong>Once you are approved, please verify your email.</strong> We sent a verification message to your inbox (check spam too). Tap the link in it.</p>") +
           '<p class="muted small">Signed in as ' + R.esc(ctx.user.email) + "</p></div>";
         return null;
       }
