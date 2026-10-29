@@ -75,7 +75,7 @@
       }
       var CL = ex.certLevels || {};
       function lvBox(v, on) {   // "N2" / "N3" tickers next to a position the person is certified in
-        return '<span class="lv"' + (on ? "" : ' style="display:none"') + ">" + ["N2", "N3"].map(function (L) {
+        return '<span class="lv' + (on ? "" : " off") + '">' + ["N2", "N3"].map(function (L) {
           return '<label class="lvl"><input type="checkbox" data-lv="' + L + '" data-pos="' + esc(v) + '"' + (has(CL[v], L) ? " checked" : "") + "> " + L + "</label>";
         }).join("") + "</span>";
       }
@@ -84,7 +84,7 @@
         return '<div class="chk2"><label class="pos"><input type="checkbox" data-certonly="1" value="Admin Official"' + (on ? " checked" : "") + "> Admin Official</label>" + lvBox("Admin Official", on) + "</div>";
       }
       function checks(name, list, chosen, attr) {
-        return '<div class="checks">' + list.map(function (v) {
+        return '<div class="checks' + (name === "work" ? " certs" : "") + '">' + list.map(function (v) {
           var on = name === "work" && has(chosen, v);
           if (name !== "work") return '<label class="chk"><input type="checkbox" ' + attr + ' value="' + esc(v) + '"' + (on || has(chosen, v) ? " checked" : "") + "> " + esc(v) + "</label>";
           return '<div class="chk2"><label class="pos"><input type="checkbox" ' + attr + ' value="' + esc(v) + '"' + (on ? " checked" : "") + "> " + esc(v) + "</label>" + lvBox(v, on) + "</div>";
@@ -100,7 +100,7 @@
         var dTitle = single && x.date ? new Date(x.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "";
         return '<div class="card"><h2>' + esc(single ? (dTitle || "Positions") : x.name) + "</h2>" +
           (R.sessionWhen(x) ? '<p class="when-line" style="margin-top:0">' + esc(R.sessionWhen(x)) + "</p>" : "") +
-          (x.positions.length ? "<label>Select all of your certifications, and tick N2 and/or N3 for your national certification levels</label>" + checks("work", x.positions, mine(i, "work"), 'data-s="' + i + '" data-k="work"').replace(/<\/div>$/, i === 0 ? adminCert() + "</div>" : "</div>") : "") +
+          (x.positions.length ? "<label>Which positions are you certified in?</label><p class=\"hint\" style=\"margin:0 0 8px\">Tick each position you are certified in. If you hold a national certification level (N2 or N3) for it, tick that too.</p>" + checks("work", x.positions, mine(i, "work"), 'data-s="' + i + '" data-k="work"').replace(/<\/div>$/, i === 0 ? adminCert() + "</div>" : "</div>") : "") +
           (x.shadow.length || wsh.length ? "<label>I would like to shadow (choose as many as you like)</label>" + wshadowChecks(wsh) + checks("shadow", x.shadow, mine(i, "shadow"), 'data-s="' + i + '" data-k="shadow"').replace(/^<div class="checks">/, x.shadow.length ? '<div class="checks">' : '<div class="checks" style="display:none">') : "") +
           (!x.positions.length && !x.shadow.length && !wsh.length ? '<p class="muted">No positions are open for this session.</p>' : "") + "</div>";
       }).join("");
@@ -117,7 +117,7 @@
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
         '<label for="su-team">Team / club</label><input id="su-team" placeholder="Your team or club">' +
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
-        (n.whole.length ? '<div class="card"><h2>Meet Referee and Admin Official</h2><div class="checks">' + n.whole.map(function (p) {
+        (n.whole.length ? '<div class="card"><h2>Meet Referee and Admin Official</h2><div class="checks certs">' + n.whole.map(function (p) {
           var c = claims[WK[p]], isMine = editing && has(ex.certified, p);
           if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + ' &mdash; ' + esc(c.name) + "</div>";
           return '<div class="chk2"><label class="pos"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>" + lvBox(p, isMine) + "</div>";
@@ -152,7 +152,7 @@
           var dr = JSON.parse(localStorage.getItem(DK) || "null"), fl = formFields();
           if (dr && dr.length === fl.length) {
             fl.forEach(function (f, i) {
-              if (f.type === "checkbox") { f.checked = !!dr[i]; var w = f.closest && f.closest(".chk2"); var lv = w && !f.hasAttribute("data-lv") && w.querySelector(".lv"); if (lv) lv.style.display = f.checked ? "" : "none"; }
+              if (f.type === "checkbox") { f.checked = !!dr[i]; var w = f.closest && f.closest(".chk2"); var lv = w && !f.hasAttribute("data-lv") && w.querySelector(".lv"); if (lv) lv.classList.toggle("off", !f.checked); }
               else if (dr[i] !== "" || !f.value) f.value = dr[i];
             });
             $("su-status").innerHTML = '<div class="msg info">Welcome back. Your saved answers are filled in below.</div>';
@@ -167,8 +167,11 @@
       };
       document.getElementById("su").addEventListener("change", function (e) {
         var t = e.target;
-        if (t.type === "checkbox" && t.closest && t.closest(".chk2") && !t.hasAttribute("data-lv")) {
-          var lv = t.closest(".chk2").querySelector(".lv"); if (lv) lv.style.display = t.checked ? "" : "none";
+        if (t.type === "checkbox" && t.closest && t.closest(".chk2")) {
+          var row = t.closest(".chk2"), lv = row.querySelector(".lv"), posBox = row.querySelector(".pos input");
+          if (t.hasAttribute("data-lv")) { if (t.checked && posBox && !posBox.checked) posBox.checked = true; }   // ticking N2/N3 also ticks the position
+          else if (!t.checked) Array.prototype.forEach.call(row.querySelectorAll("input[data-lv]"), function (b) { b.checked = false; });
+          if (lv && posBox) lv.classList.toggle("off", !posBox.checked);
         }
       });
       function picked(sel) { return Array.prototype.map.call(document.querySelectorAll(sel + ":checked"), function (i) { return i.value; }); }

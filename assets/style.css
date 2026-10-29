@@ -403,3 +403,9 @@ details.has-pencil>.pencil{top:8px;right:40px}
 @media print{.card{border:1px solid #bbb}}
 .card.past-card{border-color:#b5d98a;border-left-color:var(--green)}
 .card.past-card h2{color:var(--green-dark)}
+
+/* certifications: one clear row per position, N2 / N3 always visible */
+.checks.certs{grid-template-columns:1fr!important}
+.chk2 .lv{margin-left:auto}
+.chk2 .lv.off{opacity:.45}
+@media(max-width:480px){.chk2 .lv{margin-left:30px}}
