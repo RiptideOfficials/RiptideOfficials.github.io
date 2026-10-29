@@ -46,9 +46,9 @@
       '<h3>Restore from a backup</h3><p class="muted small" style="margin-top:0">Puts meets, sign-ups, assignments, edited pages and interested people back from a backup file. Anything with the same ID is replaced by the backup version. Member accounts are not restored, since people sign in with their own passwords.</p>' +
       '<input type="file" id="bk-file" accept=".json,application/json"> <div class="btn-row"><button class="btn ghost" type="button" id="bk-import" disabled>Restore this backup</button></div>' +
       '<div id="bk-msg" role="status"></div></div>' +
-      '<div class="card" id="badge-card" hidden><h2>Home screen icon number</h2>' +
-      '<p class="muted small" style="margin-top:0">Shows the red count on the Riptide icon on your phone. It updates each time you open the app, so it is not a live alert. Needs the site added to your home screen, and you must allow notifications once.</p>' +
-      '<div class="btn-row" style="margin-top:0"><button class="btn" type="button" id="badge-on">Turn on the icon number</button></div><div id="badge-msg" role="status"></div></div>' +
+      '<div class="card" id="badge-card" hidden><h2>Phone alerts</h2>' +
+      '<p class="muted small" style="margin-top:0">Get an alert on this phone when someone creates an account or signs up as interested, and keep the red number on the Riptide icon up to date. Needs the site added to your home screen. Tap the button once and allow notifications.</p>' +
+      '<div class="btn-row" style="margin-top:0"><button class="btn" type="button" id="badge-on">Turn on phone alerts</button></div><div id="badge-msg" role="status"></div></div>' +
       '<div class="card" id="meets-card"><h2>Meets</h2><div class="btn-row" style="margin:0 0 10px"><a class="btn coord" href="meet-edit.html">+ Add a meet</a></div><ul class="meet-list" id="meets"><li class="muted">Loading...</li></ul></div>' +
       '<div class="card"><h2>Private team info</h2><p class="muted small">Only approved members can see this, and it is never stored in the website files.</p>' +
       '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
@@ -103,19 +103,29 @@
     };
 
 
-    // ----- home screen icon number (needs notification permission on iPhone) -----
+    // ----- phone alerts + home screen icon number (Web Push; iPhone needs the home-screen app) -----
     (function () {
-      var card = $("badge-card");
-      if (!card || !("setAppBadge" in navigator) || !("Notification" in window)) return;
+      var card = $("badge-card"); if (!card) return;
       var standalone = window.navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
-      if (Notification.permission === "granted") return;
+      var can = ("serviceWorker" in navigator) && ("PushManager" in window) && ("Notification" in window);
+      var msg = function (c, t) { $("badge-msg").innerHTML = '<div class="msg ' + c + '">' + t + '</div>'; };
+      function b64(k) { var p = "=".repeat((4 - k.length % 4) % 4), r = atob((k + p).replace(/-/g, "+").replace(/_/g, "/")), o = new Uint8Array(r.length); for (var i = 0; i < r.length; i++) o[i] = r.charCodeAt(i); return o; }
+      function save(sub) { return R.db.collection("adminpush").doc(R.auth.currentUser.uid).set({ sub: JSON.stringify(sub), ua: navigator.userAgent.slice(0, 120), at: firebase.firestore.FieldValue.serverTimestamp() }); }
+      function enable() {
+        return Notification.requestPermission().then(function (p) {
+          if (p !== "granted") throw new Error("Notifications were not allowed. You can allow them in your phone settings under Riptide Officials.");
+          return navigator.serviceWorker.register("sw.js").then(function () { return navigator.serviceWorker.ready; });
+        }).then(function (reg) {
+          return reg.pushManager.getSubscription().then(function (s) { return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(window.VAPID_PUBLIC_KEY) }); });
+        }).then(function (s) { return save(s.toJSON()); });
+      }
+      if (!can) { card.hidden = false; $("badge-on").hidden = true; msg("info", standalone ? "This phone or browser does not support alerts." : "Open the site from the icon on your home screen first (iPhone needs iOS 16.4 or newer), then come back to this box."); return; }
       card.hidden = false;
-      if (!standalone) $("badge-msg").innerHTML = '<div class="msg info">Open the site from the icon on your home screen first, then come back to this box.</div>';
+      if (!standalone && /iphone|ipad/i.test(navigator.userAgent)) msg("info", "Open the site from the icon on your home screen first, then come back to this box.");
+      if (Notification.permission === "granted") { enable().then(function () { $("badge-on").textContent = "Phone alerts are on"; msg("ok", "On. You will get an alert about every 15 minutes at most after someone signs up, and the icon number updates."); }).catch(function () {}); }
       $("badge-on").onclick = function () {
-        Notification.requestPermission().then(function (p) {
-          if (p === "granted") { R.adminBadge(); $("badge-msg").innerHTML = '<div class="msg ok">On. The number on the icon updates each time you open the app.</div>'; }
-          else $("badge-msg").innerHTML = '<div class="msg err">Notifications were not allowed, so the icon number cannot show. You can allow them in your phone settings under Riptide Officials.</div>';
-        });
+        enable().then(function () { R.adminBadge(); $("badge-on").textContent = "Phone alerts are on"; msg("ok", "On. This phone will now get an alert (and the icon number will update) within about 15 minutes of someone signing up."); })
+          .catch(function (e) { msg("err", (e && e.message) || "Could not turn on alerts."); });
       };
     })();
     // ----- backup / restore -----

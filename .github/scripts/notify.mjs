@@ -73,6 +73,7 @@ const newInterest = interest.filter((d) => !notified.includes("i:" + idOf(d)));
 
 console.log(`waiting: ${users.length} account(s), ${interest.length} interested; new: ${newUsers.length} + ${newInterest.length}`);
 if (!newUsers.length && !newInterest.length) process.exit(0);
+const total = users.length + interest.length;
 
 const parts = [];
 if (newUsers.length) parts.push(`${newUsers.length} new account${newUsers.length > 1 ? "s" : ""} waiting for approval`);
@@ -82,6 +83,25 @@ const issue = await gh("issues", "POST", {
   body: `@${MENTION} ${parts.join(" and ")}.\n\nOpen the Admin page to see who: ${SITE}admin.html\n\n(This message has no names or contact details on purpose.)`
 });
 await gh(`issues/${issue.number}`, "PATCH", { state: "closed" });
+
+// Phone alerts (Web Push) to every admin phone that turned them on. Best effort: never stops the run.
+try {
+  const { VAPID_PRIVATE_KEY } = process.env;
+  const pub = /VAPID_PUBLIC_KEY\s*=\s*"([^"]+)"/.exec(cfgText)?.[1];
+  if (VAPID_PRIVATE_KEY && pub) {
+    const webpush = (await import("web-push")).default;
+    webpush.setVapidDetails("mailto:" + (process.env.VAPID_CONTACT || "whpeterson@gmail.com"), pub, VAPID_PRIVATE_KEY);
+    const subs = await listAll("adminpush", token);
+    const payload = JSON.stringify({ title: "Riptide Officials", body: parts.join(" and ") + ".", count: total, url: "admin.html" });
+    for (const d of subs) {
+      try { await webpush.sendNotification(JSON.parse(d.fields.sub.stringValue), payload); console.log("push sent"); }
+      catch (e) {
+        console.log("push failed", e.statusCode || e.message);
+        if (e.statusCode === 404 || e.statusCode === 410) await fetch(`${base}/adminpush/${idOf(d)}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
+      }
+    }
+  } else console.log("Phone alerts skipped (no VAPID_PRIVATE_KEY secret).");
+} catch (e) { console.log("Phone alerts skipped:", e.message); }
 
 const keep = notified.filter((k) => (k.startsWith("u:") ? users.some((d) => "u:" + idOf(d) === k) : interest.some((d) => "i:" + idOf(d) === k)));
 await saveNotified(token, keep.concat(newUsers.map((d) => "u:" + idOf(d)), newInterest.map((d) => "i:" + idOf(d))));

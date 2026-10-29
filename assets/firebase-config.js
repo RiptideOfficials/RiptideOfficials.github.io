@@ -23,3 +23,7 @@ window.INTEREST_FORM_EMAIL = "whpeterson@gmail.com";
 
 // FormSubmit form ID (from the activation email). Used instead of the email address in the page code.
 window.FORMSUBMIT_ID = "2d67ff7d56be47cc6a6cbe6d7a687e0f";
+
+
+// Public key for phone alerts (Web Push). The matching private key is the GitHub secret VAPID_PRIVATE_KEY.
+window.VAPID_PUBLIC_KEY = "BIl0_GwOhKkt1S9bOVPcjrBu2WitUWBFrq3uP4GyX63gLHff50D3HODl91C29trhFFbKnxerFwhhxFGAlvstRAY";
