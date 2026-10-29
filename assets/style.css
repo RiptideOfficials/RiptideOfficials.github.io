@@ -386,3 +386,8 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .hdr-drop a{padding:9px 12px;font-size:1rem;border-radius:10px;text-decoration:none;color:var(--navy);font-weight:600;display:block}
 .hdr-drop .coord-label{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#6b5200;padding:2px 12px}
 @media(max-width:1019px){.avatar,.hamb{width:34px;height:34px}.hdr-drop{top:42px}}
+
+/* contact box: names and emails sit together */
+#contacts p{margin:0 0 3px}
+#contacts p:empty,#contacts p:has(>br:only-child){display:none}
+#contacts h3,#contacts h4{margin:14px 0 2px}

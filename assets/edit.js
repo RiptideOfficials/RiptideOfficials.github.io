@@ -39,7 +39,17 @@
     var doc = new DOMParser().parseFromString("<body>" + html + "</body>", "text/html");
     function walk(src, dst) {
       Array.prototype.forEach.call(src.childNodes, function (n) {
-        if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.nodeValue)); return; }
+        if (n.nodeType === 3) {
+          var inA = dst.tagName === "A" || (dst.closest && dst.closest("a")), txt = n.nodeValue;
+          if (inA || !/[\w.+-]+@[\w-]+(\.[\w-]+)+/.test(txt)) { dst.appendChild(document.createTextNode(txt)); return; }
+          var re = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, last = 0, mm;   // bare email addresses become mailto links
+          while ((mm = re.exec(txt))) {
+            if (mm.index > last) dst.appendChild(document.createTextNode(txt.slice(last, mm.index)));
+            dst.appendChild(el("a", { href: "mailto:" + mm[0], text: mm[0] })); last = mm.index + mm[0].length;
+          }
+          if (last < txt.length) dst.appendChild(document.createTextNode(txt.slice(last)));
+          return;
+        }
         if (n.nodeType !== 1) return;
         var t = n.tagName;
         if (/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|FORM|INPUT|BUTTON|TEXTAREA|SELECT|LINK|META|SVG)$/.test(t)) return;
