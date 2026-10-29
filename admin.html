@@ -57,11 +57,14 @@
       if (c.id === "meets-card") d.open = true;
     });
     var bar = document.createElement("div"); bar.className = "btn-row"; bar.style.margin = "0 0 14px";
-    bar.innerHTML = '<button class="btn small coord" type="button" id="exp-all" title="Expand all" aria-label="Expand all boxes">&#9660; All</button><button class="btn small coord" type="button" id="col-all" title="Collapse all" aria-label="Collapse all boxes">&#9654; All</button>';
+    bar.innerHTML = '<button class="btn small coord all-tog" type="button" id="tog-all"><span class="tri" aria-hidden="true"></span> All</button>';
     $("app").insertBefore(bar, $("app").querySelector(".card"));
-    function setAll(v) { Array.prototype.forEach.call(document.querySelectorAll("#app details.fold"), function (d) { d.open = v; }); }
-    $("exp-all").onclick = function () { setAll(true); };
-    $("col-all").onclick = function () { setAll(false); };
+    function folds() { return Array.prototype.slice.call(document.querySelectorAll("#app details.fold")); }
+    function anyOpen() { return folds().some(function (d) { return d.open; }); }
+    function sync() { var o = anyOpen(), b = $("tog-all"); b.classList.toggle("is-open", o); b.title = o ? "Collapse all" : "Expand all"; b.setAttribute("aria-label", b.title + " boxes"); }
+    $("tog-all").onclick = function () { var v = !anyOpen(); folds().forEach(function (d) { d.open = v; }); sync(); };
+    document.addEventListener("toggle", sync, true);
+    sync();
 
     var meets = [];
 
