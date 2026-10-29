@@ -109,6 +109,7 @@
       cnt += add; if (--left) return;
       Array.prototype.forEach.call(adm.querySelectorAll(".cnt"), function (x) { x.remove(); });
       if (cnt > 0) { var b = document.createElement("span"); b.className = "cnt"; b.textContent = cnt > 99 ? "99+" : cnt; b.title = cnt + " waiting"; adm.appendChild(b); }
+      try { if (navigator.setAppBadge) { if (cnt > 0) navigator.setAppBadge(cnt).catch(function () {}); else if (navigator.clearAppBadge) navigator.clearAppBadge().catch(function () {}); } } catch (e) {}   // number on the home-screen icon
       var hc = document.getElementById("hamb-cnt"); if (hc) { hc.textContent = cnt > 99 ? "99+" : cnt; hc.hidden = !(cnt > 0); }
     };
     try {
