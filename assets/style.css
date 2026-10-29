@@ -401,3 +401,5 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .card.coord-card{background:#fff8e6;border:1px solid #ecd18a;border-left:5px solid #e0b94a}
 .card .card{border-left-width:1.5px}
 @media print{.card{border:1px solid #bbb}}
+.card.past-card{border-color:#b5d98a;border-left-color:var(--green)}
+.card.past-card h2{color:var(--green-dark)}
