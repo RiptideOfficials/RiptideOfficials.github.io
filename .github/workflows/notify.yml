@@ -5,7 +5,7 @@ name: Notify coordinator
 # The issue never contains names, emails or phone numbers (this repository is public).
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
 
 permissions:
