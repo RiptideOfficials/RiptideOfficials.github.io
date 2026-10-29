@@ -416,3 +416,12 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .pencil.del{right:96px}
 #announce:empty{display:none}
 .announce.has-pencil>h2{padding-right:190px}@media(max-width:560px){.announce.has-pencil>h2{padding-right:0;padding-top:34px}}
+
+/* members on the Admin page */
+.mem-wait-box{border:1.5px solid #e8891d;border-left:5px solid #e8891d;border-radius:12px;padding:10px 12px;margin:0 0 12px;background:#fff6e8}
+.mem-wait-box h3{margin:0 0 6px;color:#a85a00}
+.mem-wait{padding:8px 0;border-top:1px solid #f0d3aa}.mem-wait:first-of-type{border-top:0}
+.mem-ok>summary{cursor:pointer;font-weight:700;padding:6px 0;color:var(--navy)}
+.mem-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}
+.mem-who{min-width:0;overflow-wrap:anywhere}
+.mem-btns{display:flex;gap:6px;flex-wrap:wrap}

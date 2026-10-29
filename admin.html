@@ -64,7 +64,7 @@
       s.appendChild(h);
       while (c.firstChild) body.appendChild(c.firstChild);
       d.appendChild(s); d.appendChild(body); c.appendChild(d);
-      if (c.id === "meets-card") d.open = true;
+      if (c.id === "meets-card" || c.id === "badge-card") d.open = true;
     });
     var bar = document.createElement("div"); bar.className = "btn-row"; bar.style.margin = "0 0 14px";
     bar.innerHTML = '<button class="btn small coord all-tog" type="button" id="tog-all"><span class="tri" aria-hidden="true"></span> All</button>';
@@ -204,15 +204,21 @@
     function loadMembers() {
       return R.db.collection("users").orderBy("createdAt", "desc").get().then(function (snap) {
         var users = snap.docs.map(function (d) { var u = d.data(); u.id = d.id; return u; });
-        $("members").innerHTML = users.length ?
-          '<table class="data"><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th></th></tr></thead><tbody>' +
-          users.map(function (u) {
-            return "<tr><td>" + esc(u.name) + (u.admin || String(u.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase() ? ' <span class="pill green">Admin</span>' : "") + "</td><td>" + esc(u.email) + "</td><td>" + esc(u.phone || "") + "</td><td>" +
-              (u.approved ? '<span class="pill green">Approved</span>' : '<span class="pill">Waiting</span>') + "</td><td>" +
-              (u.approved ? (ctx.isOwner && String(u.email).toLowerCase() !== String(window.ADMIN_EMAIL).toLowerCase() ? (u.admin ? '<button class="btn small ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button> ' : '<button class="btn small green" data-mkadmin="' + esc(u.id) + '">Make admin</button> ') : "") + '<button class="btn small ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>'
-                          : '<button class="btn small green" data-approve="' + esc(u.id) + '">Approve</button> <button class="btn small danger" data-deluser="' + esc(u.id) + '">Delete</button>') +
-              "</td></tr>";
-          }).join("") + "</tbody></table>" : '<p class="muted">No accounts yet.</p>';
+        var isOwnerEmail = function (u) { return String(u.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase(); };
+        var waiting = users.filter(function (u) { return !u.approved; }), ok = users.filter(function (u) { return u.approved; });
+        var html = "";
+        if (waiting.length) html += '<div class="mem-wait-box"><h3>Waiting for approval (' + waiting.length + ")</h3>" + waiting.map(function (u) {
+          return '<div class="mem-wait"><div><strong>' + esc(u.name) + '</strong><br><a href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" + (u.phone ? " &middot; " + esc(u.phone) : "") + '</div>' +
+            '<div class="btn-row" style="margin:6px 0 0"><button class="btn small green" data-approve="' + esc(u.id) + '">Approve</button> <button class="btn small danger" data-deluser="' + esc(u.id) + '">Delete</button></div></div>';
+        }).join("") + "</div>";
+        else html += '<p class="muted" style="margin-top:0">No one is waiting for approval.</p>';
+        html += '<details class="mem-ok"' + (waiting.length ? "" : " open") + '><summary>Approved members (' + ok.length + ")</summary>" + ok.map(function (u) {
+          var admin = u.admin || isOwnerEmail(u);
+          return '<div class="mem-row"><div class="mem-who"><strong>' + esc(u.name) + "</strong>" + (admin ? ' <span class="pill green">Admin</span>' : "") + '<br><span class="muted small">' + esc(u.email) + (u.phone ? " &middot; " + esc(u.phone) : "") + "</span></div>" +
+            '<div class="mem-btns">' + (ctx.isOwner && !isOwnerEmail(u) ? (u.admin ? '<button class="btn small ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button>' : '<button class="btn small green" data-mkadmin="' + esc(u.id) + '">Make admin</button>') : "") +
+            (isOwnerEmail(u) ? "" : '<button class="btn small ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>') + "</div></div>";
+        }).join("") + "</details>";
+        $("members").innerHTML = users.length ? html : '<p class="muted">No accounts yet.</p>';
         setBadge("b-mem", users.filter(function (u) { return !u.approved; }).length); R.adminBadge();
       }).catch(function () { $("members").innerHTML = '<div class="msg err">Could not load members.</div>'; });
     }
