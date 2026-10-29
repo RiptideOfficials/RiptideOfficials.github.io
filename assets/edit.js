@@ -322,6 +322,15 @@
   /* ---------- put it all on a page ---------- */
   E.run = function (root, ctx, page) {
     return load(page).then(function (content) {
+      // boxes an admin adds as things come up (announcements): saved in content.boxes[containerId]
+      var adders = Array.prototype.slice.call(root.querySelectorAll("[data-add-boxes]"));
+      adders.forEach(function (c) {
+        (((content.boxes || {})[c.id]) || []).forEach(function (b) {
+          var d = el("div", { class: "card announce", id: b.id, "data-editable": "", "data-dyn": c.id });
+          d.appendChild(el("h2", { text: b.title || "Announcement" })); d.insertAdjacentHTML("beforeend", E.clean(b.html || ""));
+          c.appendChild(d);
+        });
+      });
       var lists = Array.prototype.slice.call(root.querySelectorAll("section.doc-section")).filter(function (s) { return s.querySelector("ul.doc-list"); });
       var blocks = Array.prototype.slice.call(root.querySelectorAll("[data-editable]"));
       var heads = Array.prototype.slice.call(root.querySelectorAll("[data-edit-head]"));
@@ -353,6 +362,28 @@
       blocks.forEach(function (h) {
         var host = h.tagName === "DETAILS" ? h : h;
         pencil(host, function () { editBlock(h, page, content, originals[h.id], null); });
+        if (h.hasAttribute("data-dyn")) {
+          var del = el("button", { type: "button", class: "pencil del", title: "Delete this box", "aria-label": "Delete this box", html: "\u2715 <span>Delete</span>" });
+          del.onclick = function () {
+            if (!confirm("Delete this box? This cannot be undone.")) return;
+            var cid = h.getAttribute("data-dyn"); content.boxes = content.boxes || {};
+            content.boxes[cid] = (content.boxes[cid] || []).filter(function (b) { return b.id !== h.id; });
+            if (content.blocks) delete content.blocks[h.id];
+            store(page, content).then(function () { h.parentNode.removeChild(h); }).catch(function () { alert("Could not delete. Please try again."); });
+          };
+          h.insertBefore(del, h.firstChild);
+        }
+      });
+      adders.forEach(function (c) {
+        var bar = el("div", { class: "btn-row", style: "margin:0 0 14px" });
+        var add = el("button", { type: "button", class: "btn coord", text: "+ Add " + (c.getAttribute("data-add-boxes") || "a box") });
+        add.onclick = function () {
+          add.disabled = true;
+          content.boxes = content.boxes || {};
+          content.boxes[c.id] = [{ id: "box-" + Date.now().toString(36), title: "New announcement", html: "<p>Tap Edit to write your message.</p>" }].concat(content.boxes[c.id] || []);
+          store(page, content).then(function () { location.reload(); }).catch(function () { add.disabled = false; alert("Could not add it. Make sure the latest firestore.rules are published."); });
+        };
+        bar.appendChild(add); c.parentNode.insertBefore(bar, c);
       });
     });
   };

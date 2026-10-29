@@ -409,3 +409,10 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .chk2 .lv{margin-left:auto}
 .chk2 .lv.off{opacity:.45}
 @media(max-width:480px){.chk2 .lv{margin-left:30px}}
+
+/* announcement boxes */
+.card.announce{border-color:#f0c48a;border-left:5px solid #e8891d}
+.card.announce h2{color:#a85a00}
+.pencil.del{right:96px}
+#announce:empty{display:none}
+.announce.has-pencil>h2{padding-right:190px}@media(max-width:560px){.announce.has-pencil>h2{padding-right:0;padding-top:34px}}
