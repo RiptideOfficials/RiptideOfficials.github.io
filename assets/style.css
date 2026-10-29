@@ -389,7 +389,5 @@ details.has-pencil>.pencil{top:8px;right:40px}
 
 /* contact box: names and emails sit together */
 #contacts p{margin:0 0 3px}
-#contacts p:empty,#contacts p:has(>br:only-child){display:none}
 #contacts h3,#contacts h4{margin:14px 0 2px}
 #contacts p{line-height:1.4}
-#contacts p:has(>a[href^="mailto:"])+p,#contacts p:has(>a[href^="mailto:"])+h3,#contacts p:has(>a[href^="mailto:"])+h4{margin-top:16px}

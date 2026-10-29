@@ -69,7 +69,7 @@
           if (n.hasAttribute("data-team-link")) { dst.appendChild(el("div", { "data-team-link": "", style: "margin:10px 0", text: "Loading the team link..." })); return; }
           var c = n.className || "";
           if (/\bcallout\b/.test(c)) { var d = el("div", { class: /\bwarn\b/.test(c) ? "callout warn" : "callout" }); walk(n, d); dst.appendChild(d); return; }
-          var p = el("p"); walk(n, p); if (p.textContent.trim()) dst.appendChild(p); return;   // plain divs become paragraphs
+          var p = el("p"); walk(n, p); if (p.textContent.trim()) dst.appendChild(p); else if (p.querySelector("br") && !p.querySelector("img")) { dst.appendChild(p); } return;   // plain divs become paragraphs
         }
         var out = el(t.toLowerCase()); walk(n, out); dst.appendChild(out);
       });
@@ -280,6 +280,7 @@
     }
     ui.appendChild(el("label", { text: "Title" })); ui.appendChild(title);
     ui.appendChild(el("label", { text: "Text" })); ui.appendChild(tools); ui.appendChild(ed);
+    ui.appendChild(el("p", { class: "muted small", text: "Tip: press Enter twice to leave a blank line (a space). To remove a space, put the cursor on the blank line and press Backspace. Email addresses turn into links by themselves." }));
     ui.appendChild(el("div", { class: "btn-row" }, [btn("Save", "green", save), btn("Cancel", "ghost", close), (content.blocks && content.blocks[id]) ? btn("Restore the original text", "danger", restore) : null]));
     ui.appendChild(msg);
     parts[1].forEach(function (n) { n.hidden = true; });
