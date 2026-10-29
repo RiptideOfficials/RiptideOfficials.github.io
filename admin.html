@@ -65,6 +65,10 @@
       while (c.firstChild) body.appendChild(c.firstChild);
       d.appendChild(s); d.appendChild(body); c.appendChild(d);
       if (c.id === "meets-card" || c.id === "badge-card") d.open = true;
+      // remember each box's open/closed state on this device
+      var fkey = "ro_fold_" + (c.id || String((h.childNodes[0] && h.childNodes[0].textContent) || "box").trim().toLowerCase().replace(/[^a-z]+/g, "-"));
+      try { var sv = localStorage.getItem(fkey); if (sv === "1") d.open = true; else if (sv === "0") d.open = false; } catch (e) {}
+      d.addEventListener("toggle", function () { try { localStorage.setItem(fkey, d.open ? "1" : "0"); } catch (e) {} });
     });
     var bar = document.createElement("div"); bar.className = "btn-row"; bar.style.margin = "0 0 14px";
     bar.innerHTML = '<button class="btn small coord all-tog" type="button" id="tog-all"><span class="tri" aria-hidden="true"></span> All</button>';
