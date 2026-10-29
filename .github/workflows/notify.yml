@@ -1,0 +1,29 @@
+name: Notify coordinator
+
+# Every ~15 minutes: look for new accounts waiting for approval and new "interested" people.
+# If there are any, open (and immediately close) an issue; GitHub then emails the coordinator.
+# The issue never contains names, emails or phone numbers (this repository is public).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node .github/scripts/notify.mjs
+        env:
+          BOT_EMAIL: ${{ secrets.BOT_EMAIL }}
+          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          NOTIFY_USER: ${{ vars.NOTIFY_USER }}

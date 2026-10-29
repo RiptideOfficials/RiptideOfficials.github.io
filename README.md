@@ -28,3 +28,9 @@ Live at https://riptideofficials.github.io once published.
 
 - Email and phone are stored separately from the public sign-up names, and only the admin account can read them.
 - The team's USA Swimming registration link is kept in the database, never in the repository. Documents live in the public repository. The site's document page requires login, but a file's direct URL is not secret. Don't upload anything confidential.
+
+## Backup alerts through GitHub
+
+`.github/workflows/notify.yml` runs about every 15 minutes. It signs in as a helper admin account, looks for new accounts waiting for approval and new "interested" people, and opens (then closes) a GitHub issue so GitHub emails the coordinator. The issue never contains names or contact details because this repository is public.
+
+One-time setup: create a helper account on the site, approve it and tap **Make admin**, then add `BOT_EMAIL` and `BOT_PASSWORD` under Settings > Secrets and variables > Actions. Optional: a repository variable `NOTIFY_USER` with the GitHub username to @mention.
