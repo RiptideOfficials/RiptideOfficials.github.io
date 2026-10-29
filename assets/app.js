@@ -199,7 +199,7 @@
           String(ctx.user.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase() && !ctx.user.emailVerified
           ? "<p>Please verify your email (check your inbox) and sign in again to unlock admin access.</p>" : "";
         app.innerHTML = '<div class="card"><h2>Waiting for approval</h2>' +
-          "<p>Your account has been created. The Riptide officials coordinator needs to approve it before you can see the calendar, documents, and sign-ups.</p>" +
+          "<p>Your account has been created. The Riptide officials coordinator needs to approve it before you can see the meets, documents, and sign-ups.</p>" +
           verifyNote +
           '<p class="muted small">Signed in as ' + R.esc(ctx.user.email) + "</p></div>";
         return null;
@@ -367,7 +367,7 @@
     if (!app || !/^\s*Loading\.\.\.\s*$/.test(app.textContent)) return;
     app.innerHTML = '<div class="card"><h2>This page did not finish loading</h2>' +
       "<p>Tap Refresh below, or sign in again. If it keeps happening, email the coordinator.</p>" +
-      '<div class="btn-row"><a class="btn" href="login.html">Sign in</a> <a class="btn ghost" href="home.html">Calendar</a></div>' +
+      '<div class="btn-row"><a class="btn" href="login.html">Sign in</a> <a class="btn ghost" href="home.html">Home</a></div>' +
       (detail ? '<p class="muted small">' + R.esc(detail) + "</p>" : "") + "</div>";
   }
   window.addEventListener("error", function (e) { stuckGuard(e && e.message); });

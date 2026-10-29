@@ -51,7 +51,7 @@
     // meets I've signed up for
     R.db.collection("users").doc(ctx.user.uid).collection("mysignups").get().then(function (snap) {
       var ids = snap.docs.map(function (d) { return d.id; });
-      if (!ids.length) { $("mine").textContent = "You haven't signed up for a meet yet. Find one on the Calendar or Meet Sign-Ups page."; return; }
+      if (!ids.length) { $("mine").textContent = "You haven't signed up for a meet yet. Find one on the Home or Meet Sign-Ups page."; return; }
       return Promise.all(ids.map(function (id) {
         return R.db.collection("meets").doc(id).get().then(function (m) { return m.exists ? Object.assign({ id: id }, m.data()) : null; }).catch(function () { return null; });
       })).then(function (meets) {
