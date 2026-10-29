@@ -264,12 +264,12 @@ details.card[open] summary{margin-bottom:8px}
 @media (min-width:760px){.asg-cols{grid-template-columns:1fr 1fr 1fr}}
 
 /* everything for coordinators/admins is shaded gold so it stands out */
-.btn.coord{background:#fff1c2;color:#6b4e00;border:2px dashed #d9a400}
+.btn.coord{background:#fff1c2;color:#6b4e00;border:1.5px solid #e0b94a}
 .btn.coord:hover{background:#ffe79a}
-.coord-bar{background:#fff6dc;border:2px dashed #e0b94a;border-radius:14px;padding:10px 12px 12px;margin-top:16px}
+.coord-bar{background:#fff6dc;border:1.5px solid #ecd18a;border-radius:14px;padding:10px 12px 12px;margin-top:16px}
 .coord-bar .coord-label{display:block;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8a6500}
 .coord-bar .btn-row{margin-top:8px}
-.card.coord-card{background:#fff8e6;border:2px dashed #e0b94a}
+.card.coord-card{background:#fff8e6;border:1px solid #ecd18a;border-left:5px solid #e0b94a}
 .nav a.coord{background:#fff1c2;color:#6b4e00;border-radius:9px}
 
 /* collapsible boxes */
@@ -322,10 +322,10 @@ h2 .cnt{font-size:.8rem;vertical-align:middle;margin-left:8px}
 .step .num{display:block;width:auto;height:auto;border-radius:0;background:none;color:var(--blue-dark);font-size:1.05rem;letter-spacing:.08em;text-transform:uppercase}
 /* admin edit pencil + editors */
 .has-pencil{position:relative}
-.pencil{position:absolute;top:10px;right:10px;z-index:3;display:inline-flex;align-items:center;gap:4px;font:inherit;font-weight:700;font-size:.85rem;padding:5px 10px;border-radius:9px;border:1.5px dashed #d9b43f;background:#fff1c2;color:#6b4e00;cursor:pointer}
+.pencil{position:absolute;top:10px;right:10px;z-index:3;display:inline-flex;align-items:center;gap:4px;font:inherit;font-weight:700;font-size:.85rem;padding:5px 10px;border-radius:9px;border:1.5px solid #e0b94a;background:#fff1c2;color:#6b4e00;cursor:pointer}
 .pencil:hover{background:#ffe9a0}
 details.has-pencil>.pencil{top:8px;right:40px}
-.edit-ui{border:1.5px dashed #d9b43f;background:#fff8dc;border-radius:12px;padding:12px;margin-top:10px}
+.edit-ui{border:1.5px solid #e0b94a;background:#fff8dc;border-radius:12px;padding:12px;margin-top:10px}
 .edit-ui input{width:100%;margin:0 0 6px}
 .edit-group{border-top:1px solid #ecd98a;padding:10px 0}
 .edit-row{display:grid;gap:6px;margin:0 0 12px;padding:8px;background:#fff;border:1px solid var(--line);border-radius:10px}
@@ -379,7 +379,7 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .avatar{width:38px;height:38px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:1.2rem;text-decoration:none;border:2px solid #fff;box-shadow:0 0 0 2px var(--line)}
 .avatar.active{box-shadow:0 0 0 2px var(--blue)}
 .hdr-menu{position:relative}
-.hamb{position:relative;width:38px;height:38px;border-radius:10px;border:1.5px dashed #d9b43f;background:#fff8dc;color:#6b5200;font-size:1.25rem;line-height:1;cursor:pointer}
+.hamb{position:relative;width:38px;height:38px;border-radius:10px;border:1.5px solid #e0b94a;background:#fff8dc;color:#6b5200;font-size:1.25rem;line-height:1;cursor:pointer}
 .hamb .cnt{position:absolute;top:-7px;right:-7px;margin:0}
 .hdr-drop{position:absolute;right:0;top:46px;z-index:30;min-width:190px;background:#fff;border:1.5px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px;display:flex;flex-direction:column;gap:4px}
 .hdr-drop[hidden]{display:none}
