@@ -119,7 +119,7 @@
         .then(function () {
           // Best-effort heads-up email to the coordinator (name and email only, no phone).
           if (String(email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase()) return;
-          return fetch("https://formsubmit.co/ajax/" + encodeURIComponent(window.INTEREST_FORM_EMAIL), {
+          return fetch("https://formsubmit.co/ajax/" + encodeURIComponent(window.FORMSUBMIT_ID || window.INTEREST_FORM_EMAIL), {
             method: "POST",
             headers: { "Content-Type": "application/json", "Accept": "application/json" },
             body: JSON.stringify({

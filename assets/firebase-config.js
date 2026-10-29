@@ -20,3 +20,6 @@ window.ADMIN_EMAIL = "whpeterson@gmail.com";
 
 // Where "Interested in becoming an official?" form submissions go.
 window.INTEREST_FORM_EMAIL = "whpeterson@gmail.com";
+
+// FormSubmit form ID (from the activation email). Used instead of the email address in the page code.
+window.FORMSUBMIT_ID = "2d67ff7d56be47cc6a6cbe6d7a687e0f";

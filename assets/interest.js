@@ -32,7 +32,7 @@
           swimmer: form.swimmer.value.trim(), message: form.message.value.trim() };
         // best-effort email copy (works once FormSubmit is activated); the saved entry below is the real record
         try {
-          fetch("https://formsubmit.co/ajax/" + encodeURIComponent(window.INTEREST_FORM_EMAIL), {
+          fetch("https://formsubmit.co/ajax/" + encodeURIComponent(window.FORMSUBMIT_ID || window.INTEREST_FORM_EMAIL), {
             method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
             body: JSON.stringify(Object.assign({ _subject: "Riptide Officials: new interest form from " + name, _template: "table", _captcha: "false" }, data))
           }).catch(function () {});
