@@ -395,3 +395,9 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .all-tog{display:inline-flex;align-items:center;gap:9px}
 .all-tog .tri{width:0;height:0;border-left:10px solid #6b4e00;border-top:7px solid transparent;border-bottom:7px solid transparent;transition:transform .15s}
 .all-tog.is-open .tri{transform:rotate(90deg)}
+
+/* outlined boxes for everyone (no fill) */
+.card{background:transparent;border:1.5px solid #9cc4e4;border-left:5px solid var(--blue);box-shadow:none}
+.card.coord-card{background:#fff8e6;border:1px solid #ecd18a;border-left:5px solid #e0b94a}
+.card .card{border-left-width:1.5px}
+@media print{.card{border:1px solid #bbb}}
