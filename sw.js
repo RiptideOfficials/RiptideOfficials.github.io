@@ -6,7 +6,7 @@ self.addEventListener("push", function (e) {
   try { d = e.data ? e.data.json() : {}; } catch (x) {}
   var n = parseInt(d.count, 10) || 0;
   e.waitUntil(Promise.all([
-    self.registration.showNotification(d.title || "Riptide Officials", { body: d.body || "Something is waiting for you.", icon: "assets/img/icon-192.png", tag: "riptide-admin", data: { url: d.url || "admin.html" } }),
+    self.registration.showNotification(d.title || "Riptide Officials", { body: d.body || "Something is waiting for you.", icon: "assets/img/icon-192.png", tag: "riptide-admin", renotify: true, data: { url: d.url || "admin.html" } }),
     (self.navigator && self.navigator.setAppBadge) ? self.navigator.setAppBadge(n).catch(function () {}) : null
   ]));
 });

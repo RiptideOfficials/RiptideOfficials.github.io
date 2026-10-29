@@ -82,7 +82,7 @@ const issue = await gh("issues", "POST", {
   title: "Riptide Officials: " + parts.join(" and "),
   body: `@${MENTION} ${parts.join(" and ")}.\n\nOpen the Admin page to see who: ${SITE}admin.html\n\n(This message has no names or contact details on purpose.)`
 });
-await gh(`issues/${issue.number}`, "PATCH", { state: "closed" });
+let pushNote = "";
 
 // Phone alerts (Web Push) to every admin phone that turned them on. Best effort: never stops the run.
 try {
@@ -93,15 +93,19 @@ try {
     webpush.setVapidDetails("mailto:" + (process.env.VAPID_CONTACT || "whpeterson@gmail.com"), pub, VAPID_PRIVATE_KEY);
     const subs = await listAll("adminpush", token);
     const payload = JSON.stringify({ title: "Riptide Officials", body: parts.join(" and ") + ".", count: total, url: "admin.html" });
+    var pushed = 0, failed = [];
     for (const d of subs) {
-      try { await webpush.sendNotification(JSON.parse(d.fields.sub.stringValue), payload); console.log("push sent"); }
+      try { await webpush.sendNotification(JSON.parse(d.fields.sub.stringValue), payload); console.log("push sent"); pushed++; }
       catch (e) {
-        console.log("push failed", e.statusCode || e.message);
+        console.log("push failed", e.statusCode || e.message); failed.push(e.statusCode || "error");
         if (e.statusCode === 404 || e.statusCode === 410) await fetch(`${base}/adminpush/${idOf(d)}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
       }
     }
-  } else console.log("Phone alerts skipped (no VAPID_PRIVATE_KEY secret).");
-} catch (e) { console.log("Phone alerts skipped:", e.message); }
+    pushNote = `Phone alerts: ${subs.length} phone(s), ${pushed} sent` + (failed.length ? `, failed (${failed.join(",")})` : "") + ".";
+  } else pushNote = "Phone alerts skipped (no VAPID_PRIVATE_KEY secret).";
+} catch (e) { pushNote = "Phone alerts error: " + e.message; console.log(pushNote); }
+if (pushNote) await gh(`issues/${issue.number}/comments`, "POST", { body: pushNote });
+await gh(`issues/${issue.number}`, "PATCH", { state: "closed" });
 
 const keep = notified.filter((k) => (k.startsWith("u:") ? users.some((d) => "u:" + idOf(d) === k) : interest.some((d) => "i:" + idOf(d) === k)));
 await saveNotified(token, keep.concat(newUsers.map((d) => "u:" + idOf(d)), newInterest.map((d) => "i:" + idOf(d))));
