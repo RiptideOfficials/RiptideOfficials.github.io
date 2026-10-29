@@ -20,7 +20,7 @@
 
 <template id="docs-content">
   <h1>Documents</h1>
-  <p class="muted">Jump to: <a href="#registration">Registration</a> &middot; <a href="#stroke-turn">Stroke &amp; Turn</a> &middot; <a href="#starter">Starter</a> &middot; <a href="#deck-referee">Deck Referee</a> &middot; <a href="#general">General meet documents</a> &middot; <a href="#apparel">Apparel</a></p>
+  <p class="muted">Jump to: <a href="#registration">Registration</a> &middot; <a href="#stroke-turn">Stroke &amp; Turn</a> &middot; <a href="#starter">Starter</a> &middot; <a href="#deck-referee">Deck Referee</a> &middot; <a href="#general">General meet documents</a></p>
   <div class="doc-grid">
 
   <section class="card doc-section blue" id="registration">
@@ -70,14 +70,6 @@
     </ul>
   </section>
 
-  <section class="card doc-section" id="apparel">
-    <h2>Officials apparel</h2>
-    <ul class="doc-list">
-      <li><a href="https://elsmoreswim.com/collections/minnesota-swimming-1" target="_blank" rel="noopener"><span class="badge page">SHOP</span><span><span class="t">Minnesota Swimming officials apparel</span><span class="d">Polos and other gear (Elsmore Swim)</span></span></a></li>
-      <li><a href="https://www.usaswimmingbrandstore.com/products?s%5Bf%5D%5Bc%5D%5B%5D=%2FMeet+Officials" target="_blank" rel="noopener"><span class="badge page">SHOP</span><span><span class="t">USA Swimming officials apparel</span><span class="d">Meet Officials collection at the USA Swimming brand store</span></span></a></li>
-    </ul>
-  </section>
-
   <section class="card doc-section blue" id="general">
     <h2>General meet documents</h2>
     <ul class="doc-list">
@@ -98,6 +90,7 @@
 (function () {
   var R = window.Riptide;
   R.footer();
+  if (location.hash === "#apparel") { location.replace("apparel.html"); return; }   // Apparel has its own page now
   R.requireMember("docs").then(function (ctx) {
     if (!ctx) return;
     var app = document.getElementById("app");

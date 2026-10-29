@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apparel | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<template id="content">
+  <h1>Apparel</h1>
+  <p class="muted">Where to buy Minnesota Swimming and USA Swimming officials gear.</p>
+  <div class="doc-grid">
+
+  <section class="card doc-section" id="apparel">
+    <h2>Officials apparel</h2>
+    <ul class="doc-list">
+      <li><a href="https://elsmoreswim.com/collections/minnesota-swimming-1" target="_blank" rel="noopener"><span class="badge page">SHOP</span><span><span class="t">Minnesota Swimming officials apparel</span><span class="d">Polos and other gear (Elsmore Swim)</span></span></a></li>
+      <li><a href="https://www.usaswimmingbrandstore.com/products?s%5Bf%5D%5Bc%5D%5B%5D=%2FMeet+Officials" target="_blank" rel="noopener"><span class="badge page">SHOP</span><span><span class="t">USA Swimming officials apparel</span><span class="d">Meet Officials collection at the USA Swimming brand store</span></span></a></li>
+    </ul>
+  </section>
+
+  </div>
+</template>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/edit.js"></script>
+<script>
+(function () {
+  var R = window.Riptide;
+  R.footer();
+  R.requireMember("apparel").then(function (ctx) {
+    if (!ctx) return;
+    var app = document.getElementById("app");
+    app.innerHTML = "";
+    app.appendChild(document.getElementById("content").content.cloneNode(true));
+    if (R.Edit) R.Edit.run(app, ctx, "docs").catch(function () {});   // same saved edits as before (page key "docs")
+  });
+})();
+</script>
+</body>
+</html>
