@@ -30,7 +30,7 @@
   var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
   R.footer();
   var meetId = new URLSearchParams(location.search).get("m");
-  R.requireAdmin("assignments").then(function (ctx) {
+  R.requireMeetAdmin("assignments").then(function (ctx) {
     if (!ctx) return;
     if (!meetId) {
       R.db.collection("meets").orderBy("date").get().then(function (snap) {

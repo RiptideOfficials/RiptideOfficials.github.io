@@ -8,6 +8,7 @@ rules_version = '2';
 //    (Meet IDs are long random codes, so they cannot be guessed or browsed.)
 //  - Email and phone are stored in a separate "contacts" collection that ONLY the admin can read.
 //  - Signed-in, approved members can list all meets (for the calendar).
+//  - Meet managers (marked by the owner) can add/edit meets, read sign-up contact details and set assignments only.
 //  - Admins (the owner, plus anyone the owner marks as admin, e.g. another Meet Ref) can create/edit/delete
 //    meets, read contact details, and approve members. Only the owner can grant or remove admin.
 //
@@ -38,12 +39,19 @@ service cloud.firestore {
       return isOwner() || (hasProfile() && profile().approved == true && profile().get('admin', false) == true);
     }
 
+    // Meet managers = approved members the owner marked as "meet manager". They can add/edit meets, see sign-up
+    // contact details and set up assignments, and nothing else (no member approval, no page edits, no admin settings).
+    function isMeetAdmin() {
+      return isAdmin() || (hasProfile() && profile().approved == true && profile().get('meetAdmin', false) == true);
+    }
+
     function isMember() {
       return isOwner() || (hasProfile() && profile().approved == true);
     }
 
     function adminUnchanged() {
-      return request.resource.data.get('admin', false) == resource.data.get('admin', false);
+      return request.resource.data.get('admin', false) == resource.data.get('admin', false)
+        && request.resource.data.get('meetAdmin', false) == resource.data.get('meetAdmin', false);
     }
 
     // Member profiles. People create their own (always unapproved, never admin).
@@ -61,7 +69,7 @@ service cloud.firestore {
         || (signedIn() && request.auth.uid == uid
             && request.resource.data.approved == resource.data.approved
             && adminUnchanged()
-            && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'admin', 'createdAt']));
+            && request.resource.data.keys().hasOnly(['name', 'email', 'phone', 'approved', 'admin', 'meetAdmin', 'createdAt']));
       allow delete: if isAdmin();
 
       // The private edit codes for sign-ups this member made (one per meet).
@@ -112,7 +120,7 @@ service cloud.firestore {
     match /meets/{meetId} {
       allow get: if true;               // anyone who knows the (unguessable) link
       allow list: if isMember();        // calendar and meet list
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isMeetAdmin();
 
       // Who has taken the Meet Referee / Admin Official spot (everyone can see it; first person to sign up gets it).
       match /whole/{pos} {
@@ -121,7 +129,7 @@ service cloud.firestore {
           && request.resource.data.keys().hasOnly(['name', 'team', 'createdAt'])
           && request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
           && request.resource.data.team is string && request.resource.data.team.size() <= 80;
-        allow update: if isAdmin();
+        allow update: if isMeetAdmin();
         allow delete: if true;
       }
 
@@ -144,10 +152,10 @@ service cloud.firestore {
             && (!('comments' in d) || (d.comments is string && d.comments.size() <= 500));
         }
         allow get: if true;
-        allow list: if isAdmin();
+        allow list: if isMeetAdmin();
         allow create: if validSignup(request.resource.data)
           && (request.resource.data.uid == null || (signedIn() && request.resource.data.uid == request.auth.uid));
-        allow update: if isAdmin() || (validSignup(request.resource.data)
+        allow update: if isMeetAdmin() || (validSignup(request.resource.data)
           && request.resource.data.uid == resource.data.uid
           && request.resource.data.createdAt == resource.data.createdAt);
         allow delete: if true;

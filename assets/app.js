@@ -77,8 +77,8 @@
       var nm = (ctx.profile && ctx.profile.name) || (ctx.user && (ctx.user.displayName || ctx.user.email)) || "?";
       var ini = String(nm).trim().charAt(0).toUpperCase() || "?";
       tools = '<div class="hdr-tools">' +
-        (ctx.isAdmin ? '<div class="hdr-menu"><button type="button" class="hamb" id="hamb" aria-label="Coordinator menu" aria-expanded="false">&#9776;<span class="cnt" id="hamb-cnt" hidden></span></button>' +
-          '<div class="hdr-drop" id="hdrdrop" hidden><span class="coord-label">Coordinator</span>' + a("admin.html", "Admin", "admin", "coord") + a("assignments.html", "Assignments", "assignments", "coord") + "</div></div>" : "") +
+        (ctx.isAdmin || ctx.isMeetAdmin ? '<div class="hdr-menu"><button type="button" class="hamb" id="hamb" aria-label="Coordinator menu" aria-expanded="false">&#9776;<span class="cnt" id="hamb-cnt" hidden></span></button>' +
+          '<div class="hdr-drop" id="hdrdrop" hidden><span class="coord-label">' + (ctx.isAdmin ? "Coordinator" : "Meet manager") + "</span>" + (ctx.isAdmin ? a("admin.html", "Admin", "admin", "coord") : a("meet-edit.html", "Add a meet", "admin", "coord")) + a("assignments.html", "Assignments", "assignments", "coord") + "</div></div>" : "") +
         '<a class="avatar' + (active === "account" ? " active" : "") + '" href="account.html" aria-label="My account" title="My account">' + R.esc(ini) + "</a></div>";
     }
     el.className = "site-header";
@@ -157,7 +157,7 @@
         if (!user) return resolve({ user: null, member: false, isAdmin: false });
         var isOwner = R.isAdminUser(user);
         var gt = setTimeout(function () {
-          resolve({ user: user, profile: null, isOwner: isOwner, isAdmin: isOwner, member: isOwner, timedOut: true });
+          resolve({ user: user, profile: null, isOwner: isOwner, isAdmin: isOwner, isMeetAdmin: isOwner, member: isOwner, timedOut: true });
         }, 12000);
         R.db.collection("users").doc(user.uid).get().then(function (snap) {
           clearTimeout(gt);
@@ -168,11 +168,12 @@
             profile.approved = true;
           }
           var isAdmin = isOwner || !!(profile && profile.approved && profile.admin === true);
-          resolve({ user: user, profile: profile, isOwner: isOwner, isAdmin: isAdmin,
+          var isMeetAdmin = isAdmin || !!(profile && profile.approved && profile.meetAdmin === true);
+          resolve({ user: user, profile: profile, isOwner: isOwner, isAdmin: isAdmin, isMeetAdmin: isMeetAdmin,
             member: isAdmin || !!(profile && profile.approved) });
         }).catch(function () {
           clearTimeout(gt);
-          resolve({ user: user, profile: null, isOwner: isOwner, isAdmin: isOwner, member: isOwner });
+          resolve({ user: user, profile: null, isOwner: isOwner, isAdmin: isOwner, isMeetAdmin: isOwner, member: isOwner });
         });
       });
     });
@@ -205,6 +206,17 @@
           verifyNote +
           (ctx.user.emailVerified ? "" : "<p><strong>Once you are approved, please verify your email.</strong> We sent a verification message to your inbox (check spam too). Tap the link in it.</p>") +
           '<p class="muted small">Signed in as ' + R.esc(ctx.user.email) + "</p></div>";
+        return null;
+      }
+      return ctx;
+    });
+  };
+
+  R.requireMeetAdmin = function (active) {   // coordinators and meet managers
+    return R.requireMember(active).then(function (ctx) {
+      if (!ctx) return null;
+      if (!ctx.isMeetAdmin) {
+        document.getElementById("app").innerHTML = '<div class="card"><h2>Coordinators only</h2><p>This page is for the officials coordinator and meet managers.</p></div>';
         return null;
       }
       return ctx;

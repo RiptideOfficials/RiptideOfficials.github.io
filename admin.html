@@ -54,7 +54,7 @@
       '<label for="t-link">USA Swimming team registration link</label><input id="t-link" placeholder="https://omr.usaswimming.org/omr/welcome/...">' +
       '<div class="btn-row"><button class="btn green" id="t-save" type="button">Save</button></div><div id="t-status" role="status"></div></div>' +
       '<div class="card"><h2>People interested in becoming officials <span class="cnt" id="b-int" hidden></span></h2><p class="muted small">From the "I\'m interested" form on the public pages.</p><div id="interested">Loading...</div></div>' +
-      '<div class="card"><h2>Members <span class="cnt" id="b-mem" hidden></span></h2><p class="muted small">New accounts wait here until approved. Admins can see members\' email and phone. ' + (ctx.isOwner ? 'To let another Meet Ref (or anyone) help run meets, approve their account and tap <strong>Make admin</strong>. Admins can add and edit meets, email officials, and approve members.' : '') + '</p><div id="members" class="table-wrap">Loading...</div></div>';
+      '<div class="card"><h2>Members <span class="cnt" id="b-mem" hidden></span></h2><p class="muted small">New accounts wait here until approved. Admins can see members\' email and phone. ' + (ctx.isOwner ? 'To let another Meet Ref (or anyone) help run meets, approve their account and tap <strong>Make admin</strong>. Admins can add and edit meets, email officials, and approve members. To give someone access to <strong>meets only</strong> (add and edit meets, see sign-ups, set assignments), tap <strong>Make meet manager</strong> instead.' : '') + '</p><div id="members" class="table-wrap">Loading...</div></div>';
     Array.prototype.forEach.call(document.querySelectorAll("#app .card"), function (c) { c.classList.add("coord-card"); });
     // make every box collapsible (triangle), with Expand all / Collapse all at the top
     Array.prototype.forEach.call(document.querySelectorAll("#app .card"), function (c) {
@@ -228,8 +228,8 @@
         else html += '<p class="muted" style="margin-top:0">No one is waiting for approval.</p>';
         html += '<details class="mem-ok"' + (waiting.length ? "" : " open") + '><summary>Approved members (' + ok.length + ")</summary>" + ok.map(function (u) {
           var admin = u.admin || isOwnerEmail(u);
-          return '<div class="mem-row"><div class="mem-who"><strong>' + esc(u.name) + "</strong>" + (admin ? ' <span class="pill green">Admin</span>' : "") + '<br><span class="muted small">' + esc(u.email) + (u.phone ? " &middot; " + esc(u.phone) : "") + "</span></div>" +
-            '<div class="mem-btns">' + (ctx.isOwner && !isOwnerEmail(u) ? (u.admin ? '<button class="btn small ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button>' : '<button class="btn small green" data-mkadmin="' + esc(u.id) + '">Make admin</button>') : "") +
+          return '<div class="mem-row"><div class="mem-who"><strong>' + esc(u.name) + "</strong>" + (admin ? ' <span class="pill green">Admin</span>' : (u.meetAdmin ? ' <span class="pill green">Meet manager</span>' : "")) + '<br><span class="muted small">' + esc(u.email) + (u.phone ? " &middot; " + esc(u.phone) : "") + "</span></div>" +
+            '<div class="mem-btns">' + (ctx.isOwner && !isOwnerEmail(u) ? (u.admin ? '<button class="btn small ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button>' : '<button class="btn small green" data-mkadmin="' + esc(u.id) + '">Make admin</button>') + (u.admin ? "" : (u.meetAdmin ? '<button class="btn small ghost" data-unmm="' + esc(u.id) + '">Remove meet manager</button>' : '<button class="btn small ghost" data-mkmm="' + esc(u.id) + '">Make meet manager</button>')) : "") +
             (isOwnerEmail(u) ? "" : '<button class="btn small ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>') + "</div></div>";
         }).join("") + "</details>";
         $("members").innerHTML = users.length ? html : '<p class="muted">No accounts yet.</p>';
@@ -242,7 +242,9 @@
       if (g("data-approve")) p = users.doc(g("data-approve")).update({ approved: true });
       else if (g("data-mkadmin")) { if (!confirm("Make this person an admin? They will be able to see everyone's contact info, email officials, and edit meets.")) return; p = users.doc(g("data-mkadmin")).update({ admin: true }); }
       else if (g("data-unadmin")) p = users.doc(g("data-unadmin")).update({ admin: false });
-      else if (g("data-unapprove")) { if (!confirm("Remove this person's access?")) return; p = users.doc(g("data-unapprove")).update({ approved: false, admin: false }); }
+      else if (g("data-mkmm")) { if (!confirm("Make this person a meet manager? They can add and edit meets, see sign-up contact details, and set up assignments. They cannot approve members or edit anything else on the site.")) return; p = users.doc(g("data-mkmm")).update({ meetAdmin: true }); }
+      else if (g("data-unmm")) p = users.doc(g("data-unmm")).update({ meetAdmin: false });
+      else if (g("data-unapprove")) { if (!confirm("Remove this person's access?")) return; p = users.doc(g("data-unapprove")).update({ approved: false, admin: false, meetAdmin: false }); }
       else if (g("data-deluser")) { if (!confirm("Delete this account request?")) return; p = users.doc(g("data-deluser")).delete(); }
       if (p) p.then(loadMembers).catch(function () { alert("That didn't work. Please try again."); });
     });

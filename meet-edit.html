@@ -29,7 +29,7 @@
   R.footer();
   var meetId = new URLSearchParams(location.search).get("m");
 
-  R.requireAdmin("admin").then(function (ctx) {
+  R.requireMeetAdmin("admin").then(function (ctx) {
     if (!ctx) return;
     var app = $("app"), S = [], whole = R.WHOLE_POS.slice(), legacy = false;
 
