@@ -446,3 +446,6 @@ details.has-pencil>.pencil.del{right:76px}
 .nav a.recruit{background:var(--green);color:#fff}
 .join.recruit .why>div{border-left-color:#8fd16a;color:#fff}.join.recruit .why .k{color:#fff}
 .join.recruit .why{margin:14px 0 18px}
+#interested .meet-list li{flex-wrap:wrap;gap:8px 12px}
+#interested .meet-list li>div:first-child{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+#interested .meet-list li>.btn-row{flex:0 1 auto!important;flex-wrap:wrap;max-width:100%}
