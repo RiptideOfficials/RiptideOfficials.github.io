@@ -264,6 +264,7 @@
     { key: "shadow", label: "Shadowing", cert: "" }
   ];
   R.fmtTime = function (t) {
+    if (/^\s*tbd\s*$/i.test(t || "")) return "TBD";
     var m = /^(\d{1,2}):(\d{2})/.exec(t || ""); if (!m) return "";
     var h = +m[1], ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
     return h + ":" + m[2] + " " + ap;

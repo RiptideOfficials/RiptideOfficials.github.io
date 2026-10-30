@@ -425,3 +425,7 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .mem-row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}
 .mem-who{min-width:0;overflow-wrap:anywhere}
 .mem-btns{display:flex;gap:6px;flex-wrap:wrap}
+
+.tbd-opt{font-weight:600;margin-left:10px;font-size:.9em;white-space:nowrap;display:inline}
+.tbd-opt input{width:auto;min-height:0;margin:0 4px 0 0;vertical-align:middle}
+.lbl-row{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.lbl-row>label:first-child{margin-bottom:0}.tbd-opt{margin-left:4px}

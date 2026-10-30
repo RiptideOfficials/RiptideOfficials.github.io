@@ -130,7 +130,13 @@
         else if (i != null && dk) S[+i].dv[dk] = t.value;
       });
       $("sess").addEventListener("change", function (e) {
-        var t = e.target, i = t.getAttribute("data-i"), f = t.getAttribute("data-list");
+        var t = e.target, i = t.getAttribute("data-i"), f = t.getAttribute("data-list"), tk = t.getAttribute("data-tbd");
+        if (i != null && tk) {   // TBD box: time not known yet
+          var isS = tk === "@start", box = t.closest("div").querySelector(isS ? 'input[data-f="start"]' : 'input[data-dv="' + tk + '"]');
+          if (isS) S[+i].start = t.checked ? "TBD" : ""; else S[+i].dv[tk] = t.checked ? "TBD" : "";
+          if (box) { box.value = ""; box.disabled = t.checked; }
+          return;
+        }
         if (i == null || !f) return;
         S[+i][f] = Array.prototype.map.call(document.querySelectorAll('#sess input[data-i="' + i + '"][data-list="' + f + '"]:checked'), function (x) { return x.value; });
       });
@@ -171,14 +177,16 @@
         return '<div class="card coord-card"><h2>' + esc(x.name || (S.length === 1 ? ((x.date || ($("m-date") && $("m-date").value)) ? new Date((x.date || $("m-date").value) + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }) : "Session details") : "Session " + (i + 1))) + "</h2>" +
           '<label>Session name (optional)</label><input data-i="' + i + '" data-f="name" placeholder="' + (S.length === 1 ? "Leave blank \u2014 only one session" : "Session " + (i + 1)) + '" value="' + esc(x.name) + '">' +
           '<div class="row2"><div><label>Date</label><input type="date" data-i="' + i + '" data-f="date" value="' + esc(x.date) + '"></div>' +
-          '<div><label>Start time</label><input type="time" data-i="' + i + '" data-f="start" value="' + esc(x.start) + '"></div></div>' +
+          '<div><div class="lbl-row"><label>Start time</label><label class="tbd-opt"><input type="checkbox" data-i="' + i + '" data-tbd="@start"' + (/^tbd$/i.test(x.start || "") ? " checked" : "") + '> TBD</label></div><input type="time" data-i="' + i + '" data-f="start"' + (/^tbd$/i.test(x.start || "") ? " disabled" : "") + ' value="' + esc(/^tbd$/i.test(x.start || "") ? "" : x.start) + '"></div></div>' +
           "<label>Positions people can sign up for in this session</label>" + checks("positions", x.positions) +
           "<label>Positions people can ask to shadow in this session</label>" + checks("shadow", x.shadow) +
           "<label>Meet details</label>" + '<div class="row2">' + DKEYS.map(function (d) {
-            var isT = TIMEKEYS.indexOf(d[1]) >= 0, cur = x.dv[d[1]] || "", hm = isT ? toHHMM(cur) : null;
-            if (isT && hm !== null) { x.dv[d[1]] = hm; cur = hm; }
-            var typ = isT && hm !== null ? ' type="time"' : "";
-            return '<div><label class="muted small" style="font-weight:600">' + d[0] + '</label><input' + typ + ' data-i="' + i + '" data-dv="' + d[1] + '" placeholder="' + (d[1] === "timersby" ? "Name (add when known)" : "Time") + '" value="' + esc(cur) + '"></div>';
+            var isT = TIMEKEYS.indexOf(d[1]) >= 0, cur = x.dv[d[1]] || "", tbd = isT && /^tbd$/i.test(cur.trim()), hm = isT && !tbd ? toHHMM(cur) : null;
+            if (tbd) { x.dv[d[1]] = "TBD"; cur = ""; }
+            else if (isT && hm !== null) { x.dv[d[1]] = hm; cur = hm; }
+            var typ = isT && (tbd || hm !== null) ? ' type="time"' : "";
+            var tbdBox = typ ? ' <label class="tbd-opt"><input type="checkbox" data-i="' + i + '" data-tbd="' + d[1] + '"' + (tbd ? " checked" : "") + '> TBD</label>' : "";
+            return '<div><div class="lbl-row"><label class="muted small" style="font-weight:600">' + d[0] + '</label>' + tbdBox + '</div><input' + typ + (tbd ? " disabled" : "") + ' data-i="' + i + '" data-dv="' + d[1] + '" placeholder="' + (d[1] === "timersby" ? "Name (add when known)" : "Time") + '" value="' + esc(cur) + '"></div>';
           }).join("") + "</div>" +
           '<label>Notes for officials</label><textarea rows="3" data-i="' + i + '" data-f="notes" placeholder="Warm-ups, officials meeting, timers meeting...">' + esc(x.notes) + "</textarea>" +
           (S.length > 1 ? '<div class="btn-row"><button class="btn small danger" type="button" data-remove="' + i + '">Remove this session</button></div>' : "") + "</div>";
