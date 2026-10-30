@@ -432,3 +432,5 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .fyi-links{margin:0 0 14px}.fyi-links>h2{font-size:1.1rem;border-left:0;padding-left:0;margin:0 0 4px}
 .restore-box{border-left-color:#e0b94a;margin:0 0 14px}
 .edit-wrap{position:relative}.edit-wrap>.pencil{top:2px;right:2px}.edit-wrap>.edit-ui{margin:6px 0 12px}
+.pencil.del{background:#fde8e8;border-color:#c0392b;color:#a61b1b}
+.pencil.del:hover{background:#f9cfcf}
