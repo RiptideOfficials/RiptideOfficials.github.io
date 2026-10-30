@@ -219,7 +219,8 @@
       return R.db.collection("users").orderBy("createdAt", "desc").get().then(function (snap) {
         var users = snap.docs.map(function (d) { var u = d.data(); u.id = d.id; return u; });
         var isOwnerEmail = function (u) { return String(u.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase(); };
-        var waiting = users.filter(function (u) { return !u.approved; }), ok = users.filter(function (u) { return u.approved; });
+        var isHelper = function (u) { return /\+helper@/i.test(String(u.email || "")); };
+        var waiting = users.filter(function (u) { return !u.approved && !isHelper(u); }), ok = users.filter(function (u) { return u.approved && !isHelper(u); }), helpers = users.filter(isHelper);
         var html = "";
         if (waiting.length) html += '<div class="mem-wait-box"><h3>Waiting for approval (' + waiting.length + ")</h3>" + waiting.map(function (u) {
           return '<div class="mem-wait"><div><strong>' + esc(u.name) + '</strong><br><a href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" + (u.phone ? " &middot; " + esc(u.phone) : "") + '</div>' +
@@ -236,10 +237,11 @@
             '<div class="mem-btns">' + (ctx.isOwner && !isOwnerEmail(u) ? (u.admin ? '<button class="btn xs ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button>' : '<button class="btn xs green" data-mkadmin="' + esc(u.id) + '">Make admin</button>') + (u.admin ? "" : (u.meetAdmin ? '<button class="btn xs ghost" data-unmm="' + esc(u.id) + '">Remove meet manager</button>' : '<button class="btn xs ghost" data-mkmm="' + esc(u.id) + '">Make meet manager</button>')) : "") +
             (isOwnerEmail(u) ? "" : '<button class="btn xs ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>') + "</div></div>";
         }).join("") + "</div></details>";
+        if (helpers.length) html += '<div class="mem-helper"><h3>Helper account</h3>' + helpers.map(function (u) { return '<p class="muted small" style="margin:2px 0">' + esc(u.email) + ' &middot; ' + (u.approved ? "approved" : "<strong>not approved</strong>") + (u.admin ? " &middot; admin" : " &middot; <strong>not admin</strong>") + "</p>"; }).join("") + '<p class="muted small" style="margin:6px 0 0">This is the account that checks for new sign-ups and sends your phone alerts. Please leave it as it is.</p></div>';
         $("members").innerHTML = users.length ? html : '<p class="muted">No accounts yet.</p>';
         var dt = $("mem-det-toggle");
         if (dt) dt.onclick = function () { var l = $("mem-list"), on = l.classList.toggle("show-det"); dt.textContent = on ? "Hide full details" : "Show full details"; try { localStorage.setItem("ro_mem_details", on ? "1" : "0"); } catch (e) {} };
-        setBadge("b-mem", users.filter(function (u) { return !u.approved; }).length); R.adminBadge();
+        setBadge("b-mem", waiting.length); R.adminBadge();
       }).catch(function () { $("members").innerHTML = '<div class="msg err">Could not load members.</div>'; });
     }
     $("members").addEventListener("click", function (e) {
