@@ -34,6 +34,17 @@
     var app = $("app"), S = [], whole = R.WHOLE_POS.slice(), legacy = false;
 
     var DKEYS = [["Warm-ups", "warm", /warm/i], ["Officials meeting", "off", /official/i], ["Timers meeting", "timers", /timer(?!.*(led|run) by)/i], ["Timers meeting led by", "timersby", /(led|run) by/i], ["Meet starts", "start", /start/i]];
+    // time boxes: warm, off, timers, start use a time picker (stored as "7:30 AM"); older typed text is converted when it can be
+    var TIMEKEYS = ["warm", "off", "timers", "start"];
+    function toHHMM(v) {
+      v = String(v || "").trim(); if (!v) return "";
+      var m = /^(\d{1,2})(?::?(\d{2}))?\s*([ap])\.?\s*m?\.?$/i.exec(v) || /^(\d{1,2}):(\d{2})$/.exec(v);
+      if (!m) return null;
+      var h = +m[1], mi = m[2] ? +m[2] : 0, ap = (m[3] || "").toLowerCase();
+      if (ap === "p" && h < 12) h += 12; if (ap === "a" && h === 12) h = 0;
+      if (h > 23 || mi > 59) return null;
+      return String(h).padStart(2, "0") + ":" + String(mi).padStart(2, "0");
+    }
     function parseDetails(text) {   // "Label | time" lines -> the four boxes (+ any other lines kept as they are)
       var dv = {}, extra = [];
       R.parseSchedule(text).forEach(function (l) {
@@ -43,7 +54,7 @@
       return { dv: dv, extra: extra.join("\n") };
     }
     function buildDetails(x) {
-      var lines = DKEYS.filter(function (d) { return (x.dv[d[1]] || "").trim(); }).map(function (d) { return d[0] + " | " + x.dv[d[1]].trim(); });
+      var lines = DKEYS.filter(function (d) { return (x.dv[d[1]] || "").trim(); }).map(function (d) { var v = x.dv[d[1]].trim(); if (TIMEKEYS.indexOf(d[1]) >= 0 && /^\d{2}:\d{2}$/.test(v)) v = R.fmtTime(v); return d[0] + " | " + v; });
       if (x.extra) lines.push(x.extra);
       return lines.join("\n");
     }
@@ -164,7 +175,10 @@
           "<label>Positions people can sign up for in this session</label>" + checks("positions", x.positions) +
           "<label>Positions people can ask to shadow in this session</label>" + checks("shadow", x.shadow) +
           "<label>Meet details</label>" + '<div class="row2">' + DKEYS.map(function (d) {
-            return '<div><label class="muted small" style="font-weight:600">' + d[0] + '</label><input data-i="' + i + '" data-dv="' + d[1] + '" placeholder="' + (d[1] === "timersby" ? "Name (add when known)" : "Time") + '" value="' + esc(x.dv[d[1]] || "") + '"></div>';
+            var isT = TIMEKEYS.indexOf(d[1]) >= 0, cur = x.dv[d[1]] || "", hm = isT ? toHHMM(cur) : null;
+            if (isT && hm !== null) { x.dv[d[1]] = hm; cur = hm; }
+            var typ = isT && hm !== null ? ' type="time"' : "";
+            return '<div><label class="muted small" style="font-weight:600">' + d[0] + '</label><input' + typ + ' data-i="' + i + '" data-dv="' + d[1] + '" placeholder="' + (d[1] === "timersby" ? "Name (add when known)" : "Time") + '" value="' + esc(cur) + '"></div>';
           }).join("") + "</div>" +
           '<label>Notes for officials</label><textarea rows="3" data-i="' + i + '" data-f="notes" placeholder="Warm-ups, officials meeting, timers meeting...">' + esc(x.notes) + "</textarea>" +
           (S.length > 1 ? '<div class="btn-row"><button class="btn small danger" type="button" data-remove="' + i + '">Remove this session</button></div>' : "") + "</div>";
