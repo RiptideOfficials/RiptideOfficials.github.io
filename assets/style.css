@@ -413,9 +413,9 @@ details.has-pencil>.pencil{top:8px;right:40px}
 /* announcement boxes */
 .card.announce{border-color:#f0c48a;border-left:5px solid #e8891d}
 .card.announce h2{color:#a85a00}
-.pencil.del{right:96px}
+.pencil.del{right:46px}
 #announce:empty{display:none}
-.announce.has-pencil>h2{padding-right:190px}@media(max-width:560px){.announce.has-pencil>h2{padding-right:0;padding-top:34px}}
+.announce.has-pencil>h2{padding-right:90px}@media(max-width:560px){.announce.has-pencil>h2{padding-right:0;padding-top:34px}}
 
 /* members on the Admin page */
 .mem-wait-box{border:1.5px solid #e8891d;border-left:5px solid #e8891d;border-radius:12px;padding:10px 12px;margin:0 0 12px;background:#fff6e8}
@@ -434,3 +434,11 @@ details.has-pencil>.pencil{top:8px;right:40px}
 .edit-wrap{position:relative}.edit-wrap>.pencil{top:2px;right:2px}.edit-wrap>.edit-ui{margin:6px 0 12px}
 .pencil.del{background:#fde8e8;border-color:#c0392b;color:#a61b1b}
 .pencil.del:hover{background:#f9cfcf}
+/* edit / delete buttons are small icons so they take up little room */
+.pencil{width:30px;height:30px;padding:0;justify-content:center;gap:0;font-size:1rem;line-height:1;border-radius:8px}
+.pencil span{display:none}
+.pencil.static{width:auto;height:auto;padding:5px 10px;gap:4px;font-size:.85rem}
+.pencil.static span{display:inline}
+.pencil.del{font-size:1.05rem;font-weight:800;color:#d12626}
+details.has-pencil>.pencil.del{right:76px}
+.edit-wrap>.pencil{top:0;right:0}
