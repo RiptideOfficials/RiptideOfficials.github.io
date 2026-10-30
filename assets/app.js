@@ -62,7 +62,7 @@
       links += a("registration.html", "Registration", "registration");
       links += a("apprentice-forms.html", "Apprentice Forms", "forms");
       links += a("meets.html", "Meet Sign-Ups", "meets");
-      links += a("docs.html", "Documents", "docs");
+      links += a("docs.html", "Resources", "docs");
       links += a("apparel.html", "Apparel", "apparel");
     } else if (ctx && ctx.user) {
       links += a("index.html", "Home", "index");
