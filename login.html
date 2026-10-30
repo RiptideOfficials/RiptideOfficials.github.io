@@ -77,6 +77,7 @@
   }
   $("tab-in").onclick = function () { tab(false); };
   $("tab-up").onclick = function () { tab(true); };
+  if (location.hash === "#create") tab(true);   // the "Create account" links open this tab
 
   function friendly(e) {
     var c = e && e.code || "";

@@ -70,7 +70,8 @@
     } else {
       links += a("index.html", "Home", "index");
       links += a("interested.html", "Become an Official", "interested");
-      links += a("login.html", "Member Login", "login", "cta");
+      links += a("login.html#create", "Create Account", "create");
+      links += a("login.html", "Sign In", "login", "cta");
     }
     var tools = "";
     if (member) {
