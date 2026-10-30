@@ -347,8 +347,9 @@
         p.onclick = function () { if (host.querySelector(".edit-ui")) return; fn(); };
         host.classList.add("has-pencil"); host.insertBefore(p, host.firstChild);
       }
+      lists.forEach(function (s) { if (s.hasAttribute("data-edit-list")) pencil(s, function () { editList(s, page, content, originals[s.id], null); }); });   // a stand-alone list box (no tabs)
       heads.forEach(function (h) { pencil(h, function () { editHead(h, page, content, originals[h.id], null); }); });
-      if (lists.length) {
+      if (lists.some(function (s) { return !s.hasAttribute("data-edit-list"); })) {
         var wrap = el("div", { class: "edit-page-bar" });
         var eb = el("button", { type: "button", class: "pencil static", html: "\u270E <span>Edit or upload files in this tab</span>" });
         eb.onclick = function () {
