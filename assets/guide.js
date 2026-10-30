@@ -18,7 +18,9 @@
       var saveNote = null, timer = null;
       var ref = persist ? R.db.collection("users").doc(ctx.user.uid).collection("progress").doc(key) : null;
 
-      if (progress && boxes.length) {
+      var groupMode = !!opts.groups;   // sections with their own step numbers: show "x of y" per section instead of one total
+      if (progress && boxes.length && groupMode) progress.parentNode.removeChild(progress);
+      if (progress && boxes.length && !groupMode) {
         progress.innerHTML =
           '<div class="progress card"><div class="progress-top"><strong id="ptext"></strong>' +
           '<span class="muted small" id="psave"></span></div>' +
@@ -26,7 +28,14 @@
         saveNote = document.getElementById("psave");
       }
 
+      var groupEls = groupMode ? Array.prototype.slice.call(app.querySelectorAll(".group-title")) : [];
+      function groupSteps(g) { var out = [], h = g.closest(".edit-wrap") || g, n = h.nextElementSibling; while (n && !n.classList.contains("group-title") && !n.querySelector(".group-title")) { var b = n.querySelector && n.querySelector("input.stepbox"); if (b) out.push(b); n = n.nextElementSibling; } return out; }
       function refresh() {
+        groupEls.forEach(function (g) {
+          var bs = groupSteps(g), d = bs.filter(function (b) { return b.checked; }).length, tag = g.querySelector(".gp");
+          if (!tag) { tag = document.createElement("span"); tag.className = "gp"; g.appendChild(tag); }
+          tag.textContent = bs.length ? (d === bs.length ? "All done" : d + " of " + bs.length + " done") : "";
+        });
         var done = boxes.filter(function (b) { return b.checked; }).length;
         boxes.forEach(function (b) {
           var host = b.closest(".step, .chk-item");

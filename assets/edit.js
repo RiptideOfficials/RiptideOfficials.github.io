@@ -405,9 +405,10 @@
   }
 
   /* ---------- put it all on a page ---------- */
-  E.renumber = function (root) {   // "Step 1, Step 2..." follow whatever steps are on the page
+  E.renumber = function (root) {   // "Step 1, Step 2..." follow whatever steps are on the page; each section heading (group) starts again at 1
     var n = 0;
-    Array.prototype.forEach.call(root.querySelectorAll(".step"), function (st) {
+    Array.prototype.forEach.call(root.querySelectorAll(".step, .group-title"), function (st) {
+      if (st.classList.contains("group-title")) { n = 0; return; }
       var num = st.querySelector(".num"); if (!num || !/^\s*step\s*\d+/i.test(num.textContent)) return;
       num.textContent = "Step " + (++n);
     });

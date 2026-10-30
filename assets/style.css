@@ -449,3 +449,4 @@ details.has-pencil>.pencil.del{right:76px}
 #interested .meet-list li{flex-wrap:wrap;gap:8px 12px}
 #interested .meet-list li>div:first-child{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
 #interested .meet-list li>.btn-row{flex:0 1 auto!important;flex-wrap:wrap;max-width:100%}
+.group-title .gp{font-family:"Barlow",sans-serif;font-size:.9rem;font-weight:600;color:var(--muted);margin-left:12px;white-space:nowrap}

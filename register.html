@@ -33,13 +33,14 @@
 <div class="callout"><strong>New officials: please register as an APPRENTICE OFFICIAL.</strong> The apprentice membership gives you access to the officials' education resources for a 60-day grace period, without a paid membership fee.</div>
 <div class="card"><h3>Jump to</h3>
   <div class="btn-row" style="margin-top:0" id="jump-buttons" data-edit-buttons>
-    <a class="btn small" href="#step-1">First time officials</a>
+    <a class="btn small" href="#new">First time officials</a>
     <a class="btn small" href="#renew">Renew my membership</a>
     <a class="btn small" href="#upgrade">Upgrade Apprentice to Registered</a>
   </div>
   <p style="margin:14px 0 4px"><strong>Use this link to get started (new 2026 link):</strong></p>
   <div data-team-link style="margin:10px 0">Loading the team link...</div>
 </div>
+<h2 class="group-title" id="new" style="margin-top:26px;scroll-margin-top:90px">New officials: register as an Apprentice</h2>
 <section class="step card" id="step-1" data-editable>
   <input type="checkbox" class="stepbox" data-step="r1" aria-label="Mark step 1 done">
   <div class="body"><div class="num">Step 1</div><h2>First time officials: start registering</h2>
@@ -78,7 +79,7 @@
 <h2 class="group-title" id="renew" style="margin-top:26px;scroll-margin-top:90px">Existing officials: renew</h2>
 <section class="step card" id="step-5" data-editable>
   <input type="checkbox" class="stepbox" data-step="r5" aria-label="Mark step 5 done">
-  <div class="body"><div class="num">Step 5</div><h2>Check Official next to your name</h2>
+  <div class="body"><div class="num">Step 1</div><h2>Check Official next to your name</h2>
 
     <p>Log in and scroll to the bottom. Check the box for <strong>Official</strong> next to your name.</p>
 
@@ -86,7 +87,7 @@
 </section>
 <section class="step card" id="step-6" data-editable>
   <input type="checkbox" class="stepbox" data-step="r6" aria-label="Mark step 6 done">
-  <div class="body"><div class="num">Step 6</div><h2>Click Renew</h2>
+  <div class="body"><div class="num">Step 2</div><h2>Click Renew</h2>
 
     <img class="shot sm" src="assets/img/guide/renew-button.png" alt="Renew button" loading="lazy">
 
@@ -94,7 +95,7 @@
 </section>
 <section class="step card" id="step-7" data-editable>
   <input type="checkbox" class="stepbox" data-step="r7" aria-label="Mark step 7 done">
-  <div class="body"><div class="num">Step 7</div><h2>Confirm you're in Good Standing</h2>
+  <div class="body"><div class="num">Step 3</div><h2>Confirm you're in Good Standing</h2>
 
     <p>Log back in and make sure your dashboard shows <strong>Official</strong> and <strong>Parent</strong>, and that your Officials status is <strong>&ldquo;Good Standing&rdquo;</strong>.</p>
 
@@ -103,7 +104,7 @@
 <h2 class="group-title" id="upgrade" style="margin-top:26px;scroll-margin-top:90px">Upgrade from Apprentice to Registered</h2>
 <section class="step card" id="step-8" data-editable>
   <input type="checkbox" class="stepbox" data-step="r8" aria-label="Mark step 8 done">
-  <div class="body"><div class="num">Step 8</div><h2>Upgrade your membership</h2>
+  <div class="body"><div class="num">Step 1</div><h2>Upgrade your membership</h2>
 
     <p>Follow the instructions in <a href="https://websitedevsa.blob.core.windows.net/sitefinity/docs/default-source/swims-documents/members/how-do-i-upgrade-a-membership.pdf?sfvrsn=398d0632_1" target="_blank" rel="noopener">How do I upgrade a membership?</a> (PDF from USA Swimming).</p>
 
@@ -119,6 +120,6 @@
 <script src="assets/app.js"></script>
 <script src="assets/edit.js"></script>
 <script src="assets/guide.js"></script>
-<script>Guide.init({ key: "register", persist: true, active: "docs" });</script>
+<script>Guide.init({ key: "register", persist: true, active: "docs", groups: true });</script>
 </body>
 </html>
