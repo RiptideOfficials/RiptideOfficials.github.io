@@ -456,3 +456,5 @@ details.has-pencil>.pencil.del{right:76px}
 .mem-det{display:none}.mem-list.show-det .mem-det{display:inline}
 .btn.xs{padding:3px 9px;font-size:.78rem;min-height:0;border-radius:7px;line-height:1.3}
 .mem-btns{gap:5px}
+.mem-list .mem-btns{display:none}.mem-list.show-det .mem-btns{display:flex;margin-top:4px}
+.mem-list .btn.xs{padding:3px 9px;font-size:.78rem;min-height:0;line-height:1.3}
