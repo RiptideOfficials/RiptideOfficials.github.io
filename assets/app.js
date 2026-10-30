@@ -69,7 +69,7 @@
       links += '<a href="#" id="signout">Sign out</a>';
     } else {
       links += a("index.html", "Home", "index");
-      links += a("interested.html", "Become an Official", "interested", "recruit");
+      links += a("interested.html", "Learn About Officiating", "interested", "recruit");
       links += a("login.html#create", "Create Account", "create");
       links += a("login.html", "Sign In", "login", "cta");
     }
