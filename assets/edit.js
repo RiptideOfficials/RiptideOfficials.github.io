@@ -319,6 +319,48 @@
     var anchor = h.querySelector(".btn-row"); anchor ? h.insertBefore(ui, anchor) : h.appendChild(ui);
   }
 
+  /* ---------- loose text on a page: group headings, notes (callouts), intro lines ---------- */
+  function textTargets(root) {
+    var seen = {}, out = [];
+    if (!root.querySelector(".guide-head")) return out;   // only the step-by-step pages
+    Array.prototype.forEach.call(root.querySelectorAll(".group-title, .callout, .card > h3, .card > p, .guide-note"), function (n) {
+      if (n.closest("[data-editable],[data-edit-head],.edit-ui,.doc-section,.progress,.contact-card,.restore-box") || n.querySelector("[data-team-link]")) return;
+      var kind = /^H\d$/.test(n.tagName) ? "head" : "note";
+      seen[kind] = (seen[kind] || 0) + 1;
+      n.setAttribute("data-etid", n.id ? "t-" + n.id : "t-" + kind + "-" + seen[kind]);
+      out.push(n);
+    });
+    return out;
+  }
+  function isHeadEl(n) { return /^H\d$/.test(n.tagName); }
+  function applyText(n, v) { if (isHeadEl(n)) n.textContent = v.text || ""; else n.innerHTML = E.clean(v.html || ""); }
+  function editText(n, wrap, page, content, original) {
+    var id = n.getAttribute("data-etid"), head = isHeadEl(n), cur = (content.texts && content.texts[id]) || original;
+    var ui = el("div", { class: "edit-ui" }), msg = el("div", { role: "status" }), field;
+    if (head) { field = el("input", { value: cur.text || "", "aria-label": "Heading" }); ui.appendChild(field); }
+    else {
+      var tools = el("div", { class: "rt-tools" });
+      field = el("div", { class: "rt-box", contenteditable: "true" }); field.innerHTML = cur.html || "";
+      function cmd(name, val) { field.focus(); document.execCommand(name, false, val || null); }
+      [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", function () {
+        var sel = window.getSelection(); if (!sel || sel.isCollapsed) { alert("First select the words you want to turn into a link."); return; }
+        var u = prompt("Paste the web address (starts with https://):", "https://"); if (u && URL_OK.test(u.trim())) cmd("createLink", u.trim());
+      }], ["Unlink", "Remove the link", function () { cmd("unlink"); }]].forEach(function (t) { var b = btn(t[0], "ghost", t[2]); b.onmousedown = function (e) { e.preventDefault(); }; tools.appendChild(b); });
+      ui.appendChild(tools); ui.appendChild(field);
+    }
+    function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); n.hidden = false; var pb = wrap.querySelector(".pencil"); if (pb) pb.hidden = false; }
+    function put(v, ok) { content.texts = content.texts || {}; if (v) content.texts[id] = v; else delete content.texts[id];
+      msg.textContent = "Saving...";
+      store(page, content).then(function () { applyText(n, v || original); close(); }).catch(function () { msg.innerHTML = '<div class="msg err">Could not save. Make sure the latest firestore.rules are published.</div>'; }); }
+    ui.appendChild(el("div", { class: "btn-row" }, [
+      btn("Save", "green", function () { var v = head ? { text: field.value.trim() || original.text } : { html: E.clean(field.innerHTML) }; put(v); }),
+      btn("Cancel", "ghost", close),
+      (content.texts && content.texts[id]) ? btn("Restore the original", "danger", function () { if (confirm("Go back to the original text?")) put(null); }) : null]));
+    ui.appendChild(msg);
+    n.hidden = true; var pb2 = wrap.querySelector(".pencil"); if (pb2) pb2.hidden = true;
+    wrap.appendChild(ui);
+  }
+
   /* ---------- put it all on a page ---------- */
   E.renumber = function (root) {   // "Step 1, Step 2..." follow whatever steps are on the page
     var n = 0;
@@ -348,6 +390,8 @@
       blocks.forEach(function (h) { originals[h.id] = { title: titleOf(h), html: blockHtml(h) }; });
       lists.forEach(function (s) { if (content.lists && content.lists[s.id]) renderList(s, content.lists[s.id]); });
       blocks.forEach(function (h) { if (content.blocks && content.blocks[h.id]) applyBlock(h, content.blocks[h.id]); });
+      var texts = textTargets(root), textOrig = {};
+      texts.forEach(function (n) { var id = n.getAttribute("data-etid"); textOrig[id] = isHeadEl(n) ? { text: n.textContent } : { html: E.clean(n.innerHTML) }; if (content.texts && content.texts[id]) applyText(n, content.texts[id]); });
       // sections an admin removed from the page (they can be restored); the step numbers then close up
       var hidden = content.hidden || {}, hiddenList = [];
       blocks = blocks.filter(function (h) {
@@ -366,6 +410,12 @@
         });
         var first = root.querySelector("#progress") || root.firstChild; first.parentNode.insertBefore(rb, first);
       }
+      texts.forEach(function (n) {
+        var w = el("div", { class: "edit-wrap" }); n.parentNode.insertBefore(w, n); w.appendChild(n);
+        var pb = el("button", { type: "button", class: "pencil", title: "Edit this text", "aria-label": "Edit this text", html: "\u270E <span>Edit</span>" });
+        pb.onclick = function () { if (!w.querySelector(".edit-ui")) editText(n, w, page, content, textOrig[n.getAttribute("data-etid")]); };
+        w.insertBefore(pb, w.firstChild);
+      });
       function pencil(host, fn) {
         var p = el("button", { type: "button", class: "pencil", title: "Edit this box", "aria-label": "Edit this box", html: "✎ <span>Edit</span>" });
         p.onclick = function () { if (host.querySelector(".edit-ui")) return; fn(); };
