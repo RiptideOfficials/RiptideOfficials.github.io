@@ -251,7 +251,13 @@
 
   /* ---------- meets: sessions, positions, assignments ---------- */
   R.WHOLE_POS = ["Meet Referee", "Admin Official"];                       // cover the whole meet
-  R.SESSION_POS = ["Starter", "Stroke & Turn", "Deck Referee", "Chief Judge"]; // chosen per session
+  R.SESSION_POS = ["Stroke & Turn", "Starter", "Chief Judge", "Deck Referee"]; // chosen per session
+  // the order positions are listed in on sign-up pages (anything not listed goes at the end)
+  R.POS_ORDER = ["Meet Referee", "Stroke & Turn", "Starter", "Chief Judge", "Deck Referee", "Admin Official"];
+  R.sortPos = function (list) {
+    var o = R.POS_ORDER, rank = function (p) { var i = o.indexOf(p); return i < 0 ? 99 : i; };
+    return (list || []).map(function (p, i) { return [p, i]; }).sort(function (a, b) { return rank(a[0]) - rank(b[0]) || a[1] - b[1]; }).map(function (x) { return x[0]; });
+  };
   R.WHOLE_GROUPS = [
     { key: "meetRef", label: "Meet Referee", cert: "Meet Referee" },
     { key: "admin", label: "Admin Official", cert: "Admin Official" }
