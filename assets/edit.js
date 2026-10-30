@@ -35,6 +35,16 @@
 
   /* ---------- safe HTML for the rich text boxes ---------- */
   var ALLOWED = { P: 1, BR: 1, STRONG: 1, B: 1, EM: 1, I: 1, U: 1, UL: 1, OL: 1, LI: 1, A: 1, H3: 1, DIV: 1, IMG: 1 };
+  function linkTool(field, asButton) {   // turns the selected words into a link, or a blue button-style link
+    return function () {
+      var sel = window.getSelection(); if (!sel || sel.isCollapsed) { alert("First select the words you want to turn into " + (asButton ? "a button." : "a link.")); return; }
+      var u = prompt("Paste the web address (starts with https://):", "https://"); if (!u || !URL_OK.test(u.trim())) return;
+      field.focus(); document.execCommand("createLink", false, u.trim());
+      var n = window.getSelection().anchorNode, a = n && (n.nodeType === 1 ? n : n.parentNode); a = a && a.closest ? a.closest("a") : null;
+      if (!a) { var as = field.querySelectorAll("a"); a = as[as.length - 1]; }
+      if (a) { if (asButton) a.className = "btn small"; else a.removeAttribute("class"); }
+    };
+  }
   E.clean = function (html) {
     var doc = new DOMParser().parseFromString("<body>" + html + "</body>", "text/html");
     function walk(src, dst) {
@@ -57,7 +67,7 @@
         if (t === "A") {
           var h = (n.getAttribute("href") || "").trim();
           if (!URL_OK.test(h)) { walk(n, dst); return; }
-          var a = el("a", { href: h }); if (isExternal(h)) { a.target = "_blank"; a.rel = "noopener"; }
+          var a = el("a", { href: h }); if (/\bbtn\b/.test(n.className || "")) a.className = "btn small"; if (isExternal(h)) { a.target = "_blank"; a.rel = "noopener"; }
           walk(n, a); dst.appendChild(a); return;
         }
         if (t === "IMG") {
@@ -260,10 +270,7 @@
     var ed = el("div", { class: "rt-box", contenteditable: "true" });
     ed.innerHTML = cur.html.replace(/<div data-team-link[^>]*>.*?<\/div>/g, '<div data-team-link contenteditable="false" class="rt-ph">[The team registration button shows here]</div>');
     function cmd(name, val) { ed.focus(); document.execCommand(name, false, val || null); }
-    [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", function () {
-      var sel = window.getSelection(); if (!sel || sel.isCollapsed) { alert("First select the words you want to turn into a link."); return; }
-      var u = prompt("Paste the web address (starts with https://):", "https://"); if (u && URL_OK.test(u.trim())) cmd("createLink", u.trim());
-    }], ["Unlink", "Remove the link", function () { cmd("unlink"); }], ["• List", "Bulleted list", function () { cmd("insertUnorderedList"); }], ["Heading", "Small heading", function () { cmd("formatBlock", "h3"); }], ["Paragraph", "Normal text", function () { cmd("formatBlock", "p"); }]]
+    [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", linkTool(ed, false)], ["Button", "Make the selected words a blue button link", linkTool(ed, true)], ["Unlink", "Remove the link", function () { cmd("unlink"); }], ["• List", "Bulleted list", function () { cmd("insertUnorderedList"); }], ["Heading", "Small heading", function () { cmd("formatBlock", "h3"); }], ["Paragraph", "Normal text", function () { cmd("formatBlock", "p"); }]]
       .forEach(function (t) { var b = btn(t[0], "ghost", t[2]); b.title = t[1]; b.onmousedown = function (e) { e.preventDefault(); }; tools.appendChild(b); });
     function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); parts[1].concat(parts[0]).forEach(function (n) { n.hidden = false; }); }
     function save() {
@@ -342,10 +349,7 @@
       var tools = el("div", { class: "rt-tools" });
       field = el("div", { class: "rt-box", contenteditable: "true" }); field.innerHTML = cur.html || "";
       function cmd(name, val) { field.focus(); document.execCommand(name, false, val || null); }
-      [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", function () {
-        var sel = window.getSelection(); if (!sel || sel.isCollapsed) { alert("First select the words you want to turn into a link."); return; }
-        var u = prompt("Paste the web address (starts with https://):", "https://"); if (u && URL_OK.test(u.trim())) cmd("createLink", u.trim());
-      }], ["Unlink", "Remove the link", function () { cmd("unlink"); }]].forEach(function (t) { var b = btn(t[0], "ghost", t[2]); b.onmousedown = function (e) { e.preventDefault(); }; tools.appendChild(b); });
+      [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", linkTool(field, false)], ["Button", "Make the selected words a blue button link", linkTool(field, true)], ["Unlink", "Remove the link", function () { cmd("unlink"); }]].forEach(function (t) { var b = btn(t[0], "ghost", t[2]); b.onmousedown = function (e) { e.preventDefault(); }; tools.appendChild(b); });
       ui.appendChild(tools); ui.appendChild(field);
     }
     function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); n.hidden = false; var pb = wrap.querySelector(".pencil"); if (pb) pb.hidden = false; }
