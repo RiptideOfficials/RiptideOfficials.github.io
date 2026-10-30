@@ -361,6 +361,45 @@
     wrap.appendChild(ui);
   }
 
+  /* ---------- a row of buttons (e.g. "Jump to") ---------- */
+  var BTN_OK = /^(#[A-Za-z0-9_\-]+|https?:\/\/|mailto:|tel:|docs\/|assets\/|[A-Za-z0-9_\-]+\.html)/i;
+  function parseButtons(row) { return Array.prototype.map.call(row.querySelectorAll("a"), function (a) { return { label: a.textContent, url: a.getAttribute("href") || "" }; }); }
+  function renderButtons(row, list) {
+    row.innerHTML = "";
+    list.forEach(function (b) { var a = el("a", { class: "btn small", href: b.url, text: b.label }); if (/^https?:/i.test(b.url)) { a.target = "_blank"; a.rel = "noopener"; } row.appendChild(a); });
+  }
+  function editButtons(row, wrap, page, content, original) {
+    var id = row.id, list = JSON.parse(JSON.stringify((content.buttons && content.buttons[id]) || original));
+    var ui = el("div", { class: "edit-ui" }), msg = el("div", { role: "status" });
+    function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); row.hidden = false; var pb = wrap.querySelector(".pencil"); if (pb) pb.hidden = false; }
+    function draw() {
+      ui.innerHTML = "";
+      ui.appendChild(el("p", { class: "muted small", text: "Each button has the words on it and where it goes. To jump to a section on this page use #step-1, #renew, etc. Or use a full web address (https://...)." }));
+      list.forEach(function (b, i) {
+        var l = el("input", { placeholder: "Words on the button", value: b.label }); l.oninput = function () { b.label = l.value; };
+        var u = el("input", { placeholder: "Goes to: #step-1 or https://...", value: b.url }); u.oninput = function () { b.url = u.value; };
+        ui.appendChild(el("div", { class: "edit-row" }, [l, u, el("div", { class: "edit-tools" }, [
+          btn("↑", "ghost", function () { if (i > 0) { list.splice(i - 1, 0, list.splice(i, 1)[0]); draw(); } }),
+          btn("↓", "ghost", function () { if (i < list.length - 1) { list.splice(i + 1, 0, list.splice(i, 1)[0]); draw(); } }),
+          btn("Remove", "danger", function () { list.splice(i, 1); draw(); })])]));
+      });
+      ui.appendChild(btn("+ Add a button", "ghost", function () { list.push({ label: "", url: "" }); draw(); }));
+      ui.appendChild(el("div", { class: "btn-row" }, [btn("Save", "green", function () {
+        var clean = [];
+        for (var i = 0; i < list.length; i++) { var t = (list[i].label || "").trim(), u = (list[i].url || "").trim(); if (!t && !u) continue;
+          if (!t || !BTN_OK.test(u)) { msg.innerHTML = '<div class="msg err">Each button needs words and a link (#section, https://..., or a page name).</div>'; return; } clean.push({ label: t, url: u }); }
+        content.buttons = content.buttons || {}; content.buttons[id] = clean; msg.textContent = "Saving...";
+        store(page, content).then(function () { renderButtons(row, clean); close(); }).catch(function () { msg.innerHTML = '<div class="msg err">Could not save. Make sure the latest firestore.rules are published.</div>'; });
+      }), btn("Cancel", "ghost", close),
+      (content.buttons && content.buttons[id]) ? btn("Restore the original", "danger", function () {
+        if (!confirm("Go back to the original buttons?")) return; delete content.buttons[id];
+        store(page, content).then(function () { renderButtons(row, original); close(); }).catch(function () { msg.innerHTML = '<div class="msg err">Could not save.</div>'; });
+      }) : null]));
+      ui.appendChild(msg);
+    }
+    draw(); row.hidden = true; var pb2 = wrap.querySelector(".pencil"); if (pb2) pb2.hidden = true; wrap.appendChild(ui);
+  }
+
   /* ---------- put it all on a page ---------- */
   E.renumber = function (root) {   // "Step 1, Step 2..." follow whatever steps are on the page
     var n = 0;
@@ -392,6 +431,8 @@
       blocks.forEach(function (h) { if (content.blocks && content.blocks[h.id]) applyBlock(h, content.blocks[h.id]); });
       var texts = textTargets(root), textOrig = {};
       texts.forEach(function (n) { var id = n.getAttribute("data-etid"); textOrig[id] = isHeadEl(n) ? { text: n.textContent } : { html: E.clean(n.innerHTML) }; if (content.texts && content.texts[id]) applyText(n, content.texts[id]); });
+      var btnRows = Array.prototype.slice.call(root.querySelectorAll("[data-edit-buttons]")), btnOrig = {};
+      btnRows.forEach(function (r) { btnOrig[r.id] = parseButtons(r); if (content.buttons && content.buttons[r.id]) renderButtons(r, content.buttons[r.id]); });
       // sections an admin removed from the page (they can be restored); the step numbers then close up
       var hidden = content.hidden || {}, hiddenList = [];
       blocks = blocks.filter(function (h) {
@@ -414,6 +455,12 @@
         var w = el("div", { class: "edit-wrap" }); n.parentNode.insertBefore(w, n); w.appendChild(n);
         var pb = el("button", { type: "button", class: "pencil", title: "Edit this text", "aria-label": "Edit this text", html: "\u270E <span>Edit</span>" });
         pb.onclick = function () { if (!w.querySelector(".edit-ui")) editText(n, w, page, content, textOrig[n.getAttribute("data-etid")]); };
+        w.insertBefore(pb, w.firstChild);
+      });
+      btnRows.forEach(function (r) {
+        var w = el("div", { class: "edit-wrap" }); r.parentNode.insertBefore(w, r); w.appendChild(r);
+        var pb = el("button", { type: "button", class: "pencil", title: "Edit these buttons", "aria-label": "Edit these buttons", html: "\u270E <span>Edit</span>" });
+        pb.onclick = function () { if (!w.querySelector(".edit-ui")) editButtons(r, w, page, content, btnOrig[r.id]); };
         w.insertBefore(pb, w.firstChild);
       });
       function pencil(host, fn) {
