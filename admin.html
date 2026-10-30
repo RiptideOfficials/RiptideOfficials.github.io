@@ -226,13 +226,19 @@
             '<div class="btn-row" style="margin:6px 0 0"><button class="btn small green" data-approve="' + esc(u.id) + '">Approve</button> <button class="btn small danger" data-deluser="' + esc(u.id) + '">Delete</button></div></div>';
         }).join("") + "</div>";
         else html += '<p class="muted" style="margin-top:0">No one is waiting for approval.</p>';
-        html += '<details class="mem-ok"' + (waiting.length ? "" : " open") + '><summary>Approved members (' + ok.length + ")</summary>" + ok.map(function (u) {
+        var showDet = false; try { showDet = localStorage.getItem("ro_mem_details") === "1"; } catch (e) {}
+        html += '<details class="mem-ok"' + (waiting.length ? "" : " open") + '><summary>Approved members (' + ok.length + ")</summary>" +
+          '<div class="mem-bar"><button type="button" class="lnk" id="mem-det-toggle">' + (showDet ? "Hide full details" : "Show full details") + "</button></div>" +
+          '<div class="mem-list' + (showDet ? " show-det" : "") + '" id="mem-list">' + ok.map(function (u) {
           var admin = u.admin || isOwnerEmail(u);
-          return '<div class="mem-row"><div class="mem-who"><strong>' + esc(u.name) + "</strong>" + (admin ? ' <span class="pill green">Admin</span>' : (u.meetAdmin ? ' <span class="pill green">Meet manager</span>' : "")) + '<br><span class="muted small">' + esc(u.email) + (u.phone ? " &middot; " + esc(u.phone) : "") + "</span></div>" +
-            '<div class="mem-btns">' + (ctx.isOwner && !isOwnerEmail(u) ? (u.admin ? '<button class="btn small ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button>' : '<button class="btn small green" data-mkadmin="' + esc(u.id) + '">Make admin</button>') + (u.admin ? "" : (u.meetAdmin ? '<button class="btn small ghost" data-unmm="' + esc(u.id) + '">Remove meet manager</button>' : '<button class="btn small ghost" data-mkmm="' + esc(u.id) + '">Make meet manager</button>')) : "") +
-            (isOwnerEmail(u) ? "" : '<button class="btn small ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>') + "</div></div>";
-        }).join("") + "</details>";
+          return '<div class="mem-row"><div class="mem-who"><strong>' + esc(u.name) + "</strong>" + (admin ? ' <span class="pill green">Admin</span>' : (u.meetAdmin ? ' <span class="pill green">Meet manager</span>' : "")) +
+            '<span class="mem-det muted small"><br>' + esc(u.email) + (u.phone ? " &middot; " + esc(u.phone) : "") + "</span></div>" +
+            '<div class="mem-btns">' + (ctx.isOwner && !isOwnerEmail(u) ? (u.admin ? '<button class="btn xs ghost" data-unadmin="' + esc(u.id) + '">Remove admin</button>' : '<button class="btn xs green" data-mkadmin="' + esc(u.id) + '">Make admin</button>') + (u.admin ? "" : (u.meetAdmin ? '<button class="btn xs ghost" data-unmm="' + esc(u.id) + '">Remove meet manager</button>' : '<button class="btn xs ghost" data-mkmm="' + esc(u.id) + '">Make meet manager</button>')) : "") +
+            (isOwnerEmail(u) ? "" : '<button class="btn xs ghost" data-unapprove="' + esc(u.id) + '">Remove access</button>') + "</div></div>";
+        }).join("") + "</div></details>";
         $("members").innerHTML = users.length ? html : '<p class="muted">No accounts yet.</p>';
+        var dt = $("mem-det-toggle");
+        if (dt) dt.onclick = function () { var l = $("mem-list"), on = l.classList.toggle("show-det"); dt.textContent = on ? "Hide full details" : "Show full details"; try { localStorage.setItem("ro_mem_details", on ? "1" : "0"); } catch (e) {} };
         setBadge("b-mem", users.filter(function (u) { return !u.approved; }).length); R.adminBadge();
       }).catch(function () { $("members").innerHTML = '<div class="msg err">Could not load members.</div>'; });
     }

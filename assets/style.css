@@ -450,3 +450,9 @@ details.has-pencil>.pencil.del{right:76px}
 #interested .meet-list li>div:first-child{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
 #interested .meet-list li>.btn-row{flex:0 1 auto!important;flex-wrap:wrap;max-width:100%}
 .group-title .gp{font-family:"Barlow",sans-serif;font-size:.9rem;font-weight:600;color:var(--muted);margin-left:12px;white-space:nowrap}
+.mem-bar{margin:2px 0 6px}
+.lnk{background:none;border:0;padding:2px 0;font:inherit;font-weight:600;color:var(--blue);text-decoration:underline;cursor:pointer}
+.mem-list .mem-row{padding:6px 0}
+.mem-det{display:none}.mem-list.show-det .mem-det{display:inline}
+.btn.xs{padding:3px 9px;font-size:.78rem;min-height:0;border-radius:7px;line-height:1.3}
+.mem-btns{gap:5px}
