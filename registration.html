@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registration | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<template id="content">
+  <h1>Registration</h1>
+  <p class="muted">Register with USA Swimming and join the Riptide team.</p>
+  <div class="doc-grid">
+
+  <section class="card doc-section blue" id="registration">
+    <h2>Registration</h2>
+    <div class="msg info" id="team-link-box" style="margin-top:0">
+      <strong>Riptide team registration link</strong><br>
+      <span id="team-link-body">Loading...</span>
+    </div>
+    <ul class="doc-list">
+      <li><a href="register.html"><span class="badge page">PAGE</span><span><span class="t">Register with USA Swimming (2026)</span><span class="d">Start as an apprentice official; steps for new, renewing, and upgrading officials</span></span></a><a class="dl" href="docs/training/Riptide_Officials_Registration_Steps.docx" download>Download</a></li>
+    </ul>
+  </section>
+
+  </div>
+</template>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/edit.js"></script>
+<script>
+(function () {
+  var R = window.Riptide;
+  R.footer();
+  R.requireMember("registration").then(function (ctx) {
+    if (!ctx) return;
+    var app = document.getElementById("app");
+    app.innerHTML = "";
+    app.appendChild(document.getElementById("content").content.cloneNode(true));
+    R.db.collection("private").doc("team").get().then(function (snap) {
+      var link = snap.exists ? snap.data().registrationLink : "";
+      var body = document.getElementById("team-link-body");
+      if (link && /^https:\/\/omr\.usaswimming\.org\//.test(link)) {
+        body.innerHTML = '<a class="btn small" href="' + R.esc(link) + '" target="_blank" rel="noopener">Open USA Swimming registration</a>' +
+          '<span class="hint" style="display:block">Use this link to register with Riptide as your team. Please don\'t share it outside the team.</span>';
+      } else {
+        body.textContent = "The coordinator hasn't added the link yet. Email " + window.ADMIN_EMAIL + ".";
+      }
+    }).catch(function () { document.getElementById("team-link-body").textContent = "Could not load the link."; });
+    if (R.Edit) R.Edit.run(app, ctx, "docs").catch(function () {});   // same saved edits as before (page key "docs")
+  });
+})();
+</script>
+</body>
+</html>
