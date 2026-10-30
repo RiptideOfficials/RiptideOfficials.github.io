@@ -320,6 +320,13 @@
   }
 
   /* ---------- put it all on a page ---------- */
+  E.renumber = function (root) {   // "Step 1, Step 2..." follow whatever steps are on the page
+    var n = 0;
+    Array.prototype.forEach.call(root.querySelectorAll(".step"), function (st) {
+      var num = st.querySelector(".num"); if (!num || !/^\s*step\s*\d+/i.test(num.textContent)) return;
+      num.textContent = "Step " + (++n);
+    });
+  };
   E.run = function (root, ctx, page) {
     return load(page).then(function (content) {
       // boxes an admin adds as things come up (announcements): saved in content.boxes[containerId]
@@ -341,7 +348,24 @@
       blocks.forEach(function (h) { originals[h.id] = { title: titleOf(h), html: blockHtml(h) }; });
       lists.forEach(function (s) { if (content.lists && content.lists[s.id]) renderList(s, content.lists[s.id]); });
       blocks.forEach(function (h) { if (content.blocks && content.blocks[h.id]) applyBlock(h, content.blocks[h.id]); });
+      // sections an admin removed from the page (they can be restored); the step numbers then close up
+      var hidden = content.hidden || {}, hiddenList = [];
+      blocks = blocks.filter(function (h) {
+        if (hidden[h.id] && h.classList.contains("step")) { hiddenList.push({ id: h.id, title: (originals[h.id] || {}).title || h.id }); h.parentNode.removeChild(h); return false; }
+        return true;
+      });
+      E.renumber(root);
       if (!ctx || !ctx.isAdmin) return;
+      if (hiddenList.length) {
+        var rb = el("div", { class: "card restore-box" }); rb.appendChild(el("strong", { text: "Removed sections (only you see this)" }));
+        hiddenList.forEach(function (x) {
+          var row = el("div", { class: "btn-row", style: "margin:6px 0 0;align-items:center" }, [el("span", { text: x.title }), btn("Restore", "ghost", function () {
+            delete content.hidden[x.id]; store(page, content).then(function () { location.reload(); }).catch(function () { alert("Could not restore. Please try again."); });
+          })]);
+          rb.appendChild(row);
+        });
+        var first = root.querySelector("#progress") || root.firstChild; first.parentNode.insertBefore(rb, first);
+      }
       function pencil(host, fn) {
         var p = el("button", { type: "button", class: "pencil", title: "Edit this box", "aria-label": "Edit this box", html: "✎ <span>Edit</span>" });
         p.onclick = function () { if (host.querySelector(".edit-ui")) return; fn(); };
@@ -363,6 +387,15 @@
       blocks.forEach(function (h) {
         var host = h.tagName === "DETAILS" ? h : h;
         pencil(host, function () { editBlock(h, page, content, originals[h.id], null); });
+        if (!h.hasAttribute("data-dyn") && h.classList.contains("step")) {
+          var rm = el("button", { type: "button", class: "pencil del", title: "Remove this section", "aria-label": "Remove this section", html: "\u2715 <span>Delete</span>" });
+          rm.onclick = function () {
+            if (!confirm("Remove this section from the page? The step numbers will update. You can restore it later from the box at the top.")) return;
+            content.hidden = content.hidden || {}; content.hidden[h.id] = true;
+            store(page, content).then(function () { location.reload(); }).catch(function () { delete content.hidden[h.id]; alert("Could not remove it. Make sure the latest firestore.rules are published."); });
+          };
+          h.insertBefore(rm, h.firstChild);
+        }
         if (h.hasAttribute("data-dyn")) {
           var del = el("button", { type: "button", class: "pencil del", title: "Delete this box", "aria-label": "Delete this box", html: "\u2715 <span>Delete</span>" });
           del.onclick = function () {
