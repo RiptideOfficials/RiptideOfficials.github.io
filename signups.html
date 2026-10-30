@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Sign-ups | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* Coordinators and meet managers: a quick look at who signed up for what. Assignments are on their own page. */
+(function () {
+  var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
+  R.footer();
+  var meetId = new URLSearchParams(location.search).get("m");
+  function arr(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
+  R.requireMeetAdmin("meets").then(function (ctx) {
+    if (!ctx) return;
+    if (!meetId) { location.replace("meets.html"); return; }
+    var meetRef = R.db.collection("meets").doc(meetId);
+    meetRef.get().then(function (snap) {
+      if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2></div>'; return; }
+      var m = snap.data(); document.title = "Sign-ups: " + m.title;
+      var n = R.normMeet(m);
+      Promise.all([meetRef.collection("contacts").orderBy("createdAt").get(), meetRef.collection("whole").get().catch(function () { return { docs: [] }; })]).then(function (res) {
+        var signups = res[0].docs.map(function (d) { var s = d.data(); s.id = d.id; return s; }), claims = {};
+        res[1].docs.forEach(function (d) { claims[d.id] = d.data(); });
+        render(m, n, signups, claims);
+      }).catch(function () { app.innerHTML = '<div class="msg err">Could not load the sign-ups.</div>'; });
+    }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
+  });
+
+  function render(m, n, signups, claims) {
+    function picks(s, i, kind) {
+      if (Array.isArray(s.perSession)) { var f = s.perSession.filter(function (x) { return x.i === i; })[0]; return f ? arr(f[kind]) : []; }
+      return i === 0 ? arr(kind === "work" ? s.certified : s.shadow) : [];
+    }
+    function nm(s, pos) {
+      var lv = pos && s.certLevels && Object.keys(s.certLevels).filter(function (k) { return k.toLowerCase() === pos.toLowerCase(); })[0];
+      var t = lv && (s.certLevels[lv] || []).length ? " <span class=\"chip\">" + esc(s.certLevels[lv].join("/")) + "</span>" : "";
+      return esc(s.name) + (s.team && !/^riptide$/i.test(s.team) ? " <span class=\"muted small\">(" + esc(s.team) + ")</span>" : "") + t;
+    }
+    function row(label, items, shadow) { return '<div class="asg-row"><div class="asg-pos' + (shadow ? " shadow" : "") + '">' + esc(label) + '</div><div class="asg-names">' + (items.length ? items.map(function (x) { return "<div>" + x + "</div>"; }).join("") : '<span class="muted">No one yet</span>') + "</div></div>"; }
+    var id = encodeURIComponent(meetId), html =
+      '<p style="margin:0 0 10px"><a href="meets.html">&larr; All meets</a></p>' +
+      '<div class="card coord-card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": sign-ups</h1>" +
+      "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
+      '<p class="muted" style="margin:0 0 8px">' + signups.length + " sign-up" + (signups.length === 1 ? "" : "s") + ' so far. Choosing who works where happens on the Assignments page.</p>' +
+      '<div class="btn-row"><a class="btn coord" href="assignments.html?m=' + id + '">Assignments</a><a class="btn small ghost" href="meet.html?m=' + id + '">Meet details</a><a class="btn small coord" href="meet-edit.html?m=' + id + '">Edit meet</a></div></div>';
+    // whole-meet positions
+    var wrows = R.WHOLE_POS.map(function (p) {
+      var key = p === "Meet Referee" ? "meetRef" : "admin", names = [];
+      signups.forEach(function (s) { if (arr(s.certified).indexOf(p) >= 0) names.push(nm(s, p)); });
+      if (claims[key] && !signups.some(function (s) { return s.name === claims[key].name && arr(s.certified).indexOf(p) >= 0; })) names.unshift(esc(claims[key].name));
+      var sh = signups.filter(function (s) { return arr(s.shadow).indexOf(p) >= 0; }).map(function (s) { return nm(s); });
+      return row(p, names) + (sh.length ? row(p + " (shadow)", sh, true) : "");
+    });
+    html += '<div class="card"><h2>Whole meet</h2><div class="asg-table">' + wrows.join("") + "</div></div>";
+    n.sessions.forEach(function (x, i) {
+      var rows = R.sortPos(x.positions || R.SESSION_POS).filter(function (p) { return R.WHOLE_POS.indexOf(p) < 0; }).map(function (p) {
+        var names = signups.filter(function (s) { return picks(s, i, "work").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s, p); });
+        var sh = signups.filter(function (s) { return picks(s, i, "shadow").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s); });
+        return row(p, names) + (sh.length ? row(p + " (shadow)", sh, true) : "");
+      });
+      html += '<div class="card"><h2>' + esc(n.sessions.length === 1 ? "Sessions" : x.name) + (R.sessionWhen(x) ? ' <span class="muted small">' + esc(R.sessionWhen(x)) + "</span>" : "") + '</h2><div class="asg-table">' + rows.join("") + "</div></div>";
+    });
+    html += '<div class="card"><details><summary><strong>Everyone who signed up (' + signups.length + ')</strong> &mdash; contact details</summary><div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Name</th><th>Email / phone</th><th>Comments</th></tr></thead><tbody>' +
+      (signups.length ? signups.map(function (s) { return "<tr><td>" + nm(s) + "</td><td>" + esc(s.email || "") + "<br>" + esc(s.phone || "") + "</td><td>" + esc(s.comments || "") + "</td></tr>"; }).join("") : '<tr><td colspan="3" class="muted">No sign-ups yet.</td></tr>') +
+      "</tbody></table></div></details></div>";
+    app.innerHTML = html;
+  }
+})();
+</script>
+</body>
+</html>

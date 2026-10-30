@@ -91,6 +91,7 @@
         '<a class="btn small" target="_blank" rel="noopener" href="' + esc(R.googleCalUrl(m, url)) + '">Google Calendar</a>' +
         '<a class="btn small" download="' + esc(m.title.replace(/[^\w]+/g, "-")) + '.ics" href="' + R.icsHref(m, meetId, url) + '">Apple / Outlook (.ics)</a></div>' +
         (ctx.isMeetAdmin ? '<div class="coord-bar"><span class="coord-label">Coordinator only</span><div class="btn-row">' +
+          '<a class="btn coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">Sign-ups</a>' +
           '<a class="btn coord" href="assignments.html?m=' + encodeURIComponent(meetId) + '">Assigned positions</a>' +
           '<a class="btn coord" href="meet-edit.html?m=' + encodeURIComponent(meetId) + '">Edit meet details</a>' +
           '<button class="btn coord" type="button" id="copylink">Copy link</button></div></div>' : "") + "</div>";
