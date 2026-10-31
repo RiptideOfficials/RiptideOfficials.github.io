@@ -22,7 +22,7 @@
         ? '<a class="btn" href="' + R.esc(team.registrationLink) + '" target="_blank" rel="noopener">' + R.esc(label) + '</a><span class="hint" style="display:block">' + R.esc(note) + "</span>"
         : '<span class="muted">The coordinator hasn\'t added the team link yet. Email ' + R.esc(window.ADMIN_EMAIL) + ".</span>";
       if (!isAdmin) return;
-      var p = document.createElement("button"); p.type = "button"; p.className = "pencil"; p.title = "Edit the words on this button"; p.setAttribute("aria-label", p.title); p.textContent = "\u270E";
+      var p = document.createElement("button"); p.type = "button"; p.className = "pencil static"; p.style.marginLeft = "8px"; p.style.verticalAlign = "middle"; p.title = "Edit the words on this button"; p.setAttribute("aria-label", p.title); p.textContent = "\u270E";
       p.onclick = function () {
         box.innerHTML = '<div class="edit-ui"><label>Words on the button</label><input id="tb-l" maxlength="80"><label>Note under the button</label><input id="tb-h" maxlength="200">' +
           '<div class="btn-row"><button type="button" class="btn small green" id="tb-s">Save</button><button type="button" class="btn small ghost" id="tb-c">Cancel</button></div><div id="tb-m" role="status"></div></div>';
@@ -35,7 +35,7 @@
             .catch(function () { box.querySelector("#tb-m").innerHTML = '<div class="msg err">Could not save.</div>'; });
         };
       };
-      box.insertBefore(p, box.firstChild);
+      var btnEl = box.querySelector("a.btn"); if (btnEl) btnEl.parentNode.insertBefore(p, btnEl.nextSibling); else box.appendChild(p);
     }
     draw();
   };
