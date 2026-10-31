@@ -1,0 +1,31 @@
+name: Test reminder email
+
+# Run by hand (Actions tab, "Test reminder email", Run workflow). Sends one test email to MAIL_USER.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-audit --no-fund nodemailer@6
+      - name: Send test email
+        env:
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
+        run: |
+          node -e '
+          const u = process.env.MAIL_USER, p = process.env.MAIL_APP_PASSWORD;
+          if (!u || !p) { console.log("MAIL_USER or MAIL_APP_PASSWORD is not set."); process.exit(1); }
+          const n = require("nodemailer").createTransport({ service: "gmail", auth: { user: u, pass: p } });
+          n.sendMail({ from: "\"Riptide Officials\" <" + u + ">", to: u, subject: "Test: Riptide Officials reminder email",
+            text: "It works! Meet reminders will be sent from this address." })
+            .then(() => console.log("Sent. Check your inbox (and spam)."))
+            .catch((e) => { console.log("Failed:", e.message); process.exit(1); });
+          '
