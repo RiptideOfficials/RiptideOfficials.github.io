@@ -231,7 +231,7 @@
         var html = "";
         if (justApproved && memberMap[justApproved]) {
           var ju = memberMap[justApproved], sl = smsLink(ju);
-          html += '<div class="msg ok"><strong>' + esc(ju.name) + ' is approved.</strong> They get an email within about 15 minutes.' + (sl ? ' <a class="btn small green" href="' + sl + '">Text them too</a>' : "") + "</div>";
+          html += '<div class="msg ok"><strong>' + esc(ju.name) + ' is approved.</strong>' + (sl ? ' <a class="btn small green" href="' + sl + '">Text them too</a>' : "") + "</div>";
           justApproved = null;
         }
         if (waiting.length) html += '<div class="mem-wait-box"><h3>Waiting for approval (' + waiting.length + ")</h3>" + waiting.map(function (u) {
