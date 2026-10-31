@@ -215,13 +215,25 @@
       }
     });
 
+    var memberMap = {}, justApproved = null;
+    function smsLink(u) {
+      var d = String(u.phone || "").replace(/\D/g, ""); if (d.length === 10) d = "1" + d; if (d.length < 10) return "";
+      var first = String(u.name || "").split(" ")[0];
+      return "sms:+" + d + "?&body=" + encodeURIComponent("Hi " + first + ", this is Wendy with Riptide Officials. Your account has been approved! You can sign in at https://riptideofficials.github.io/login.html to see meets and sign up. Thank you!");
+    }
     function loadMembers() {
       return R.db.collection("users").orderBy("createdAt", "desc").get().then(function (snap) {
         var users = snap.docs.map(function (d) { var u = d.data(); u.id = d.id; return u; });
         var isOwnerEmail = function (u) { return String(u.email).toLowerCase() === String(window.ADMIN_EMAIL).toLowerCase(); };
         var isHelper = function (u) { return /\+helper@/i.test(String(u.email || "")); };
         var waiting = users.filter(function (u) { return !u.approved && !isHelper(u); }), ok = users.filter(function (u) { return u.approved && !isHelper(u); }), helpers = users.filter(isHelper);
+        users.forEach(function (u) { memberMap[u.id] = u; });
         var html = "";
+        if (justApproved && memberMap[justApproved]) {
+          var ju = memberMap[justApproved], sl = smsLink(ju);
+          html += '<div class="msg ok"><strong>' + esc(ju.name) + ' is approved.</strong> They get an email within about 15 minutes.' + (sl ? ' <a class="btn small green" href="' + sl + '">Text them too</a>' : "") + "</div>";
+          justApproved = null;
+        }
         if (waiting.length) html += '<div class="mem-wait-box"><h3>Waiting for approval (' + waiting.length + ")</h3>" + waiting.map(function (u) {
           return '<div class="mem-wait"><div><strong>' + esc(u.name) + '</strong><br><a href="mailto:' + esc(u.email) + '">' + esc(u.email) + "</a>" + (u.phone ? " &middot; " + esc(u.phone) : "") + '</div>' +
             '<div class="btn-row" style="margin:6px 0 0"><button class="btn small green" data-approve="' + esc(u.id) + '">Approve</button> <button class="btn small danger" data-deluser="' + esc(u.id) + '">Delete</button></div></div>';
@@ -247,7 +259,7 @@
     $("members").addEventListener("click", function (e) {
       var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
       var users = R.db.collection("users"), p;
-      if (g("data-approve")) p = users.doc(g("data-approve")).update({ approved: true });
+      if (g("data-approve")) { var aid = g("data-approve"); p = users.doc(aid).update({ approved: true }).then(function () { justApproved = aid; }); }
       else if (g("data-mkadmin")) { if (!confirm("Make this person an admin? They will be able to see everyone's contact info, email officials, and edit meets.")) return; p = users.doc(g("data-mkadmin")).update({ admin: true }); }
       else if (g("data-unadmin")) p = users.doc(g("data-unadmin")).update({ admin: false });
       else if (g("data-mkmm")) { if (!confirm("Make this person a meet manager? They can add and edit meets, see sign-up contact details, and set up assignments. They cannot approve members or edit anything else on the site.")) return; p = users.doc(g("data-mkmm")).update({ meetAdmin: true }); }
