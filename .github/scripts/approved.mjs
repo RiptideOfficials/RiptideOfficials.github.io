@@ -45,7 +45,7 @@ for (const u of fresh) {
   try {
     await mail.sendMail({
       from: `"Riptide Officials" <${MAIL_USER}>`, to: u.email, replyTo: MAIL_USER, subject: "Your Riptide Officials account is approved",
-      text: `Hi ${u.name.split(" ")[0] || "there"},\n\nGood news: your Riptide Officials account has been approved. You can sign in here:\n${SITE}login.html\n\nOne important step: please verify your email address for security. When you created your account we sent you a verification message (check your spam folder too). Open it and tap the link. If you can't find it, reply to this email and I'll help.\n\nAfter that, you're in you can see upcoming meets, sign up to work, and find training and registration help.\n\nQuestions? Just reply to this email.\n\nWendy Peterson\nRiptide Officials Coordinator`
+      text: `Hi ${u.name.split(" ")[0] || "there"},\n\nGood news: your Riptide Officials account has been approved. You can sign in here:\n${SITE}login.html\n\nOne important step: please verify your email address for security. When you created your account we sent you a verification message (check your spam folder too). Open it and tap the link. If you can't find it, reply to this email and I'll help.\n\nThank you!\n\nWendy Peterson\nRiptide Officials Coordinator`
     });
     sent.push(u.id);
   } catch (e) { console.log("Email failed for one person:", e.message); }
