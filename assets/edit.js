@@ -340,7 +340,7 @@
     });
     return out;
   }
-  function isHeadEl(n) { return /^H\d$/.test(n.tagName); }
+  function isHeadEl(n) { return /^H\d$/.test(n.tagName) || n.getAttribute("data-edit-text") === "line"; }
   function applyText(n, v) { if (isHeadEl(n)) n.textContent = v.text || ""; else n.innerHTML = E.clean(v.html || ""); }
   function editText(n, wrap, page, content, original) {
     var id = n.getAttribute("data-etid"), head = isHeadEl(n), cur = (content.texts && content.texts[id]) || original;
