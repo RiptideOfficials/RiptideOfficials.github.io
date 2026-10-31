@@ -59,12 +59,12 @@
         '<p style="margin:0 0 10px"><a href="' + detailsUrl + '">&larr; Meet details (what officials see)</a></p>' +
         '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": assigned positions</h1>" +
         "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
-        '<div class="btn-row"><a class="btn small ghost" href="' + signupUrl + '">Sign-up page</a>' +
+        '<div class="btn-row"><a class="btn small coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a><a class="btn small ghost" href="' + signupUrl + '">Sign-up form</a>' +
         '<button class="btn small ghost" id="copysu" type="button">Copy sign-up link</button></div></div>' +
         '<div class="card" id="people-card"><h2>Signed up</h2><div id="people" class="muted">Loading...</div></div>' +
-        '<div id="assign-area"></div>' +
+        '<p style="margin:0 0 8px"><a class="btn small coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a></p><div id="assign-area"></div>' +
         '<div class="card hidden" id="tools-card"></div>' +
-        '<div class="btn-row"><button class="btn green" type="button" id="asg-save">Save and publish</button></div><div id="asg-status" role="status"></div>';
+        '<div class="btn-row"><button class="btn green" type="button" id="asg-save">Save and publish</button><a class="btn ghost" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a></div><div id="asg-status" role="status"></div>';
       Array.prototype.forEach.call(app.querySelectorAll(".card"), function (c) { c.classList.add("coord-card"); });
       $("copysu").onclick = function () {
         var u = R.meetUrl(meetId).replace("meet.html", "signup.html");
