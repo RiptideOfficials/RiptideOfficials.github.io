@@ -19,15 +19,18 @@
 <div class="footer" id="site-footer"></div>
 
 <template id="content">
-  <h1>Registration</h1>
-  <p class="muted">Register with USA Swimming and join the Riptide team.</p>
+  <div id="reg-head" data-edit-head>
+    <h1>Registration</h1>
+    <p class="muted">Register with USA Swimming and join the Riptide team.</p>
+  </div>
   <div class="doc-grid">
 
   <section class="card doc-section blue" id="registration">
     <h2>Registration</h2>
     <div class="msg info" id="team-link-box" style="margin-top:0">
-      <strong>Riptide team registration link</strong><br>
+      <p id="team-link-title" data-edit-text style="margin:0 0 4px"><strong>Riptide team registration link</strong></p>
       <span id="team-link-body">Loading...</span>
+      <p class="hint" id="team-link-hint" data-edit-text style="margin:6px 0 0">Use this link to register with Riptide as your team. Please don't share it outside the team.</p>
     </div>
     <ul class="doc-list">
       <li><a href="register.html"><span class="badge page">PAGE</span><span><span class="t">Register with USA Swimming (2026)</span><span class="d">Start as an apprentice official; steps for new, renewing, and upgrading officials</span></span></a><a class="dl" href="docs/training/Riptide_Officials_Registration_Steps.docx" download>Download</a></li>
@@ -56,8 +59,7 @@
       var link = snap.exists ? snap.data().registrationLink : "";
       var body = document.getElementById("team-link-body");
       if (link && /^https:\/\/omr\.usaswimming\.org\//.test(link)) {
-        body.innerHTML = '<a class="btn small" href="' + R.esc(link) + '" target="_blank" rel="noopener">Open USA Swimming registration</a>' +
-          '<span class="hint" style="display:block">Use this link to register with Riptide as your team. Please don\'t share it outside the team.</span>';
+        body.innerHTML = '<a class="btn small" href="' + R.esc(link) + '" target="_blank" rel="noopener">Open USA Swimming registration</a>';
       } else {
         body.textContent = "The coordinator hasn't added the link yet. Email " + window.ADMIN_EMAIL + ".";
       }

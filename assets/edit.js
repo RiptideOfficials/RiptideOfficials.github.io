@@ -329,9 +329,10 @@
   /* ---------- loose text on a page: group headings, notes (callouts), intro lines ---------- */
   function textTargets(root) {
     var seen = {}, out = [];
-    if (!root.querySelector(".guide-head")) return out;   // only the step-by-step pages
-    Array.prototype.forEach.call(root.querySelectorAll(".group-title, .callout, .card > h3, .card > p, .guide-note"), function (n) {
-      if (n.closest("[data-editable],[data-edit-head],.edit-ui,.doc-section,.progress,.contact-card,.restore-box") || n.querySelector("[data-team-link]")) return;
+    if (!root.querySelector(".guide-head, [data-edit-text]")) return out;   // the step-by-step pages, plus anything marked data-edit-text
+    Array.prototype.forEach.call(root.querySelectorAll(".group-title, .callout, .card > h3, .card > p, .guide-note, [data-edit-text]"), function (n) {
+      var marked = n.hasAttribute("data-edit-text");
+      if (marked ? n.closest(".edit-ui") : (n.closest("[data-editable],[data-edit-head],.edit-ui,.doc-section,.progress,.contact-card,.restore-box") || n.querySelector("[data-team-link]"))) return;
       var kind = /^H\d$/.test(n.tagName) ? "head" : "note";
       seen[kind] = (seen[kind] || 0) + 1;
       n.setAttribute("data-etid", n.id ? "t-" + n.id : "t-" + kind + "-" + seen[kind]);
