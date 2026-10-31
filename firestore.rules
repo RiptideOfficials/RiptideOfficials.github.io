@@ -102,7 +102,7 @@ service cloud.firestore {
 
     // Edits an admin makes to the Documents, Apprentice forms and Steps pages (members read, admins write).
     match /pagecontent/{page} {
-      allow read: if isMember();
+      allow read: if isMember() || page == 'welcome';   // the public front page's text is readable before signing in
       allow write: if isAdmin();
     }
 

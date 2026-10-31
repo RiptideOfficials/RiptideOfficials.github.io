@@ -20,26 +20,26 @@
 <main id="app">
   <section class="hero">
     <div class="logo-chip"><img src="assets/img/riptide-logo.jpg" alt="Riptide Swimming"></div>
-    <h1>Officials make our meets happen.</h1>
-    <p>Home of the Riptide Swimming officials crew. New to officiating? We'll help you get started.</p>
+    <h1 id="w-h1" data-edit-text>Officials make our meets happen.</h1>
+    <p id="w-sub" data-edit-text>Home of the Riptide Swimming officials crew. New to officiating? We'll help you get started.</p>
     <div class="btn-row" id="hero-buttons">
       <a class="btn green" href="login.html#create">Create account</a>
       <a class="btn light" href="login.html">Sign in</a>
       <a class="btn light" href="interested.html">Learn more about becoming an official</a>
     </div>
-    <p class="hero-note">Riptide officials crew: <strong>Create account</strong> if you are new here, or <strong>Sign in</strong> if you already have one.</p>
+    <p class="hero-note" id="w-note" data-edit-text>Riptide officials crew: <strong>Create account</strong> if you are new here, or <strong>Sign in</strong> if you already have one.</p>
   </section>
 
   <section class="join recruit" id="recruit">
-    <h2>Curious about becoming an official?</h2>
-    <p>No swimming experience needed, just enthusiasm. Everyone is welcome! We train you, and you start by shadowing experienced officials at a meet. Contact me to learn more.</p>
+    <h2 id="w-r-h" data-edit-text>Curious about becoming an official?</h2>
+    <p id="w-r-p" data-edit-text>No swimming experience needed, just enthusiasm. Everyone is welcome! We train you, and you start by shadowing experienced officials at a meet. Contact me to learn more.</p>
     <div class="why">
-      <div><span class="k">Front-row action</span>Every race, up close.</div>
-      <div><span class="k">Support young athletes</span>Help create a fair and fun meet.</div>
-      <div><span class="k">Great people</span>A friendly crew and lasting friendships.</div>
+      <div><span class="k" id="w-k1" data-edit-text="line">Front-row action</span><span id="w-v1" data-edit-text="line">Every race, up close.</span></div>
+      <div><span class="k" id="w-k2" data-edit-text="line">Support young athletes</span><span id="w-v2" data-edit-text="line">Help create a fair and fun meet.</span></div>
+      <div><span class="k" id="w-k3" data-edit-text="line">Great people</span><span id="w-v3" data-edit-text="line">A friendly crew and lasting friendships.</span></div>
     </div>
-    <div class="btn-row"><a class="btn green" href="interested.html">Learn more about becoming an official</a><a class="btn light" href="interested.html#contact">Have a question? Contact me</a></div>
-    <p class="small" style="margin-bottom:0">Just looking? There is no commitment, and you don't need an account to ask. Wendy Peterson, Riptide Officials Coordinator, will be in touch.</p>
+    <div class="btn-row" id="w-r-btns" data-edit-buttons><a class="btn green" href="interested.html">Learn more about becoming an official</a><a class="btn light" href="interested.html#contact">Have a question? Contact me</a></div>
+    <p class="small" id="w-r-small" data-edit-text style="margin-bottom:0">Just looking? There is no commitment, and you don't need an account to ask. Wendy Peterson, Riptide Officials Coordinator, will be in touch.</p>
   </section>
 
   <div class="logos-strip">
@@ -53,17 +53,21 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/edit.js"></script>
 <script>
 (function () {
   var R = window.Riptide;
   R.footer();
   R.getContext().then(function (ctx) {
     R.renderHeader(ctx, "index");
-    if (ctx.member) {
-      document.getElementById("hero-buttons").innerHTML =
+    var asVisitor = /[?&]view=public/.test(location.search), heroBtns = document.getElementById("hero-buttons");
+    if (ctx.member && !asVisitor) {
+      heroBtns.innerHTML =
         '<a class="btn light" href="home.html">Go to home page</a>' +
         '<a class="btn green" href="docs.html">Resources</a>';
     }
+    if (!ctx.member || asVisitor) heroBtns.setAttribute("data-edit-buttons", "");   // the visitor's buttons can be edited
+    if (R.Edit) R.Edit.run(document.getElementById("app"), ctx, "welcome").catch(function () {});   // admins can edit this page; everyone sees the saved edits
   });
 })();
 </script>

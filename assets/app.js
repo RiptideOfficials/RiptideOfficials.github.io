@@ -106,7 +106,7 @@
       var ini = String(nm).trim().charAt(0).toUpperCase() || "?";
       tools = '<div class="hdr-tools">' +
         (ctx.isAdmin || ctx.isMeetAdmin ? '<div class="hdr-menu"><button type="button" class="hamb" id="hamb" aria-label="Coordinator menu" aria-expanded="false">&#9776;<span class="cnt" id="hamb-cnt" hidden></span></button>' +
-          '<div class="hdr-drop" id="hdrdrop" hidden><span class="coord-label">' + (ctx.isAdmin ? "Coordinator" : "Meet manager") + "</span>" + (ctx.isAdmin ? a("admin.html", "Admin", "admin", "coord") : a("meet-edit.html", "Add a meet", "admin", "coord")) + a("assignments.html", "Assignments", "assignments", "coord") + "</div></div>" : "") +
+          '<div class="hdr-drop" id="hdrdrop" hidden><span class="coord-label">' + (ctx.isAdmin ? "Coordinator" : "Meet manager") + "</span>" + (ctx.isAdmin ? a("admin.html", "Admin", "admin", "coord") + a("index.html?view=public", "Public home page (edit)", "welcome", "coord") : a("meet-edit.html", "Add a meet", "admin", "coord")) + a("assignments.html", "Assignments", "assignments", "coord") + "</div></div>" : "") +
         '<a class="avatar' + (active === "account" ? " active" : "") + '" href="account.html" aria-label="My account" title="My account">' + R.esc(ini) + "</a></div>";
     }
     el.className = "site-header";

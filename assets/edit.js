@@ -375,10 +375,11 @@
 
   /* ---------- a row of buttons (e.g. "Jump to") ---------- */
   var BTN_OK = /^(#[A-Za-z0-9_\-]+|https?:\/\/|mailto:|tel:|docs\/|assets\/|[A-Za-z0-9_\-]+\.html)/i;
-  function parseButtons(row) { return Array.prototype.map.call(row.querySelectorAll("a"), function (a) { return { label: a.textContent, url: a.getAttribute("href") || "" }; }); }
+  var CLS_OK = /^btn( (small|green|light|ghost|coord))*$/;
+  function parseButtons(row) { return Array.prototype.map.call(row.querySelectorAll("a"), function (a) { return { label: a.textContent, url: a.getAttribute("href") || "", cls: a.className || "" }; }); }
   function renderButtons(row, list) {
     row.innerHTML = "";
-    list.forEach(function (b) { var a = el("a", { class: "btn small", href: b.url, text: b.label }); if (/^https?:/i.test(b.url)) { a.target = "_blank"; a.rel = "noopener"; } row.appendChild(a); });
+    list.forEach(function (b) { var a = el("a", { class: (b.cls && CLS_OK.test(b.cls)) ? b.cls : "btn small", href: b.url, text: b.label }); if (/^https?:/i.test(b.url)) { a.target = "_blank"; a.rel = "noopener"; } row.appendChild(a); });
   }
   function editButtons(row, wrap, page, content, original) {
     var id = row.id, list = JSON.parse(JSON.stringify((content.buttons && content.buttons[id]) || original));
@@ -399,7 +400,7 @@
       ui.appendChild(el("div", { class: "btn-row" }, [btn("Save", "green", function () {
         var clean = [];
         for (var i = 0; i < list.length; i++) { var t = (list[i].label || "").trim(), u = (list[i].url || "").trim(); if (!t && !u) continue;
-          if (!t || !BTN_OK.test(u)) { msg.innerHTML = '<div class="msg err">Each button needs words and a link (#section, https://..., or a page name).</div>'; return; } clean.push({ label: t, url: u }); }
+          if (!t || !BTN_OK.test(u)) { msg.innerHTML = '<div class="msg err">Each button needs words and a link (#section, https://..., or a page name).</div>'; return; } clean.push(list[i].cls && CLS_OK.test(list[i].cls) ? { label: t, url: u, cls: list[i].cls } : { label: t, url: u }); }
         content.buttons = content.buttons || {}; content.buttons[id] = clean; msg.textContent = "Saving...";
         store(page, content).then(function () { renderButtons(row, clean); close(); }).catch(function () { msg.innerHTML = '<div class="msg err">Could not save. Make sure the latest firestore.rules are published.</div>'; });
       }), btn("Cancel", "ghost", close),
