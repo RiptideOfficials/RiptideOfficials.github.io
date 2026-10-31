@@ -139,6 +139,7 @@
         if (!cur) { cur = { heading: "", items: [] }; groups.push(cur); }
         Array.prototype.forEach.call(n.children, function (li) {
           var a = li.querySelector("a:not(.dl)"); if (!a) return;
+          if (li.classList.contains("btn-li")) { var dd = li.querySelector(".d"); cur.items.push({ title: a.textContent, desc: dd ? dd.textContent : "", url: a.getAttribute("href"), tag: "", dl: "", dlLabel: "", btn: true }); return; }
           var t = li.querySelector(".t"), d = li.querySelector(".d"), b = li.querySelector(".badge"), dl = li.querySelector("a.dl");
           cur.items.push({ title: t ? t.textContent : a.textContent, desc: d ? d.textContent : "", url: a.getAttribute("href"), tag: b ? b.textContent : "", dl: dl ? dl.getAttribute("href") : "", dlLabel: dl ? dl.textContent : "" });
         });
@@ -155,6 +156,10 @@
       var ul = el("ul", { class: "doc-list" });
       g.items.forEach(function (it) {
         var tg = it.tag || tagFor(it.url)[0], ext = isExternal(it.url);
+        if (it.btn) {   // shown as a blue button instead of a row
+          var ba = el("a", { class: "btn", href: it.url, text: it.title }); if (ext) { ba.target = "_blank"; ba.rel = "noopener"; }
+          var bl = el("li", { class: "btn-li" }); bl.appendChild(ba); if (it.desc) bl.appendChild(el("span", { class: "d", text: it.desc })); ul.appendChild(bl); return;
+        }
         var a = el("a", { href: it.url }); if (ext) { a.target = "_blank"; a.rel = "noopener"; }
         a.appendChild(el("span", { class: "badge " + tagClass(tg), text: tg }));
         var txt = el("span"); txt.appendChild(el("span", { class: "t", text: it.title }));
@@ -186,6 +191,8 @@
             inp.oninput = function () { it[f[0]] = inp.value; if (f[0] === "url") it.tag = ""; };
             row.appendChild(inp);
           });
+          var cbl = el("label", { class: "tbd-opt" }), cb = el("input", { type: "checkbox" }); cb.checked = !!it.btn; cb.onchange = function () { it.btn = cb.checked; };
+          cbl.appendChild(cb); cbl.appendChild(document.createTextNode(" Show as a blue button")); row.appendChild(cbl);
           var fileIn = el("input", { type: "file", style: "display:none" });
           fileIn.onchange = function () {
             if (!fileIn.files[0]) return;
@@ -219,7 +226,7 @@
           var it = g.items[i], t = (it.title || "").trim(), u = (it.url || "").trim();
           if (!t && !u) continue;
           if (!t || !URL_OK.test(u)) { msg.innerHTML = '<div class="msg err">Each link needs a name and a link that starts with https:// (or docs/).</div>'; return; }
-          items.push({ title: t, desc: (it.desc || "").trim(), url: u, tag: it.tag || "", dl: it.dl || "", dlLabel: it.dlLabel || "" });
+          items.push({ title: t, desc: (it.desc || "").trim(), url: u, tag: it.tag || "", dl: it.dl || "", dlLabel: it.dlLabel || "", btn: !!it.btn });
         }
         if (items.length) clean.push({ heading: (g.heading || "").trim(), items: items });
       }

@@ -263,7 +263,7 @@
     $("t-save").onclick = function () {
       var v = $("t-link").value.trim(), st = $("t-status");
       if (v && !/^https:\/\/omr\.usaswimming\.org\//.test(v)) { st.innerHTML = '<div class="msg err">That should start with https://omr.usaswimming.org/</div>'; return; }
-      R.db.collection("private").doc("team").set({ registrationLink: v })
+      R.db.collection("private").doc("team").set({ registrationLink: v }, { merge: true })
         .then(function () { st.innerHTML = '<div class="msg ok">Saved.</div>'; })
         .catch(function () { st.innerHTML = '<div class="msg err">Could not save.</div>'; });
     };

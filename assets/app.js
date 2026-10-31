@@ -12,6 +12,33 @@
     try { R.db.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (e) {}
   }
 
+  /* The blue "team registration link" button + the note under it. The words are shared by every page that shows it;
+     the coordinator changes them with the pencil (saved with the link in private/team). */
+  R.teamButton = function (box, team, isAdmin) {
+    var ok = team && team.registrationLink && /^https:\/\/omr\.usaswimming\.org\//.test(team.registrationLink);
+    var label = (team && team.btnLabel) || "Open the Riptide registration link", note = (team && team.btnHint) || "This link is for Riptide members only. Please don't share it.";
+    function draw() {
+      box.innerHTML = ok
+        ? '<a class="btn" href="' + R.esc(team.registrationLink) + '" target="_blank" rel="noopener">' + R.esc(label) + '</a><span class="hint" style="display:block">' + R.esc(note) + "</span>"
+        : '<span class="muted">The coordinator hasn\'t added the team link yet. Email ' + R.esc(window.ADMIN_EMAIL) + ".</span>";
+      if (!isAdmin) return;
+      var p = document.createElement("button"); p.type = "button"; p.className = "pencil"; p.title = "Edit the words on this button"; p.setAttribute("aria-label", p.title); p.textContent = "\u270E";
+      p.onclick = function () {
+        box.innerHTML = '<div class="edit-ui"><label>Words on the button</label><input id="tb-l" maxlength="80"><label>Note under the button</label><input id="tb-h" maxlength="200">' +
+          '<div class="btn-row"><button type="button" class="btn small green" id="tb-s">Save</button><button type="button" class="btn small ghost" id="tb-c">Cancel</button></div><div id="tb-m" role="status"></div></div>';
+        box.querySelector("#tb-l").value = label; box.querySelector("#tb-h").value = note;
+        box.querySelector("#tb-c").onclick = draw;
+        box.querySelector("#tb-s").onclick = function () {
+          var l = box.querySelector("#tb-l").value.trim(), h = box.querySelector("#tb-h").value.trim();
+          R.db.collection("private").doc("team").set({ btnLabel: l, btnHint: h }, { merge: true })
+            .then(function () { team.btnLabel = l; team.btnHint = h; label = l || label; note = h || note; draw(); })
+            .catch(function () { box.querySelector("#tb-m").innerHTML = '<div class="msg err">Could not save.</div>'; });
+        };
+      };
+      box.insertBefore(p, box.firstChild);
+    }
+    draw();
+  };
   R.esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];

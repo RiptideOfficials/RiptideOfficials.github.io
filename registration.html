@@ -29,8 +29,7 @@
     <h2>Registration</h2>
     <div class="msg info" id="team-link-box" style="margin-top:0">
       <p id="team-link-title" data-edit-text style="margin:0 0 4px"><strong>Riptide team registration link</strong></p>
-      <span id="team-link-body"><a class="btn small" id="team-link-btn" data-edit-text="line" href="#" target="_blank" rel="noopener" style="display:none">Open USA Swimming registration</a><span id="team-link-msg">Loading...</span></span>
-      <p class="hint" id="team-link-hint" data-edit-text style="margin:6px 0 0">Use this link to register with Riptide as your team. Please don't share it outside the team.</p>
+      <div id="team-link-body" style="margin:6px 0 0">Loading...</div>
     </div>
     <ul class="doc-list">
       <li><a href="register.html"><span class="badge page">PAGE</span><span><span class="t">Register with USA Swimming (2026)</span><span class="d">Start as an apprentice official; steps for new, renewing, and upgrading officials</span></span></a><a class="dl" href="docs/training/Riptide_Officials_Registration_Steps.docx" download>Download</a></li>
@@ -56,14 +55,8 @@
     app.innerHTML = "";
     app.appendChild(document.getElementById("content").content.cloneNode(true));
     R.db.collection("private").doc("team").get().then(function (snap) {
-      var link = snap.exists ? snap.data().registrationLink : "";
-      var body = document.getElementById("team-link-body");
-      if (link && /^https:\/\/omr\.usaswimming\.org\//.test(link)) {
-        var b = document.getElementById("team-link-btn"); b.href = link; b.style.display = ""; document.getElementById("team-link-msg").textContent = "";
-      } else {
-        document.getElementById("team-link-msg").textContent = "The coordinator hasn't added the link yet. Email " + window.ADMIN_EMAIL + ".";
-      }
-    }).catch(function () { document.getElementById("team-link-msg").textContent = "Could not load the link."; });
+      R.teamButton(document.getElementById("team-link-body"), snap.exists ? snap.data() : {}, !!ctx.isAdmin);
+    }).catch(function () { document.getElementById("team-link-body").textContent = "Could not load the link."; });
     if (R.Edit) R.Edit.run(app, ctx, "docs").catch(function () {});   // same saved edits as before (page key "docs")
   });
 })();

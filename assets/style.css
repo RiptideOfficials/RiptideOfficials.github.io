@@ -468,3 +468,6 @@ details.has-pencil>.pencil.del{right:76px}
 .my-meet{display:block}
 .you{display:inline-block;font-weight:700;font-size:.8rem;color:#fff;background:var(--green-dark);border-radius:999px;padding:2px 10px;margin:2px 6px 2px 0}
 @media print{.noprint,#hdr,header,.hdr-drop{display:none!important}}
+.doc-list li.btn-li{display:block;padding:10px 4px}
+.doc-list li.btn-li .btn{display:inline-block}
+.doc-list li.btn-li .d{display:block;font-size:.9rem;color:var(--muted);margin-top:4px}

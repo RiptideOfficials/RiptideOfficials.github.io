@@ -82,14 +82,8 @@
       var slots = app.querySelectorAll("[data-team-link]");
       if (slots.length) {
         R.db.collection("private").doc("team").get().then(function (snap) {
-          var link = snap.exists ? snap.data().registrationLink : "";
-          var ok = link && /^https:\/\/omr\.usaswimming\.org\//.test(link);
-          Array.prototype.forEach.call(slots, function (el) {
-            el.innerHTML = ok
-              ? '<a class="btn" href="' + R.esc(link) + '" target="_blank" rel="noopener">Open the Riptide registration link</a>' +
-                '<span class="hint" style="display:block">This link is for Riptide members only. Please don\'t share it.</span>'
-              : '<span class="muted">The coordinator hasn\'t added the team link yet. Email ' + R.esc(window.ADMIN_EMAIL) + ".</span>";
-          });
+          var team = snap.exists ? snap.data() : {};
+          Array.prototype.forEach.call(slots, function (el) { R.teamButton(el, team, !!(ctx && ctx.isAdmin)); });
         }).catch(function () {});
       }
 
