@@ -219,7 +219,7 @@
     function smsLink(u) {
       var d = String(u.phone || "").replace(/\D/g, ""); if (d.length === 10) d = "1" + d; if (d.length < 10) return "";
       var first = String(u.name || "").split(" ")[0];
-      return "sms:+" + d + "?&body=" + encodeURIComponent("Hi " + first + ", this is Wendy with Riptide Officials. Your account has been approved! https://riptideofficials.github.io Thank you!");
+      return "sms:+" + d + "?&body=" + encodeURIComponent("Hi " + first + ", this is Wendy with Riptide Officials. Your account has been approved! You can sign in at https://riptideofficials.github.io/login.html Thank you!");
     }
     function loadMembers() {
       return R.db.collection("users").orderBy("createdAt", "desc").get().then(function (snap) {
