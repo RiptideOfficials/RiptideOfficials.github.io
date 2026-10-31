@@ -473,3 +473,7 @@ details.has-pencil>.pencil.del{right:76px}
 .doc-list li.btn-li .d{display:block;font-size:.9rem;color:var(--muted);margin-top:4px}
 .hero .edit-wrap,.join .edit-wrap{padding-right:38px}
 .why>div .edit-wrap{display:block}
+.steps3 .edit-wrap,.why .edit-wrap{display:block}
+.steps3 strong.edit-wrap{display:block}
+.hero .edit-wrap,.join .edit-wrap{padding-right:38px}
+.band .edit-wrap,#contact .edit-wrap,.edit-wrap:has(>.lead){padding-right:38px}

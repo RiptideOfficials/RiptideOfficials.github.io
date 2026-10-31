@@ -19,42 +19,42 @@
 <main id="app">
   <section class="hero">
     <div class="logo-chip"><img src="assets/img/riptide-logo.jpg" alt="Riptide Swimming"></div>
-    <h1>Become a USA Swimming Stroke &amp; Turn Official</h1>
-    <p>For Riptide Swim Team. Make a splash: join our officiating team!</p>
-    <div class="btn-row"><a class="btn light" href="#contact">Have a question? Contact me</a></div>
+    <h1 id="i-h1" data-edit-text>Become a USA Swimming Stroke &amp; Turn Official</h1>
+    <p id="i-sub" data-edit-text>For Riptide Swim Team. Make a splash: join our officiating team!</p>
+    <div class="btn-row" id="i-hero-btns" data-edit-buttons><a class="btn light" href="#contact">Have a question? Contact me</a></div>
   </section>
 
-  <p class="lead">Do you want to support young athletes and be part of the action on deck? Becoming a USA Swimming Stroke &amp; Turn official is a rewarding way to make a positive impact and keep competitions fair and fun.</p>
+  <p class="lead" id="i-lead" data-edit-text>Do you want to support young athletes and be part of the action on deck? Becoming a USA Swimming Stroke &amp; Turn official is a rewarding way to make a positive impact and keep competitions fair and fun.</p>
 
   <section class="band">
-    <h2>Why officials love it</h2>
+    <h2 id="i-h-why" data-edit-text>Why officials love it</h2>
     <div class="why">
-      <div><span class="k">Front-row action</span>Every race, up close, with all the energy.</div>
-      <div><span class="k">Support young athletes</span>Help create a fair and fun meet.</div>
-      <div><span class="k">Grow your skills</span>Learn the sport and build leadership.</div>
-      <div><span class="k">Great people</span>A friendly crew and lasting friendships.</div>
+      <div><span class="k" id="i-wk1" data-edit-text="line">Front-row action</span><span id="i-wv1" data-edit-text="line">Every race, up close, with all the energy.</span></div>
+      <div><span class="k" id="i-wk2" data-edit-text="line">Support young athletes</span><span id="i-wv2" data-edit-text="line">Help create a fair and fun meet.</span></div>
+      <div><span class="k" id="i-wk3" data-edit-text="line">Grow your skills</span><span id="i-wv3" data-edit-text="line">Learn the sport and build leadership.</span></div>
+      <div><span class="k" id="i-wk4" data-edit-text="line">Great people</span><span id="i-wv4" data-edit-text="line">A friendly crew and lasting friendships.</span></div>
     </div>
   </section>
 
   <section class="band">
-    <h2>Getting certified is easy</h2>
+    <h2 id="i-h-cert" data-edit-text>Getting certified is easy</h2>
     <div class="steps3">
-      <div><span class="num">1</span><strong>Join USA Swimming</strong>Register as an official. Includes a background check, concussion training, and Athlete Protection Training.</div>
-      <div><span class="num">2</span><strong>Learn online</strong>Take Stroke &amp; Turn training and Foundations of Officiating at your own pace.</div>
-      <div><span class="num">3</span><strong>Shadow at a meet</strong>Work alongside experienced officials and learn by doing.</div>
+      <div><span class="num">1</span><strong id="i-sk1" data-edit-text="line">Join USA Swimming</strong><span id="i-sv1" data-edit-text="line">Register as an official. Includes a background check, concussion training, and Athlete Protection Training.</span></div>
+      <div><span class="num">2</span><strong id="i-sk2" data-edit-text="line">Learn online</strong><span id="i-sv2" data-edit-text="line">Take Stroke &amp; Turn training and Foundations of Officiating at your own pace.</span></div>
+      <div><span class="num">3</span><strong id="i-sk3" data-edit-text="line">Shadow at a meet</strong><span id="i-sv3" data-edit-text="line">Work alongside experienced officials and learn by doing.</span></div>
     </div>
   </section>
 
   <section class="join">
-    <h2>Join us today!</h2>
-    <p>No swimming experience needed, just enthusiasm. We'll be with you every step of the way.</p>
-    <p>Not ready to commit? Contact Wendy Peterson, Riptide Officials Coordinator, to arrange a shadow session at a Riptide-hosted meet.</p>
-    <a class="btn light" href="#contact">Have a question? Contact me</a>
+    <h2 id="i-h-join" data-edit-text>Join us today!</h2>
+    <p id="i-j1" data-edit-text>No swimming experience needed, just enthusiasm. We'll be with you every step of the way.</p>
+    <p id="i-j2" data-edit-text>Not ready to commit? Contact Wendy Peterson, Riptide Officials Coordinator, to arrange a shadow session at a Riptide-hosted meet.</p>
+    <div class="btn-row" id="i-join-btns" data-edit-buttons><a class="btn light" href="#contact">Have a question? Contact me</a></div>
   </section>
 
   <section class="card" id="contact">
-    <h2>Questions? Contact me</h2>
-    <p>Curious, or just have a question? Fill this out and Wendy Peterson will be in touch. There is no commitment, and no account is needed.</p>
+    <h2 id="i-h-contact" data-edit-text>Questions? Contact me</h2>
+    <p id="i-c1" data-edit-text>Curious, or just have a question? Fill this out and Wendy Peterson will be in touch. There is no commitment, and no account is needed.</p>
     <div id="interest-slot"></div>
   </section>
 
@@ -67,12 +67,16 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/firebase-config.js"></script>
 <script src="assets/app.js"></script>
+<script src="assets/edit.js"></script>
 <script src="assets/interest.js"></script>
 <script>
 (function () {
   var R = window.Riptide;
   R.footer();
-  R.getContext().then(function (ctx) { R.renderHeader(ctx, "interested"); });
+  R.getContext().then(function (ctx) {
+    R.renderHeader(ctx, "interested");
+    if (R.Edit) R.Edit.run(document.getElementById("app"), ctx, "welcome").catch(function () {});   // admins can edit this page; everyone sees the saved edits
+  });
   InterestForm.mount("interest-slot");
 })();
 </script>
