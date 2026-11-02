@@ -470,25 +470,31 @@
   /* ---------- steps an admin adds or moves on the step-by-step pages ---------- */
   function stepGroups(root) {   // [{key, head, steps}] - steps before the first section heading use key "_"
     var gs = [], cur = { key: "_", head: null, steps: [] }; gs.push(cur);
-    Array.prototype.forEach.call(root.querySelectorAll(".step, .group-title"), function (n) {
+    Array.prototype.forEach.call(root.querySelectorAll(".step, .timer-doc, .group-title"), function (n) {
       if (n.classList.contains("group-title")) { cur = { key: n.id || ("g" + gs.length), head: n, steps: [] }; gs.push(cur); }
       else if (n.tagName === "SECTION") cur.steps.push(n);
     });
     return gs;
   }
-  function mkStep(key, s) {
+  function isPlain(root) { return !root.querySelector("section.step") && !!root.querySelector("section.timer-doc"); }   // sections without step numbers (timer briefing)
+  function mkStep(key, s, plain) {
+    if (plain) {
+      var t = el("section", { class: "card timer-doc", id: s.id, "data-editable": "", "data-addstep": key });
+      t.appendChild(el("h2", { text: s.title || "New section" })); t.insertAdjacentHTML("beforeend", E.clean(s.html || "")); return t;
+    }
     var d = el("section", { class: "step card", id: s.id, "data-editable": "", "data-addstep": key });
     d.appendChild(el("input", { type: "checkbox", class: "stepbox", "data-step": s.id, "aria-label": "Mark this step done" }));
     var b = el("div", { class: "body" }); b.appendChild(el("div", { class: "num", text: "Step 1" })); b.appendChild(el("h2", { text: s.title || "New step" }));
     b.insertAdjacentHTML("beforeend", E.clean(s.html || "")); d.appendChild(b); return d;
   }
   function placeSteps(root, content) {
-    if (!root.querySelector("section.step")) return;
+    if (!root.querySelector("section.step, section.timer-doc")) return;
+    var plain = isPlain(root);
     stepGroups(root).forEach(function (g) {
       var anchor = g.steps.length ? g.steps[g.steps.length - 1] : g.head;
       if (!anchor) return;
       ((content.added || {})[g.key] || []).forEach(function (s) {
-        var d = mkStep(g.key, s); anchor.parentNode.insertBefore(d, anchor.nextSibling); anchor = d; g.steps.push(d);
+        var d = mkStep(g.key, s, plain); anchor.parentNode.insertBefore(d, anchor.nextSibling); anchor = d; g.steps.push(d);
       });
       var ord = (content.order || {})[g.key];
       if (ord && ord.length && g.steps.length > 1) {
@@ -597,7 +603,7 @@
           };
           h.insertBefore(rm2, h.firstChild);
         }
-        if (h.classList.contains("step") && h.querySelector(".num")) {
+        if ((h.classList.contains("step") && h.querySelector(".num")) || h.classList.contains("timer-doc")) {
           [["mv up", "\u25B2", "Move this step up", -1], ["mv dn", "\u25BC", "Move this step down", 1]].forEach(function (m) {
             var mb = el("button", { type: "button", class: "pencil " + m[0], title: m[2], "aria-label": m[2], text: m[1] });
             mb.onclick = function () {
@@ -634,14 +640,15 @@
           h.insertBefore(del, h.firstChild);
         }
       });
-      if (root.querySelector("section.step")) stepGroups(root).forEach(function (g) {
+      var plainPage = isPlain(root);
+      if (root.querySelector("section.step, section.timer-doc")) stepGroups(root).forEach(function (g) {
         var anchor = g.steps.length ? g.steps[g.steps.length - 1] : g.head; if (!anchor || (!g.steps.length && !g.head.id)) return;
         var bar = el("div", { class: "btn-row add-step-bar", style: "margin:0 0 14px" });
-        var add = el("button", { type: "button", class: "btn coord", text: "+ Add a step" });
+        var add = el("button", { type: "button", class: "btn coord", text: plainPage ? "+ Add a section" : "+ Add a step" });
         add.onclick = function () {
           add.disabled = true;
           content.added = content.added || {}; var id = "s-" + Date.now().toString(36);
-          content.added[g.key] = (content.added[g.key] || []).concat([{ id: id, title: "New step", html: "<p>Tap Edit to write this step.</p>" }]);
+          content.added[g.key] = (content.added[g.key] || []).concat([{ id: id, title: plainPage ? "New section" : "New step", html: "<p>Tap Edit to write this.</p>" }]);
           store(page, content).then(function () { location.reload(); }).catch(function () { add.disabled = false; alert("Could not add it. Make sure the latest firestore.rules are published."); });
         };
         bar.appendChild(add); anchor.parentNode.insertBefore(bar, anchor.nextSibling);
