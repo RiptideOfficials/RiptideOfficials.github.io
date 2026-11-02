@@ -304,7 +304,27 @@
     [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", linkTool(ed, false)], ["Button", "Make the selected words a blue button link", linkTool(ed, true)], ["Unlink", "Remove the link", function () { cmd("unlink"); }], ["• List", "Bulleted list", function () { cmd("insertUnorderedList"); }], ["Heading", "Small heading", function () { cmd("formatBlock", "h3"); }], ["Paragraph", "Normal text", function () { cmd("formatBlock", "p"); }], ["Picture", "Add a screenshot or photo from your device", function () { pickPicture(ed); }]]
       .forEach(function (t) { var b = btn(t[0], "ghost", t[2]); b.title = t[1]; b.onmousedown = function (e) { e.preventDefault(); }; tools.appendChild(b); });
     function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); parts[1].concat(parts[0]).forEach(function (n) { n.hidden = false; }); }
-    function save() {
+    function shrinkPics() {   // any picture that got in another way (png, blob) is turned into a small jpeg so it can be saved
+      return Promise.all(Array.prototype.map.call(ed.querySelectorAll("img"), function (i) {
+        var src = i.getAttribute("src") || "";
+        if (/^assets\/img\//.test(src) || /^data:image\/jpeg;base64,/.test(src)) return null;
+        return new Promise(function (res) {
+          var im = new Image(); im.crossOrigin = "anonymous";
+          im.onload = function () {
+            try {
+              var r = Math.min(1, 900 / im.naturalWidth), c = document.createElement("canvas"); c.width = Math.round(im.naturalWidth * r); c.height = Math.round(im.naturalHeight * r);
+              var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+              i.setAttribute("src", c.toDataURL("image/jpeg", 0.72));
+            } catch (e) { i.parentNode && i.parentNode.removeChild(i); }
+            res();
+          };
+          im.onerror = function () { i.parentNode && i.parentNode.removeChild(i); res(); };
+          im.src = src;
+        });
+      }));
+    }
+    function save() { msg.textContent = "Saving..."; shrinkPics().then(save2); }
+    function save2() {
       var html = E.clean(ed.innerHTML.replace(/<div data-team-link[^>]*>.*?<\/div>/g, '<div data-team-link></div>'));
       content.blocks = content.blocks || {}; content.blocks[id] = { title: title.value.trim() || original.title, html: html };
       msg.textContent = "Saving...";
