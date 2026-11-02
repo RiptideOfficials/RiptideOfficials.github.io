@@ -72,7 +72,7 @@
         }
         if (t === "IMG") {
           var s = n.getAttribute("src") || "";
-          if (/^assets\/img\//.test(s) || /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(s)) dst.appendChild(el("img", { src: s, class: "shot", alt: n.getAttribute("alt") || "", loading: "lazy" }));
+          if (/^assets\/img\//.test(s) || /^data:image\/(jpeg|png|gif|webp);base64,/i.test(s)) dst.appendChild(el("img", { src: s, class: "shot", alt: n.getAttribute("alt") || "", loading: "lazy" }));
           return;
         }
         if (t === "DIV") {
@@ -334,6 +334,8 @@
     }
     function save2() {
       var html = E.clean(ed.innerHTML.replace(/<div data-team-link[^>]*>.*?<\/div>/g, '<div data-team-link></div>'));
+      var want = ed.querySelectorAll("img").length, got = (html.match(/<img /g) || []).length;
+      if (got < want) { var bs = ed.querySelector("img"); msg.innerHTML = '<div class="msg err">A picture was dropped (' + (want - got) + '). Please tell Wendy\'s helper: ' + ((bs && (bs.getAttribute("src") || "").slice(0, 40)) || "?").replace(/</g, "") + ' / size ' + html.length + '</div>'; return; }
       content.blocks = content.blocks || {}; content.blocks[id] = { title: title.value.trim() || original.title, html: html };
       msg.textContent = "Saving...";
       store(page, content).then(function () { close(); applyBlock(host, content.blocks[id]); after && after(); })
