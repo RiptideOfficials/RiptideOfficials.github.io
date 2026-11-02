@@ -80,7 +80,8 @@
         var sh = signups.filter(function (s) { return picks(s, i, "shadow").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s); });
         return row(p, names) + (sh.length ? row(p + " (shadow)", sh, true) : "");
       });
-      html += '<div class="card"><h2>' + esc(n.sessions.length === 1 ? "Sessions" : x.name) + (R.sessionWhen(x) ? ' <span class="muted small">' + esc(R.sessionWhen(x)) + "</span>" : "") + '</h2><div class="asg-table">' + rows.join("") + "</div></div>";
+      var single = n.sessions.length === 1, sd = x.date || m.date, head = single ? (sd ? R.fmtDate(sd) : (x.name || "Session")) : x.name, when = single ? (x.start ? R.fmtTime(x.start) : "") : R.sessionWhen(x);
+      html += '<div class="card"><h2>' + esc(head) + (when ? ' <span class="muted small">' + esc(when) + "</span>" : "") + '</h2><div class="asg-table">' + rows.join("") + "</div></div>";
     });
     html += '<div class="card"><details><summary><strong>Everyone who signed up (' + signups.length + ')</strong> &mdash; contact details</summary><div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Name</th><th>Email / phone</th><th>Comments</th></tr></thead><tbody>' +
       (signups.length ? signups.map(function (s) { return "<tr><td>" + nm(s) + "</td><td>" + esc(s.email || "") + "<br>" + esc(s.phone || "") + "</td><td>" + esc(s.comments || "") + "</td></tr>"; }).join("") : '<tr><td colspan="3" class="muted">No sign-ups yet.</td></tr>') +
