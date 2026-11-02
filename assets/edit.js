@@ -268,10 +268,13 @@
     var tmp = document.createElement("div"); tmp.innerHTML = E.clean(b.html || "");
     Array.prototype.slice.call(tmp.childNodes).forEach(function (n) { holder.appendChild(n); });
   }
-  function pickPicture(ed) {   // shrink a screenshot/photo and place it in the text where the cursor is
+  function pickPicture(ed) {
     var inp = el("input", { type: "file", accept: "image/*" });
-    inp.onchange = function () {
-      var f = inp.files && inp.files[0]; if (!f) return;
+    inp.onchange = function () { if (inp.files && inp.files[0]) addPicture(ed, inp.files[0]); };
+    inp.click();
+  }
+  function addPicture(ed, f) {   // shrink a screenshot/photo and place it in the text where the cursor is
+    (function () {
       var url = URL.createObjectURL(f), im = new Image();
       im.onload = function () {
         var w = im.naturalWidth, h = im.naturalHeight, max = 900, r = Math.min(1, max / w);
@@ -283,8 +286,7 @@
       };
       im.onerror = function () { alert("Could not read that picture."); };
       im.src = url;
-    };
-    inp.click();
+    })();
   }
   function editBlock(host, page, content, original, after) {
     var id = host.id, cur = (content.blocks && content.blocks[id]) || original;
@@ -294,6 +296,10 @@
     var tools = el("div", { class: "rt-tools" });
     var ed = el("div", { class: "rt-box", contenteditable: "true" });
     ed.innerHTML = cur.html.replace(/<div data-team-link[^>]*>.*?<\/div>/g, '<div data-team-link contenteditable="false" class="rt-ph">[The team registration button shows here]</div>');
+    ed.addEventListener("paste", function (e) {   // pasting a copied screenshot puts it right in the text
+      var items = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < items.length; i++) if (items[i].kind === "file" && /^image\//.test(items[i].type)) { e.preventDefault(); addPicture(ed, items[i].getAsFile()); return; }
+    });
     function cmd(name, val) { ed.focus(); document.execCommand(name, false, val || null); }
     [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", linkTool(ed, false)], ["Button", "Make the selected words a blue button link", linkTool(ed, true)], ["Unlink", "Remove the link", function () { cmd("unlink"); }], ["• List", "Bulleted list", function () { cmd("insertUnorderedList"); }], ["Heading", "Small heading", function () { cmd("formatBlock", "h3"); }], ["Paragraph", "Normal text", function () { cmd("formatBlock", "p"); }], ["Picture", "Add a screenshot or photo from your device", function () { pickPicture(ed); }]]
       .forEach(function (t) { var b = btn(t[0], "ghost", t[2]); b.title = t[1]; b.onmousedown = function (e) { e.preventDefault(); }; tools.appendChild(b); });
