@@ -79,7 +79,7 @@
           if (n.hasAttribute("data-team-link")) { dst.appendChild(el("div", { "data-team-link": "", style: "margin:10px 0", text: "Loading the team link..." })); return; }
           var c = n.className || "";
           if (/\bcallout\b/.test(c)) { var d = el("div", { class: /\bwarn\b/.test(c) ? "callout warn" : "callout" }); walk(n, d); dst.appendChild(d); return; }
-          var p = el("p"); walk(n, p); if (p.textContent.trim()) dst.appendChild(p); else if (p.querySelector("br") && !p.querySelector("img")) { dst.appendChild(p); } return;   // plain divs become paragraphs
+          var p = el("p"); walk(n, p); if (p.textContent.trim() || p.querySelector("img")) dst.appendChild(p); else if (p.querySelector("br") && !p.querySelector("img")) { dst.appendChild(p); } return;   // plain divs become paragraphs
         }
         var out = el(t.toLowerCase()); walk(n, out); dst.appendChild(out);
       });
