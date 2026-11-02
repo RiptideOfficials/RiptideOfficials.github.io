@@ -73,7 +73,7 @@
       var sh = signups.filter(function (s) { return arr(s.shadow).indexOf(p) >= 0; }).map(function (s) { return nm(s); });
       return row(p, names) + (sh.length ? row(p + " (shadow)", sh, true) : "");
     });
-    html += '<div class="card"><h2>Whole meet</h2><div class="asg-table">' + wrows.join("") + "</div></div>";
+    html += '<div class="card"><h2>All sessions</h2><div class="asg-table">' + wrows.join("") + "</div></div>";
     n.sessions.forEach(function (x, i) {
       var rows = R.sortPos(x.positions || R.SESSION_POS).filter(function (p) { return R.WHOLE_POS.indexOf(p) < 0; }).map(function (p) {
         var names = signups.filter(function (s) { return picks(s, i, "work").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s, p); });
