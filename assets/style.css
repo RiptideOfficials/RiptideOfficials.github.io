@@ -477,3 +477,6 @@ details.has-pencil>.pencil.del{right:76px}
 .steps3 strong.edit-wrap{display:block}
 .hero .edit-wrap,.join .edit-wrap{padding-right:38px}
 .band .edit-wrap,#contact .edit-wrap,.edit-wrap:has(>.lead){padding-right:38px}
+
+.pencil.mv.up{right:84px}.pencil.mv.dn{right:122px}.pencil.mv{font-size:.8rem}
+.step.has-pencil>.body>h2{padding-right:0}

@@ -72,7 +72,7 @@
         }
         if (t === "IMG") {
           var s = n.getAttribute("src") || "";
-          if (/^assets\/img\//.test(s)) dst.appendChild(el("img", { src: s, class: "shot", alt: n.getAttribute("alt") || "", loading: "lazy" }));
+          if (/^assets\/img\//.test(s) || /^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(s)) dst.appendChild(el("img", { src: s, class: "shot", alt: n.getAttribute("alt") || "", loading: "lazy" }));
           return;
         }
         if (t === "DIV") {
@@ -268,6 +268,24 @@
     var tmp = document.createElement("div"); tmp.innerHTML = E.clean(b.html || "");
     Array.prototype.slice.call(tmp.childNodes).forEach(function (n) { holder.appendChild(n); });
   }
+  function pickPicture(ed) {   // shrink a screenshot/photo and place it in the text where the cursor is
+    var inp = el("input", { type: "file", accept: "image/*" });
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var url = URL.createObjectURL(f), im = new Image();
+      im.onload = function () {
+        var w = im.naturalWidth, h = im.naturalHeight, max = 900, r = Math.min(1, max / w);
+        var c = document.createElement("canvas"); c.width = Math.round(w * r); c.height = Math.round(h * r);
+        var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+        var data = c.toDataURL("image/jpeg", 0.72); URL.revokeObjectURL(url);
+        ed.focus(); document.execCommand("insertImage", false, data);
+        Array.prototype.forEach.call(ed.querySelectorAll("img"), function (i) { i.className = "shot"; i.removeAttribute("style"); });
+      };
+      im.onerror = function () { alert("Could not read that picture."); };
+      im.src = url;
+    };
+    inp.click();
+  }
   function editBlock(host, page, content, original, after) {
     var id = host.id, cur = (content.blocks && content.blocks[id]) || original;
     var holder = host.tagName === "DETAILS" ? host : (host.querySelector(".body") || host), parts = blockParts(host);
@@ -277,7 +295,7 @@
     var ed = el("div", { class: "rt-box", contenteditable: "true" });
     ed.innerHTML = cur.html.replace(/<div data-team-link[^>]*>.*?<\/div>/g, '<div data-team-link contenteditable="false" class="rt-ph">[The team registration button shows here]</div>');
     function cmd(name, val) { ed.focus(); document.execCommand(name, false, val || null); }
-    [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", linkTool(ed, false)], ["Button", "Make the selected words a blue button link", linkTool(ed, true)], ["Unlink", "Remove the link", function () { cmd("unlink"); }], ["• List", "Bulleted list", function () { cmd("insertUnorderedList"); }], ["Heading", "Small heading", function () { cmd("formatBlock", "h3"); }], ["Paragraph", "Normal text", function () { cmd("formatBlock", "p"); }]]
+    [["B", "Bold", function () { cmd("bold"); }], ["Link", "Make the selected words a link", linkTool(ed, false)], ["Button", "Make the selected words a blue button link", linkTool(ed, true)], ["Unlink", "Remove the link", function () { cmd("unlink"); }], ["• List", "Bulleted list", function () { cmd("insertUnorderedList"); }], ["Heading", "Small heading", function () { cmd("formatBlock", "h3"); }], ["Paragraph", "Normal text", function () { cmd("formatBlock", "p"); }], ["Picture", "Add a screenshot or photo from your device", function () { pickPicture(ed); }]]
       .forEach(function (t) { var b = btn(t[0], "ghost", t[2]); b.title = t[1]; b.onmousedown = function (e) { e.preventDefault(); }; tools.appendChild(b); });
     function close() { if (ui.parentNode) ui.parentNode.removeChild(ui); parts[1].concat(parts[0]).forEach(function (n) { n.hidden = false; }); }
     function save() {
@@ -413,6 +431,38 @@
     draw(); row.hidden = true; var pb2 = wrap.querySelector(".pencil"); if (pb2) pb2.hidden = true; wrap.appendChild(ui);
   }
 
+  /* ---------- steps an admin adds or moves on the step-by-step pages ---------- */
+  function stepGroups(root) {   // [{key, head, steps}] - steps before the first section heading use key "_"
+    var gs = [], cur = { key: "_", head: null, steps: [] }; gs.push(cur);
+    Array.prototype.forEach.call(root.querySelectorAll(".step, .group-title"), function (n) {
+      if (n.classList.contains("group-title")) { cur = { key: n.id || ("g" + gs.length), head: n, steps: [] }; gs.push(cur); }
+      else if (n.tagName === "SECTION") cur.steps.push(n);
+    });
+    return gs;
+  }
+  function mkStep(key, s) {
+    var d = el("section", { class: "step card", id: s.id, "data-editable": "", "data-addstep": key });
+    d.appendChild(el("input", { type: "checkbox", class: "stepbox", "data-step": s.id, "aria-label": "Mark this step done" }));
+    var b = el("div", { class: "body" }); b.appendChild(el("div", { class: "num", text: "Step 1" })); b.appendChild(el("h2", { text: s.title || "New step" }));
+    b.insertAdjacentHTML("beforeend", E.clean(s.html || "")); d.appendChild(b); return d;
+  }
+  function placeSteps(root, content) {
+    if (!root.querySelector("section.step")) return;
+    stepGroups(root).forEach(function (g) {
+      var anchor = g.steps.length ? g.steps[g.steps.length - 1] : g.head;
+      if (!anchor) return;
+      ((content.added || {})[g.key] || []).forEach(function (s) {
+        var d = mkStep(g.key, s); anchor.parentNode.insertBefore(d, anchor.nextSibling); anchor = d; g.steps.push(d);
+      });
+      var ord = (content.order || {})[g.key];
+      if (ord && ord.length && g.steps.length > 1) {
+        var last = g.steps[g.steps.length - 1], marker = last.nextSibling, parent = last.parentNode;
+        var sorted = g.steps.map(function (n, i) { var k = ord.indexOf(n.id); return { n: n, k: k < 0 ? 1e6 + i : k }; }).sort(function (a, b) { return a.k - b.k; });
+        sorted.forEach(function (x) { parent.insertBefore(x.n, marker); });
+      }
+    });
+  }
+
   /* ---------- put it all on a page ---------- */
   E.renumber = function (root) {   // "Step 1, Step 2..." follow whatever steps are on the page; each section heading (group) starts again at 1
     var n = 0;
@@ -433,6 +483,7 @@
           c.appendChild(d);
         });
       });
+      placeSteps(root, content);
       var lists = Array.prototype.slice.call(root.querySelectorAll("section.doc-section")).filter(function (s) { return s.querySelector("ul.doc-list"); });
       var blocks = Array.prototype.slice.call(root.querySelectorAll("[data-editable]"));
       var heads = Array.prototype.slice.call(root.querySelectorAll("[data-edit-head]"));
@@ -498,7 +549,35 @@
       blocks.forEach(function (h) {
         var host = h.tagName === "DETAILS" ? h : h;
         pencil(host, function () { editBlock(h, page, content, originals[h.id], null); });
-        if (!h.hasAttribute("data-dyn") && h.classList.contains("step")) {
+        if (h.hasAttribute("data-addstep")) {
+          var rm2 = el("button", { type: "button", class: "pencil del", title: "Delete this step", "aria-label": "Delete this step", html: "\u2715 <span>Delete</span>" });
+          rm2.onclick = function () {
+            if (!confirm("Delete this step? This cannot be undone.")) return;
+            var k = h.getAttribute("data-addstep");
+            content.added = content.added || {}; content.added[k] = (content.added[k] || []).filter(function (x) { return x.id !== h.id; });
+            if (content.blocks) delete content.blocks[h.id];
+            if (content.order && content.order[k]) content.order[k] = content.order[k].filter(function (x) { return x !== h.id; });
+            store(page, content).then(function () { location.reload(); }).catch(function () { alert("Could not delete. Please try again."); });
+          };
+          h.insertBefore(rm2, h.firstChild);
+        }
+        if (h.classList.contains("step") && h.querySelector(".num")) {
+          [["mv up", "\u25B2", "Move this step up", -1], ["mv dn", "\u25BC", "Move this step down", 1]].forEach(function (m) {
+            var mb = el("button", { type: "button", class: "pencil " + m[0], title: m[2], "aria-label": m[2], text: m[1] });
+            mb.onclick = function () {
+              var g = stepGroups(root).filter(function (x) { return x.steps.indexOf(h) >= 0; })[0]; if (!g) return;
+              var i = g.steps.indexOf(h), j = i + m[3]; if (j < 0 || j >= g.steps.length) return;
+              var other = g.steps[j];
+              if (m[3] < 0) other.parentNode.insertBefore(h, other); else other.parentNode.insertBefore(h, other.nextSibling);
+              E.renumber(root);
+              content.order = content.order || {}; content.order[g.key] = stepGroups(root).filter(function (x) { return x.key === g.key; })[0].steps.map(function (n) { return n.id; });
+              store(page, content).catch(function () { alert("Could not save the new order. Make sure the latest firestore.rules are published."); });
+              h.scrollIntoView({ block: "center", behavior: "smooth" });
+            };
+            h.insertBefore(mb, h.firstChild);
+          });
+        }
+        if (!h.hasAttribute("data-dyn") && !h.hasAttribute("data-addstep") && h.classList.contains("step")) {
           var rm = el("button", { type: "button", class: "pencil del", title: "Remove this section", "aria-label": "Remove this section", html: "\u2715 <span>Delete</span>" });
           rm.onclick = function () {
             if (!confirm("Remove this section from the page? The step numbers will update. You can restore it later from the box at the top.")) return;
@@ -518,6 +597,18 @@
           };
           h.insertBefore(del, h.firstChild);
         }
+      });
+      if (root.querySelector("section.step")) stepGroups(root).forEach(function (g) {
+        var anchor = g.steps.length ? g.steps[g.steps.length - 1] : g.head; if (!anchor || (!g.steps.length && !g.head.id)) return;
+        var bar = el("div", { class: "btn-row add-step-bar", style: "margin:0 0 14px" });
+        var add = el("button", { type: "button", class: "btn coord", text: "+ Add a step" });
+        add.onclick = function () {
+          add.disabled = true;
+          content.added = content.added || {}; var id = "s-" + Date.now().toString(36);
+          content.added[g.key] = (content.added[g.key] || []).concat([{ id: id, title: "New step", html: "<p>Tap Edit to write this step.</p>" }]);
+          store(page, content).then(function () { location.reload(); }).catch(function () { add.disabled = false; alert("Could not add it. Make sure the latest firestore.rules are published."); });
+        };
+        bar.appendChild(add); anchor.parentNode.insertBefore(bar, anchor.nextSibling);
       });
       adders.forEach(function (c) {
         var bar = el("div", { class: "btn-row", style: "margin:0 0 14px" });
