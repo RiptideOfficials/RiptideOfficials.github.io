@@ -534,7 +534,18 @@
       heads.forEach(function (h) { if (content.heads && content.heads[h.id]) applyHead(h, content.heads[h.id]); });
       lists.forEach(function (s) { originals[s.id] = parseList(s); });
       blocks.forEach(function (h) { originals[h.id] = { title: titleOf(h), html: blockHtml(h) }; });
-      lists.forEach(function (s) { if (content.lists && content.lists[s.id]) renderList(s, content.lists[s.id]); });
+      var mergedNew = false;   // rows added to the page's own markup later (marked data-new) join a list that was already edited, once
+      lists.forEach(function (s) {
+        var saved = content.lists && content.lists[s.id]; if (!saved) return;
+        var newUrls = {}; Array.prototype.forEach.call(s.querySelectorAll("li[data-new] a:not(.dl)"), function (a) { newUrls[a.getAttribute("href")] = 1; });
+        var have = {}; saved.forEach(function (g) { (g.items || []).forEach(function (it) { have[it.url] = 1; }); });
+        (originals[s.id] || []).forEach(function (g) { g.items.forEach(function (it) {
+          if (!newUrls[it.url] || have[it.url] || (content.merged || {})[it.url]) return;
+          if (!saved.length) saved.push({ heading: "", items: [] });
+          saved[0].items.push(it); content.merged = content.merged || {}; content.merged[it.url] = true; mergedNew = true;
+        }); });
+        renderList(s, saved);
+      });
       blocks.forEach(function (h) { if (content.blocks && content.blocks[h.id]) applyBlock(h, content.blocks[h.id]); });
       var texts = textTargets(root), textOrig = {};
       texts.forEach(function (n) { var id = n.getAttribute("data-etid"); textOrig[id] = isHeadEl(n) ? { text: n.textContent } : { html: E.clean(n.innerHTML) }; if (content.texts && content.texts[id]) applyText(n, content.texts[id]); });
@@ -548,6 +559,7 @@
       });
       E.renumber(root);
       if (!ctx || !ctx.isAdmin) return;
+      if (mergedNew) store(page, content).catch(function () {});
       if (hiddenList.length) {
         var rb = el("div", { class: "card restore-box" }); rb.appendChild(el("strong", { text: "Removed sections (only you see this)" }));
         hiddenList.forEach(function (x) {
