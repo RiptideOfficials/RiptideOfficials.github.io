@@ -231,7 +231,7 @@
         var html = "";
         if (justApproved && memberMap[justApproved]) {
           var ju = memberMap[justApproved], sl = smsLink(ju);
-          html += '<div class="msg ok"><strong>' + esc(ju.name) + ' is approved.</strong>' + (sl ? ' <a class="btn small green" href="' + sl + '">Text them too</a>' : "") + "</div>";
+          html += '<div class="msg ok" id="just-ok" style="font-size:1.05rem;padding:14px"><strong>' + esc(ju.name) + ' is approved.</strong> ' + (sl ? '<a class="btn green" href="' + sl + '">Text them now</a>' : '<span class="muted">(No phone number on file, so there is no text button.)</span>') + "</div>";
           justApproved = null;
         }
         if (waiting.length) html += '<div class="mem-wait-box"><h3>Waiting for approval (' + waiting.length + ")</h3>" + waiting.map(function (u) {
@@ -251,6 +251,7 @@
         }).join("") + "</div></details>";
         if (helpers.length) html += '<div class="mem-helper"><h3>Helper account</h3>' + helpers.map(function (u) { return '<p class="muted small" style="margin:2px 0">' + esc(u.email) + ' &middot; ' + (u.approved ? "approved" : "<strong>not approved</strong>") + (u.admin ? " &middot; admin" : " &middot; <strong>not admin</strong>") + "</p>"; }).join("") + '<p class="muted small" style="margin:6px 0 0">This is the account that checks for new sign-ups and sends your phone alerts. Please leave it as it is.</p></div>';
         $("members").innerHTML = users.length ? html : '<p class="muted">No accounts yet.</p>';
+        var jo = $("just-ok"); if (jo && jo.scrollIntoView) jo.scrollIntoView({ block: "center", behavior: "smooth" });
         var dt = $("mem-det-toggle");
         if (dt) dt.onclick = function () { var l = $("mem-list"), on = l.classList.toggle("show-det"); dt.textContent = on ? "Hide full details" : "Show full details"; try { localStorage.setItem("ro_mem_details", on ? "1" : "0"); } catch (e) {} };
         setBadge("b-mem", waiting.length); R.adminBadge();
@@ -259,14 +260,14 @@
     $("members").addEventListener("click", function (e) {
       var t = e.target, g = function (a) { return t.getAttribute && t.getAttribute(a); };
       var users = R.db.collection("users"), p;
-      if (g("data-approve")) { var aid = g("data-approve"); p = users.doc(aid).update({ approved: true }).then(function () { justApproved = aid; }); }
+      if (g("data-approve")) { var aid = g("data-approve"); t.disabled = true; t.textContent = "Approving..."; var slow = setTimeout(function () { t.textContent = "Still working - check your connection"; }, 4000); p = users.doc(aid).update({ approved: true }).then(function () { justApproved = aid; }); }
       else if (g("data-mkadmin")) { if (!confirm("Make this person an admin? They will be able to see everyone's contact info, email officials, and edit meets.")) return; p = users.doc(g("data-mkadmin")).update({ admin: true }); }
       else if (g("data-unadmin")) p = users.doc(g("data-unadmin")).update({ admin: false });
       else if (g("data-mkmm")) { if (!confirm("Make this person a meet manager? They can add and edit meets, see sign-up contact details, and set up assignments. They cannot approve members or edit anything else on the site.")) return; p = users.doc(g("data-mkmm")).update({ meetAdmin: true }); }
       else if (g("data-unmm")) p = users.doc(g("data-unmm")).update({ meetAdmin: false });
       else if (g("data-unapprove")) { if (!confirm("Remove this person's access?")) return; p = users.doc(g("data-unapprove")).update({ approved: false, admin: false, meetAdmin: false }); }
       else if (g("data-deluser")) { if (!confirm("Delete this account request?")) return; p = users.doc(g("data-deluser")).delete(); }
-      if (p) p.then(loadMembers).catch(function () { alert("That didn't work. Please try again."); });
+      if (p) p.then(function () { if (typeof slow !== "undefined") clearTimeout(slow); return loadMembers(); }).catch(function () { alert("That didn't work. Please try again."); loadMembers(); });
     });
 
     R.db.collection("private").doc("team").get().then(function (snap) {
