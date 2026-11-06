@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Read document | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<style>
+.pdfbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.pdfbar h1{flex:1 1 100%;margin:0 0 4px;font-size:1.5rem}
+#pages canvas{display:block;width:100%;height:auto;margin:0 auto 14px;background:#fff;border:1px solid #d5dfe8;border-radius:6px;box-shadow:0 1px 4px rgba(10,42,74,.12)}
+#pages{max-width:900px;margin:0 auto}
+.pdfnote{text-align:center;color:#5b6b7a;padding:20px}
+@media print{#site-header,.footer,.pdfbar .btn{display:none}#pages canvas{border:0;box-shadow:none;break-after:page}}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+(function () {
+  var R = window.Riptide;
+  R.footer();
+  var q = new URLSearchParams(location.search), f = q.get("f") || "";
+  var ok = /^docs\/[A-Za-z0-9_\-\/\.]+\.pdf$/i.test(f) && f.indexOf("..") < 0;
+  R.requireMember("docs").then(function (ctx) {
+    if (!ctx) return;
+    var app = document.getElementById("app"); app.innerHTML = "";
+    var title = (q.get("t") || (f.split("/").pop() || "Document").replace(/\.pdf$/i, "").replace(/_/g, " "));
+    var bar = document.createElement("div"); bar.className = "pdfbar";
+    var h1 = document.createElement("h1"); h1.textContent = title; bar.appendChild(h1);
+    var back = document.createElement("a"); back.className = "btn"; back.href = "docs.html"; back.textContent = "← Back to Resources";
+    back.onclick = function (e) { if (document.referrer && history.length > 1) { e.preventDefault(); history.back(); } };
+    bar.appendChild(back);
+    if (ok) { var dl = document.createElement("a"); dl.className = "btn"; dl.href = f; dl.setAttribute("download", ""); dl.textContent = "Download"; bar.appendChild(dl); }
+    app.appendChild(bar);
+    var pages = document.createElement("div"); pages.id = "pages"; app.appendChild(pages);
+    function note(t) { var d = document.createElement("div"); d.className = "pdfnote"; d.textContent = t; pages.appendChild(d); return d; }
+    if (!ok) { note("That document could not be found."); return; }
+    var wait = note("Loading document...");
+    if (!window.pdfjsLib) { wait.textContent = "The reader could not load. Use the Download button instead."; return; }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    pdfjsLib.getDocument(f).promise.then(function (pdf) {
+      pages.removeChild(wait);
+      var chain = Promise.resolve();
+      for (var n = 1; n <= pdf.numPages; n++) (function (n) {
+        chain = chain.then(function () { return pdf.getPage(n).then(function (pg) {
+          var w = Math.min(pages.clientWidth || 800, 900), base = pg.getViewport({ scale: 1 });
+          var scale = (w / base.width) * Math.min(window.devicePixelRatio || 1, 2);
+          var vp = pg.getViewport({ scale: scale }), c = document.createElement("canvas");
+          c.width = Math.floor(vp.width); c.height = Math.floor(vp.height); pages.appendChild(c);
+          return pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+        }); });
+      })(n);
+      return chain;
+    }).catch(function () {
+      pages.innerHTML = "";
+      var fr = document.createElement("iframe"); fr.src = f; fr.style.cssText = "width:100%;height:80vh;border:1px solid #d5dfe8;border-radius:6px";
+      pages.appendChild(fr); note("If the document does not show above, use the Download button.");
+    });
+  });
+})();
+</script>
+</body>
+</html>

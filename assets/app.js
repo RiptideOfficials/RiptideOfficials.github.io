@@ -485,4 +485,15 @@
     document.getElementById("ver-refresh").onclick = function () { R.refreshLatest(this); };
     R.checkForUpdate();
   };
+
+  /* PDF links in the document lists open in the on-site reader; the Download button still downloads */
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest(".doc-list a:not(.dl)");
+    if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+    var h = a.getAttribute("href") || "";
+    if (!/^docs\/[^?#]+\.pdf$/i.test(h)) return;
+    e.preventDefault();
+    var t = a.querySelector(".t");
+    location.href = "view.html?f=" + encodeURIComponent(h).replace(/%2F/g, "/") + (t ? "&t=" + encodeURIComponent(t.textContent) : "");
+  });
 })();
