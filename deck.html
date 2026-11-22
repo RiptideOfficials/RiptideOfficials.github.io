@@ -64,11 +64,17 @@
   var meetId = new URLSearchParams(location.search).get("m");
   var TPL = {
     brk: { label: "Break (no officials needed)", rows: [] },
-    relay: { label: "Relays", rows: [["DR / SR", ""], ["Relay 1-4", ""], ["Relay 4-1", ""], ["Relay 5-8", ""], ["Relay 8-5", ""], ["Watch Turns", ""]] },
-    free: { label: "Freestyle / other", rows: [["DR / SR", ""], ["Watch Turns", "Rotate"]] },
-    strokes: { label: "Strokes", rows: [["DR / SR", ""], ["Start End ST", "See chart below"], ["Turn End ST", "See chart below"]] },
-    blank: { label: "Blank", rows: [["DR / SR", ""]] }
+    relay: { label: "Relays", rows: [["DR", ""], ["SR", ""], ["Relay 1-4", ""], ["Relay 4-1", ""], ["Relay 5-8", ""], ["Relay 8-5", ""], ["Watch Turns", ""]] },
+    free: { label: "Freestyle / other", rows: [["DR", ""], ["SR", ""], ["Watch Turns", "Rotate"]] },
+    strokes: { label: "Strokes", rows: [["DR", ""], ["SR", ""], ["ST Start End 1-4", "See chart below"], ["ST Start End 5-8", "See chart below"], ["ST Turn End 1-4", "See chart below"], ["ST Turn End 5-8", "See chart below"]] },
+    blank: { label: "Blank", rows: [["DR", ""]] }
   };
+  var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8"];
+  function roleSel(path, val) {
+    var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("");
+    if (val && ROLES.indexOf(val) < 0) o += '<option selected>' + esc(val) + "</option>";   // keeps an older custom role
+    return '<select data-p="' + path + '">' + o + "</select>";
+  }
   function mkBlock(t) { return { type: t === "brk" ? "break" : "", num: "", name: t === "brk" ? "Break" : "", start: "", rows: TPL[t].rows.map(function (r) { return { role: r[0], who: r[1], relief: "", shadow: "" }; }) }; }
   function emptyDeck() { return { blocks: [mkBlock("free")], end: "", st: { a: [], b: [], c: [], d: [] } }; }
   function mins(t) { var p = /^(\d{1,2}):(\d{2})$/.exec(t || ""); return p ? +p[1] * 60 + +p[2] : null; }
@@ -160,7 +166,7 @@
             '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
             b.rows.map(function (r, j) {
               var p = "blocks." + i + ".rows." + j + ".";
-              return '<div class="dk-row">' + inp(p + "role", r.role, "Role") + inp(p + "who", r.who, "Name(s)", ' list="dk-names"') + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
+              return '<div class="dk-row">' + roleSel(p + "role", r.role) + inp(p + "who", r.who, "Name(s)", ' list="dk-names"') + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
                 '<button class="dk-x" type="button" data-act="delr" data-i="' + i + '" data-j="' + j + '" aria-label="Remove row">&times;</button></div>';
             }).join("") + '<button class="btn small ghost" type="button" data-act="addr" data-i="' + i + '">+ Add a role</button></div>';
         });
