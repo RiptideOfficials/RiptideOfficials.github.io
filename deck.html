@@ -41,6 +41,7 @@
 #print-sheet th,#print-sheet td{border:1px solid #666;padding:2px 5px;font-size:9.5pt;line-height:1.2;text-align:center;vertical-align:middle}
 #print-sheet th{background:#dde8f2}
 #print-sheet .lo{text-align:left}
+#print-sheet tr.nt td.lo,#print-sheet td.notebox{background:#fff3b0!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #print-sheet td.na{background:#9a9a9a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #print-sheet .sub{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
 #print-sheet .sub table{font-size:9.5pt}
@@ -294,7 +295,7 @@
         var tot = D.blocks.map(function (b, i) { return d[i] == null ? "" : "<tr><td>" + esc(b.name || ("Events " + b.num)) + "</td><td>" + hm(d[i]) + "</td></tr>"; }).join("");
         h += '<div class="sub">' + stT("a", "Start End ST") + stT("b", "Relief", true) + stT("c", "Turn End ST") + stT("d", "Apprentice", true) +
           (tot ? '<table style="width:auto;margin-left:auto"><thead><tr><th colspan="2">Total Time</th></tr></thead><tbody>' + tot + "</tbody></table>" : "") + "</div>" +
-          ((D.note || "").trim() ? '<table style="margin-top:6px"><thead><tr><th>Notes</th></tr></thead><tbody><tr><td class="lo" style="white-space:pre-wrap">' + esc(D.note) + "</td></tr></tbody></table>" : "");
+          ((D.note || "").trim() ? '<table style="margin-top:6px"><thead><tr><th>Notes</th></tr></thead><tbody><tr><td class="lo notebox" style="white-space:pre-wrap">' + esc(D.note) + "</td></tr></tbody></table>" : "");
         var sheet = document.getElementById("print-sheet"); if (!sheet) { sheet = document.createElement("div"); sheet.id = "print-sheet"; app.appendChild(sheet); }
         sheet.innerHTML = h; sheet.style.zoom = ""; sheet.style.width = "";
         var avail = 6.3 * 96, z = 1;   // shrink to fit one landscape page: the sheet is laid out wider, then zoomed down to page width
