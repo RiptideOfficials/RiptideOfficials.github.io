@@ -13,6 +13,17 @@
 <link rel="icon" href="assets/img/favicon-32.png">
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
+<style>
+#print-sheet{display:none}
+@media print{
+  body.pa #app>*:not(#print-sheet),body.pa .footer,body.pa #site-header{display:none!important}
+  body.pa #print-sheet{display:block;color:#000}
+  #print-sheet h1{font-size:22pt;margin:0 0 4px}#print-sheet h2{font-size:14pt;margin:18px 0 6px;border-bottom:2px solid #000;padding-bottom:3px}
+  #print-sheet table{width:100%;border-collapse:collapse}#print-sheet th,#print-sheet td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top;font-size:11pt}
+  #print-sheet th{width:34%;background:#eee}#print-sheet .open{color:#777;font-style:italic}#print-sheet .printed{margin-top:16px;font-size:9pt;color:#555}
+  #print-sheet tr{break-inside:avoid}
+}
+</style>
 </head>
 <body>
 <header id="site-header"></header>
@@ -60,11 +71,11 @@
         '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": assigned positions</h1>" +
         "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
         '<div class="btn-row"><a class="btn small coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a><a class="btn small ghost" href="' + signupUrl + '">Sign-up form</a>' +
-        '<button class="btn small ghost" id="copysu" type="button">Copy sign-up link</button></div></div>' +
+        '<button class="btn small ghost" id="copysu" type="button">Copy sign-up link</button><button class="btn small" id="print-asg" type="button">Print assignments</button></div></div>' +
         '<div class="card" id="people-card"><h2>Signed up</h2><div id="people" class="muted">Loading...</div></div>' +
         '<p style="margin:0 0 8px"><a class="btn small coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a></p><div id="assign-area"></div>' +
         '<div class="card hidden" id="tools-card"></div>' +
-        '<div class="btn-row"><button class="btn green" type="button" id="asg-save">Save and publish</button><a class="btn ghost" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a></div><div id="asg-status" role="status"></div>';
+        '<div class="btn-row"><button class="btn green" type="button" id="asg-save">Save and publish</button><button class="btn" type="button" id="print-asg2">Print assignments</button><a class="btn ghost" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a></div><div id="asg-status" role="status"></div>';
       Array.prototype.forEach.call(app.querySelectorAll(".card"), function (c) { c.classList.add("coord-card"); });
       $("copysu").onclick = function () {
         var u = R.meetUrl(meetId).replace("meet.html", "signup.html");
@@ -165,6 +176,24 @@
         if (n.info.misc) L.push("MISCELLANEOUS", n.info.misc, "");
         return L.join("\n").replace(/\n{3,}/g, "\n\n").trim();
       }
+
+      function printSheet() {   // a clean "who is where" sheet built from what is on screen now
+        function names(a) { return (a || []).map(function (v) { return v.indexOf(" | ") > 0 ? v.split(" | ")[1] + " (shadowing " + v.split(" | ")[0] + ")" : v; }); }
+        function rows(groups, get) {
+          return groups.map(function (g) { var nm = names(get(g)); return "<tr><th>" + esc(g.label) + "</th><td>" + (nm.length ? nm.map(esc).join("<br>") : '<span class="open">(open)</span>') + "</td></tr>"; }).join("");
+        }
+        var h = '<h1>' + esc(m.title) + "</h1><p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? " &middot; " + esc(m.location) : "") + "</p>" +
+          "<h2>All sessions</h2><table>" + rows(R.WHOLE_GROUPS, function (g) { return asg.whole[g.key]; }) + "</table>";
+        n.sessions.forEach(function (x, i) {
+          h += "<h2>" + esc(x.name) + (R.sessionWhen(x) ? " &mdash; " + esc(R.sessionWhen(x)) : "") + "</h2><table>" + rows(R.SESSION_GROUPS, function (g) { return asg.sessions[i][g.key]; }) + "</table>";
+        });
+        h += '<p class="printed">Printed ' + esc(new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })) + " &middot; Riptide Officials</p>";
+        var sheet = $("print-sheet"); if (!sheet) { sheet = document.createElement("div"); sheet.id = "print-sheet"; app.appendChild(sheet); }
+        sheet.innerHTML = h; document.body.classList.add("pa");
+        var done = function () { document.body.classList.remove("pa"); window.removeEventListener("afterprint", done); };
+        window.addEventListener("afterprint", done); window.print();
+      }
+      $("print-asg").onclick = printSheet; $("print-asg2").onclick = printSheet;
 
       function drawTools() {
         var emails = [];
