@@ -84,7 +84,7 @@
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         '<div class="meet-when"><span class="when">' + esc(R.fmtRange(m)) + "</span>" + "</div>" +
-        (refRowsHtml() ? '<div style="margin:10px 0 4px;padding:10px 14px;border:1px solid #cfd9e3;border-left:4px solid #1f6fb2;border-radius:8px;background:#f6f9fc"><h3 style="margin:0 0 4px;font-size:1rem">Meet Referee</h3>" + refLinesHtml() + "</div>" : "") +
+        (refRowsHtml() ? '<div style="margin:10px 0 4px;padding:10px 14px;border:1px solid #cfd9e3;border-left:4px solid #1f6fb2;border-radius:8px;background:#f6f9fc"><h3 style="margin:0 0 4px;font-size:1rem">Meet Referee</h3>' + refLinesHtml() + "</div>" : "") +
         (n.v2 ? "" : notesHtml(m.notes)) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up</a>' +
         '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button><button class="btn ghost noprint" type="button" onclick="window.print()">Print</button></div>' +
