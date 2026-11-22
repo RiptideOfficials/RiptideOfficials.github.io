@@ -33,16 +33,17 @@
 @page{size:landscape;margin:.4in}
 @media print{
   body.pa #app>*:not(#print-sheet),body.pa .footer,body.pa #site-header{display:none!important}
-  body.pa #print-sheet{display:block;color:#000;width:979px}
+  body.pa #print-sheet{display:block;color:#000;width:940px}
 }
 #print-sheet h1{font-size:15pt;margin:0 0 4px}
 #print-sheet table{border-collapse:collapse;width:100%}
-#print-sheet th,#print-sheet td{border:1px solid #666;padding:3px 6px;font-size:10pt;text-align:center;vertical-align:middle}
+#print-sheet th,#print-sheet td{border:1px solid #666;padding:2px 5px;font-size:9.5pt;line-height:1.2;text-align:center;vertical-align:middle}
 #print-sheet th{background:#dde8f2}
 #print-sheet .lo{text-align:left}
 #print-sheet .sub{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
 #print-sheet .sub table{font-size:9.5pt}
-#print-sheet .brk td{background:#ffe9a8}
+#print-sheet,#print-sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#print-sheet .brk td{background:#ffc83d!important;border-top:3px solid #000;border-bottom:3px solid #000;font-weight:700;font-size:11pt}
 #print-sheet .endr td{font-weight:700;background:#f2f2f2}
 </style>
 </head>
@@ -214,7 +215,7 @@
           "<table><thead><tr><th>Event #</th><th>Event</th><th>Start</th><th>Total</th><th>Role</th><th>Rotation / Assignment</th><th>Relief</th><th>Shadow</th></tr></thead><tbody>";
         D.blocks.forEach(function (b, i) {
           if (b.type === "break") {
-            h += '<tr class="brk"><td></td><td><strong>' + esc(b.name || "Break") + "</strong></td><td>" + esc(clockM(cc.st[i])) + "</td><td>" + (d[i] == null ? "" : hm(d[i])) + '</td><td colspan="4" style="letter-spacing:.3em">BREAK</td></tr>';
+            h += '<tr class="brk"><td></td><td><strong>' + esc(b.name || "Break") + "</strong></td><td>" + esc(clockM(cc.st[i])) + "</td><td>" + (d[i] == null ? "" : hm(d[i])) + '</td><td colspan="4" style="letter-spacing:.4em">&#9632; BREAK &#9632;</td></tr>';
             return;
           }
           var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }];
@@ -232,9 +233,13 @@
         h += '<div class="sub">' + stT("a", "Start End ST") + stT("b", "Relief", true) + stT("c", "Turn End ST") + stT("d", "Apprentice", true) +
           (tot ? '<table style="width:auto;margin-left:auto"><thead><tr><th colspan="2">Total Time</th></tr></thead><tbody>' + tot + "</tbody></table>" : "") + "</div>";
         var sheet = document.getElementById("print-sheet"); if (!sheet) { sheet = document.createElement("div"); sheet.id = "print-sheet"; app.appendChild(sheet); }
-        sheet.innerHTML = h; sheet.style.zoom = "";
-        sheet.style.cssText = "display:block;position:absolute;left:-9999px;top:0;width:979px"; var ht = sheet.scrollHeight; sheet.style.cssText = "";
-        var avail = 7.6 * 96; if (ht > avail) sheet.style.zoom = String(Math.max(0.4, avail / ht));
+        sheet.innerHTML = h; sheet.style.zoom = ""; sheet.style.width = "";
+        var avail = 6.3 * 96, z = 1;   // shrink to fit one landscape page: the sheet is laid out wider, then zoomed down to page width
+        for (var it = 0; it < 4; it++) {
+          sheet.style.cssText = "display:block;position:absolute;left:-9999px;top:0;width:" + (940 / z) + "px"; var ht = sheet.scrollHeight;
+          var nz = Math.max(0.35, Math.min(1, avail / ht)); if (Math.abs(nz - z) < 0.01) break; z = nz;
+        }
+        sheet.style.cssText = ""; if (z < 1) { sheet.style.width = (940 / z) + "px"; sheet.style.zoom = String(z); }
         document.body.classList.add("pa");
         var done = function () { document.body.classList.remove("pa"); window.removeEventListener("afterprint", done); };
         window.addEventListener("afterprint", done); window.print();
