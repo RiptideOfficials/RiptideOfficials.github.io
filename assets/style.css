@@ -480,3 +480,13 @@ details.has-pencil>.pencil.del{right:76px}
 
 .pencil.mv.up{right:84px}.pencil.mv.dn{right:122px}.pencil.mv{font-size:.8rem}
 .step.has-pencil>.body>h2{padding-right:0}
+
+.help-box{margin:8px 0;border:1px solid #cfd9e3;border-radius:8px;background:#f6f9fc;max-width:760px}
+.help-box summary{cursor:pointer;padding:7px 12px;font-weight:600;color:#1f4e8c;list-style:none}
+.help-box summary::-webkit-details-marker{display:none}
+.help-box[open] summary{border-bottom:1px solid #cfd9e3}
+.help-body{padding:8px 14px 10px;font-size:.95rem}
+.help-body ol,.help-body ul{margin:4px 0 6px 20px;padding:0}
+.help-body li{margin:3px 0}
+.help-body p{margin:6px 0}
+@media print{.help-box{display:none}}

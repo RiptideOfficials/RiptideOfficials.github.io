@@ -100,7 +100,7 @@
         '<div id="cal-opts" class="btn-row hidden">' +
         '<a class="btn small" target="_blank" rel="noopener" href="' + esc(R.googleCalUrl(m, url)) + '">Google Calendar</a>' +
         '<a class="btn small" download="' + esc(m.title.replace(/[^\w]+/g, "-")) + '.ics" href="' + R.icsHref(m, meetId, url) + '">Apple / Outlook (.ics)</a></div>' +
-        (ctx.isMeetAdmin ? '<div class="coord-bar"><span class="coord-label">Coordinator only</span><div class="btn-row">' +
+        (ctx.isMeetAdmin ? '<div class="coord-bar"><span class="coord-label">Coordinator only</span>' + R.helpBox("coordinator buttons", "<p>This is the page officials see, with extra coordinator buttons in the yellow box.</p><ul><li><strong>Sign-ups</strong>: who has signed up, their contact info, what they are certified for, and which positions still need someone.</li><li><strong>Assigned positions</strong>: pick who works where, and email everyone.</li><li><strong>Deck setup</strong>: build the flow of the meet and print the deck sheet.</li><li><strong>Edit meet details</strong>: change the date, location, address, schedule, uniform, and the Meet Referee's email and cell.</li><li><strong>Copy link</strong>: the link to send to officials. People without an account see only the meet details. Members who are logged in also see the assignments.</li></ul>") + '<div class="btn-row">' +
           '<a class="btn coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">Sign-ups</a>' +
           '<a class="btn coord" href="assignments.html?m=' + encodeURIComponent(meetId) + '">Assigned positions</a>' +
           '<a class="btn coord" href="deck.html?m=' + encodeURIComponent(meetId) + '">Deck setup</a>' +

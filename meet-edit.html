@@ -87,7 +87,7 @@
       if (n) whole = n.whole.slice();
       app.innerHTML =
         '<p style="margin:0 0 10px"><a href="admin.html">&larr; Admin</a></p>' +
-        "<h1>" + (meetId ? "Edit meet" : "Add a meet") + "</h1>" +
+        "<h1>" + (meetId ? "Edit meet" : "Add a meet") + "</h1>" + R.helpBox("editing a meet", "<ol><li><strong>Meet</strong>: title, dates, location, and the address (it fills in on its own if you used that location on another meet). Add the Meet Referee's email and cell so officials can reach them.</li><li><strong>Sessions</strong>: each session has its own schedule and the positions people can sign up for. Untick any you do not need.</li><li><strong>Information for officials</strong>: parking, uniform, food and notes shown on the meet page.</li><li>Tap <strong>Save meet</strong> when you are done.</li></ol>") +
         (legacy ? '<div class="msg info">This meet was set up the older way. Its notes and times were copied into <strong>Miscellaneous</strong>. Sort them into the right boxes, then save.</div>' : "") +
         '<form id="mf" novalidate>' +
         '<div class="card coord-card"><h2>Meet</h2>' +
