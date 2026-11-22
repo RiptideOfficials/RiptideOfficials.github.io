@@ -84,6 +84,7 @@
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         '<div class="meet-when"><span class="when">' + esc(R.fmtRange(m)) + "</span>" + (m.location ? '<span class="where">' + esc(m.location) + "</span>" : "") + "</div>" +
+        ((asg.whole.meetRef || []).length ? '<p style="margin:8px 0 0"><strong>Meet Referee:</strong> ' + esc(asg.whole.meetRef.map(function (x) { return String(x).replace(/\s*\([^)]*\)\s*$/, ""); }).join(", ")) + (m.refEmail || window.ADMIN_EMAIL ? ' &mdash; questions? <a href="mailto:' + esc(m.refEmail || window.ADMIN_EMAIL) + '">' + esc(m.refEmail || window.ADMIN_EMAIL) + "</a>" : "") + (m.refPhone ? ' &middot; cell <a href="tel:' + esc(m.refPhone.replace(/[^\d+]/g, "")) + '">' + esc(m.refPhone) + "</a>" : "") + "</p>" : "") +
         (n.v2 ? "" : notesHtml(m.notes)) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up</a>' +
         '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button><button class="btn ghost noprint" type="button" onclick="window.print()">Print</button></div>' +
@@ -108,10 +109,6 @@
         if (ud.length) out += "<h3>Meet uniform</h3>" + ud.map(function (d) {
           return (d.date && (ud.length > 1) ? '<p class="uni-day-line"><strong>' + esc(R.fmtDate(d.date)) + "</strong></p>" : "") + paras(d.text);
         }).join("");
-        out += "<h3>Meet assignments</h3>";
-        var anyHere = (asg.whole.meetRef || []).length > 0;
-        out += anyHere ? asgTable(asg.whole, o)
-          : '<p class="muted">The Meet Referee will be posted here once the coordinator has filled it in.</p>';
         return out;
       }
 
@@ -129,10 +126,6 @@
       } else {
         if (m.schedule) html += '<div class="card"><h2>Meet details</h2><table class="sched">' + R.parseSchedule(m.schedule).map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
-        var anyAsg = (asg.whole.meetRef || []).length > 0;
-        html += '<div class="card" id="assignments"><h2>Meet assignments</h2>' + (anyAsg
-          ? asgTable(asg.whole, asg.sessions[0])
-          : '<p class="muted">The Meet Referee will be posted here once the coordinator has filled it in.</p>') + "</div>";
       }
       app.innerHTML = html;
 

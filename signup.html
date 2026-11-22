@@ -118,9 +118,9 @@
         '<div><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" required></div></div>' +
         '<label for="su-team">Team / club</label><input id="su-team" placeholder="Your team or club">' +
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
-        (n.whole.length ? '<div class="card"><h2>Meet Referee and Admin Official</h2><div class="checks certs">' + n.whole.map(function (p) {
+        (n.whole.some(function (p) { return !claims[WK[p]] || (editing && has(ex.certified, p)); }) ? '<div class="card"><h2>Meet Referee and Admin Official</h2><div class="checks certs">' + n.whole.map(function (p) {
           var c = claims[WK[p]], isMine = editing && has(ex.certified, p);
-          if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + "</div>";
+          if (c && !isMine) return "";   // already filled: nothing to show
           return '<div class="chk2"><label class="pos"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>" + lvBox(p, isMine) + "</div>";
         }).join("") + "</div></div>" : "") +
         sessCards +
