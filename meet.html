@@ -62,10 +62,14 @@
     }
     var ORDER = [["w", "meetRef", "Meet Referee"], ["w", "admin", "Admin Official"], ["s", "deckRef", "Deck Referee"], ["s", "leadStarter", "Lead Starter"],
                  ["s", "reliefDeckRef", "Relief Deck Referee"], ["s", "reliefStarter", "Relief Starter"], ["s", "strokeTurn", "Stroke & Turn"], ["s", "reliefStrokeTurn", "Relief Stroke & Turn"], ["s", "reliefStartEnd", "Relief Start End"], ["s", "reliefTurnEnd", "Relief Turn End"]];
+    function teamSmall(n) {   // the team name in parentheses is smaller and lighter, so it does not run into the name
+      var mt = String(n).match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+      return mt ? esc(mt[1]) + ' <span style="font-size:.78em;font-weight:400;color:#7a8a99">(' + esc(mt[2]) + ")</span>" : esc(n);
+    }
     function asgTable(whole, o) {   // one neat row per position, in a fixed order
       var rows = ORDER.filter(function (r) { return r[1] !== "meetRef"; }).map(function (r) {   // the shared link only shows the Meet Referee; everything else stays with the coordinator
         var names = (r[0] === "w" ? whole : o)[r[1]] || [];
-        return names.length ? '<div class="asg-row"><div class="asg-pos' + (r[1] === "shadow" ? " shadow" : "") + '">' + esc(r[2]) + '</div><div class="asg-names">' + names.map(function (n) { return "<div>" + esc(n) + "</div>"; }).join("") + "</div></div>" : "";
+        return names.length ? '<div class="asg-row"><div class="asg-pos' + (r[1] === "shadow" ? " shadow" : "") + '">' + esc(r[2]) + '</div><div class="asg-names">' + names.map(function (n) { return "<div>" + teamSmall(n) + "</div>"; }).join("") + "</div></div>" : "";
       }).join("");
       var sh = (o.shadow || []).map(function (e) { var i = e.indexOf(" | "); return i > 0 ? { pos: e.slice(0, i), name: e.slice(i + 3) } : { pos: "Position not listed", name: e }; });
       var order = ["Meet Referee", "Admin Official", "Deck Referee", "Starter", "Stroke & Turn", "Chief Judge", "Position not listed"];
