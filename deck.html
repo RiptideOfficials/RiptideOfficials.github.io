@@ -43,6 +43,7 @@
 #print-sheet .sub{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
 #print-sheet .sub table{font-size:9.5pt}
 #print-sheet,#print-sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#print-sheet tr.grp td{border-top:5px solid #000}
 #print-sheet .brk td{background:#ffc83d!important;border-top:3px solid #000;border-bottom:3px solid #000;font-weight:700;font-size:11pt}
 #print-sheet .endr td{font-weight:700;background:#f2f2f2}
 </style>
@@ -220,7 +221,7 @@
           }
           var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }];
           rows.forEach(function (r, j) {
-            h += "<tr>" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clockM(cc.st[i])) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
+            h += "<tr" + (j === 0 ? ' class="grp"' : "") + ">" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clockM(cc.st[i])) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
               "<td>" + esc(r.role) + "</td><td>" + esc(r.who) + "</td><td>" + esc(r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
           });
         });
