@@ -117,6 +117,10 @@
         (info.uniformByDate || []).forEach(function (d) { U[d.date] = d.text || ""; });
         U["*"] = info.uniform || "";   // older single text: used for every day without its own
       })();
+      var knownAddr = {};   // addresses already entered on other meets, matched by location name
+      R.db.collection("meets").get().then(function (q) { q.docs.forEach(function (d) { var x = d.data() || {}; if (d.id !== meetId && x.location && x.address) knownAddr[x.location.trim().toLowerCase()] = x.address; }); useKnown(); }).catch(function () {});
+      function useKnown() { var k = $("m-loc").value.trim().toLowerCase(); if (k && knownAddr[k] && !$("m-addr").value.trim()) $("m-addr").value = knownAddr[k]; }
+      $("m-loc").addEventListener("change", useKnown); $("m-loc").addEventListener("blur", useKnown);
       drawUniform(); $("i-food").value = info.food || ""; $("i-misc").value = info.misc || "";
       if (!S.length) S.push(blankSession(0));
       drawSessions();
