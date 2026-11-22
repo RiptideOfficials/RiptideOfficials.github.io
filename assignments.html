@@ -71,7 +71,7 @@
         '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": assigned positions</h1>" +
         "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
         '<div class="btn-row"><a class="btn small coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a><a class="btn small ghost" href="' + signupUrl + '">Sign-up form</a>' +
-        '<button class="btn small ghost" id="copysu" type="button">Copy sign-up link</button><button class="btn small" id="print-asg" type="button">Print assignments</button></div></div>' +
+        '<button class="btn small ghost" id="copysu" type="button">Copy sign-up link</button><button class="btn small" id="print-asg" type="button">Print assignments</button><a class="btn small coord" href="deck.html?m=' + encodeURIComponent(meetId) + '">Deck setup</a></div></div>' +
         '<div class="card" id="people-card"><h2>Signed up</h2><div id="people" class="muted">Loading...</div></div>' +
         '<p style="margin:0 0 8px"><a class="btn small coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">See who signed up</a></p><div id="assign-area"></div>' +
         '<div class="card hidden" id="tools-card"></div>' +

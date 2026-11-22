@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Deck setup | Riptide Officials</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<meta name="theme-color" content="#0a2a4a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Officials">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+#print-sheet{display:none}
+.dk-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.dk-block{border:1px solid #cfd9e3;border-left:5px solid #1f6fb2;border-radius:10px;padding:12px;margin:0 0 14px;background:#fff}
+.dk-top{display:grid;grid-template-columns:90px 1fr 120px;gap:8px;align-items:end}
+.dk-block label,.dk-st label{display:block;font-size:.78rem;color:#5b6b7a;margin:0 0 2px}
+.dk-block input,.dk-st input,.dk-block select{width:100%;box-sizing:border-box;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px;background:#fff}
+.dk-row{display:grid;grid-template-columns:1fr 1.4fr 1fr 1fr 30px;gap:6px;margin:6px 0;align-items:center}
+.dk-head{font-size:.75rem;color:#5b6b7a;margin-top:10px}
+.dk-x{background:none;border:0;color:#b02a2a;font-size:1.1rem;cursor:pointer;padding:0}
+.dk-tot{display:inline-block;background:#e8f1f9;border-radius:6px;padding:3px 9px;font-weight:600}
+.dk-st{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.dk-st h3{font-size:.95rem;margin:0 0 6px}
+.dk-st .it{display:grid;grid-template-columns:64px 1fr 22px;gap:4px;margin:4px 0}
+.dk-st .it.one{grid-template-columns:1fr 22px}
+@media(max-width:760px){.dk-top{grid-template-columns:1fr 1fr}.dk-top>div:nth-child(2){grid-column:1/-1;order:3}.dk-row{grid-template-columns:1fr 1fr;border-bottom:1px dashed #cfd9e3;padding-bottom:6px}.dk-row .dk-x{justify-self:end}.dk-st{grid-template-columns:1fr}}
+@page{size:landscape;margin:.4in}
+@media print{
+  body.pa #app>*:not(#print-sheet),body.pa .footer,body.pa #site-header{display:none!important}
+  body.pa #print-sheet{display:block;color:#000;width:979px}
+}
+#print-sheet h1{font-size:15pt;margin:0 0 4px}
+#print-sheet table{border-collapse:collapse;width:100%}
+#print-sheet th,#print-sheet td{border:1px solid #666;padding:3px 6px;font-size:10pt;text-align:center;vertical-align:middle}
+#print-sheet th{background:#dde8f2}
+#print-sheet .lo{text-align:left}
+#print-sheet .sub{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
+#print-sheet .sub table{font-size:9.5pt}
+#print-sheet .brk td{background:#ffe9a8}
+#print-sheet .endr td{font-weight:700;background:#f2f2f2}
+</style>
+</head>
+<body>
+<header id="site-header"></header>
+<main id="app"><div class="card loading">Loading...</div></main>
+<div class="footer" id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/firebase-config.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* Admin / meet manager only: plan the deck for each session - events with start times, who is Deck Ref / Starter,
+   relay takeoff judges, stroke & turn lanes, shadows - and print it on one sheet. */
+(function () {
+  var R = window.Riptide, esc = R.esc, app = document.getElementById("app");
+  R.footer();
+  var meetId = new URLSearchParams(location.search).get("m");
+  var TPL = {
+    brk: { label: "Break (no officials needed)", rows: [] },
+    relay: { label: "Relays", rows: [["DR / SR", ""], ["Relay 1-4", ""], ["Relay 4-1", ""], ["Relay 5-8", ""], ["Relay 8-5", ""], ["Watch Turns", ""]] },
+    free: { label: "Freestyle / other", rows: [["DR / SR", ""], ["Watch Turns", "Rotate"]] },
+    strokes: { label: "Strokes", rows: [["DR / SR", ""], ["Start End ST", "See chart below"], ["Turn End ST", "See chart below"]] },
+    blank: { label: "Blank", rows: [["DR / SR", ""]] }
+  };
+  function mkBlock(t) { return { type: t === "brk" ? "break" : "", num: "", name: t === "brk" ? "Break" : "", start: "", rows: TPL[t].rows.map(function (r) { return { role: r[0], who: r[1], relief: "", shadow: "" }; }) }; }
+  function emptyDeck() { return { blocks: [mkBlock("free")], end: "", st: { a: [], b: [], c: [], d: [] } }; }
+  function mins(t) { var p = /^(\d{1,2}):(\d{2})$/.exec(t || ""); return p ? +p[1] * 60 + +p[2] : null; }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function hm(m) { return m == null || m < 0 ? "" : Math.floor(m / 60) + ":" + pad(m % 60); }
+  function clock(t) { var m = mins(t); if (m == null) return ""; var h = Math.floor(m / 60), ap = h >= 12 ? "" : ""; return ((h + 11) % 12 + 1) + ":" + pad(m % 60); }
+  function durs(D) {
+    return D.blocks.map(function (b, i) {
+      var s = mins(b.start), e = i + 1 < D.blocks.length ? mins(D.blocks[i + 1].start) : mins(D.end);
+      return s != null && e != null && e >= s ? e - s : null;
+    });
+  }
+
+  R.requireMeetAdmin("assignments").then(function (ctx) {
+    if (!ctx) return;
+    if (!meetId) {
+      R.db.collection("meets").orderBy("date").get().then(function (snap) {
+        var key = new Date().toISOString().slice(0, 10), up = [];
+        snap.docs.forEach(function (d) { var m = d.data(); m.id = d.id; if ((m.endDate || m.date) >= key) up.push(m); });
+        app.innerHTML = '<div class="card"><h1>Deck setup</h1><p class="muted">Pick a meet.</p><ul style="list-style:none;padding:0;margin:0">' +
+          (up.length ? up.map(function (m) { return '<li style="padding:8px 0"><a class="btn small coord" href="deck.html?m=' + encodeURIComponent(m.id) + '">' + esc(m.title) + '</a> <span class="muted">' + esc(R.fmtRange(m)) + "</span></li>"; }).join("") : '<li class="muted">No upcoming meets yet.</li>') + "</ul></div>";
+      }).catch(function () { app.innerHTML = '<div class="msg err">Could not load meets.</div>'; });
+      return;
+    }
+    var meetRef = R.db.collection("meets").doc(meetId);
+    Promise.all([meetRef.get(), meetRef.collection("deck").get().catch(function () { return null; })]).then(function (res) {
+      if (!res[0].exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2></div>'; return; }
+      var m = res[0].data(); m.id = meetId;
+      if (!res[1]) { app.innerHTML = '<div class="msg err">Could not open the deck planner. The newest firestore.rules need to be published (see the note from Claude).</div>'; return; }
+      var saved = {}; res[1].docs.forEach(function (d) { saved[d.id] = d.data(); });
+      start(m, saved);
+    }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
+
+    function start(m, saved) {
+      var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length), cur = 0, timer = null, decks = {};
+      function sid(i) { return "s" + i; }
+      function deckOf(i) {
+        if (!decks[i]) { var s = saved[sid(i)]; decks[i] = s ? { blocks: s.blocks || [], end: s.end || "", st: { a: (s.st || {}).a || [], b: (s.st || {}).b || [], c: (s.st || {}).c || [], d: (s.st || {}).d || [] } } : emptyDeck(); }
+        return decks[i];
+      }
+      function nameList(i) {
+        var out = [];
+        function add(v) { String(v || "").split(" | ").slice(-1).forEach(function (x) { x = x.trim(); if (x && out.indexOf(x) < 0) out.push(x); }); }
+        R.WHOLE_GROUPS.forEach(function (g) { asg.whole[g.key].forEach(add); });
+        R.SESSION_GROUPS.forEach(function (g) { (asg.sessions[i][g.key] || []).forEach(add); });
+        return out;
+      }
+      function setPath(D, path, val) {
+        var p = path.split("."), o = D;
+        for (var k = 0; k < p.length - 1; k++) o = o[p[k]];
+        o[p[p.length - 1]] = val;
+      }
+      function save(now) {
+        clearTimeout(timer);
+        var st = document.getElementById("dk-status"); if (st) st.textContent = "Saving...";
+        var go = function () {
+          var D = deckOf(cur), payload = JSON.parse(JSON.stringify(D)); payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+          meetRef.collection("deck").doc(sid(cur)).set(payload).then(function () { var s2 = document.getElementById("dk-status"); if (s2) s2.textContent = "Saved"; })
+            .catch(function () { var s2 = document.getElementById("dk-status"); if (s2) s2.innerHTML = '<span style="color:#b02a2a">Could not save. The newest firestore.rules may need to be published.</span>'; });
+        };
+        if (now) go(); else timer = setTimeout(go, 900);
+      }
+      function inp(path, val, ph, extra) { return '<input data-p="' + path + '" value="' + esc(val || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + (extra || "") + ">"; }
+      function stCol(key, title, D, one) {
+        return '<div><h3>' + title + "</h3>" + D.st[key].map(function (it, j) {
+          return '<div class="it' + (one ? " one" : "") + '">' + (one ? "" : inp("st." + key + "." + j + ".l", it.l, "Lanes")) + inp("st." + key + "." + j + ".n", it.n, "Name", ' list="dk-names"') + '<button class="dk-x" type="button" data-act="stdel" data-k="' + key + '" data-j="' + j + '" aria-label="Remove">&times;</button></div>';
+        }).join("") + '<button class="btn small ghost" type="button" data-act="stadd" data-k="' + key + '">+ Add</button></div>';
+      }
+      function draw() {
+        var D = deckOf(cur), d = durs(D);
+        var tabs = n.sessions.length > 1 ? '<div class="dk-tabs">' + n.sessions.map(function (x, i) { return '<button type="button" class="btn small ' + (i === cur ? "coord" : "ghost") + '" data-act="tab" data-i="' + i + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "";
+        var html = '<p style="margin:0 0 10px"><a href="assignments.html?m=' + encodeURIComponent(meetId) + '">&larr; Assignments</a></p>' +
+          '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": deck setup</h1><p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" + tabs +
+          '<p class="muted small" style="margin:0">Type the first event number and start time for each group of events. The total time for a group is worked out from the next group\'s start time (and the End Time at the bottom). Changes save by themselves.</p></div>';
+        D.blocks.forEach(function (b, i) {
+          if (b.type === "break") {
+            html += '<div class="dk-block" style="border-left-color:#e0a82e;background:#fdf6e3"><div class="dk-top"><div><label>&nbsp;</label><strong>Break</strong></div><div><label>What is happening</label>' + inp("blocks." + i + ".name", b.name, "Break / warm-up / awards") +
+              '</div><div><label>Start time</label>' + inp("blocks." + i + ".start", b.start, "", ' type="time"') + '</div></div>' +
+              '<p style="margin:8px 0 0">Length: <span class="dk-tot" data-tot="' + i + '">' + (d[i] == null ? "--" : hm(d[i])) + '</span> ' +
+              '<button class="btn small ghost" type="button" data-act="up" data-i="' + i + '">&uarr;</button> <button class="btn small ghost" type="button" data-act="dn" data-i="' + i + '">&darr;</button> ' +
+              '<button class="btn small ghost" type="button" data-act="delb" data-i="' + i + '">Remove break</button></p></div>';
+            return;
+          }
+          html += '<div class="dk-block"><div class="dk-top"><div><label>Events #</label>' + inp("blocks." + i + ".num", b.num, "1-3") + '</div><div><label>Event</label>' + inp("blocks." + i + ".name", b.name, "200 Free relays") +
+            '</div><div><label>Start time</label>' + inp("blocks." + i + ".start", b.start, "", ' type="time"') + '</div></div>' +
+            '<p style="margin:8px 0 0">Total time: <span class="dk-tot" data-tot="' + i + '">' + (d[i] == null ? "--" : hm(d[i])) + '</span> ' +
+            '<button class="btn small ghost" type="button" data-act="up" data-i="' + i + '">&uarr;</button> <button class="btn small ghost" type="button" data-act="dn" data-i="' + i + '">&darr;</button> ' +
+            '<button class="btn small ghost" type="button" data-act="delb" data-i="' + i + '">Remove group</button></p>' +
+            '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
+            b.rows.map(function (r, j) {
+              var p = "blocks." + i + ".rows." + j + ".";
+              return '<div class="dk-row">' + inp(p + "role", r.role, "Role") + inp(p + "who", r.who, "Name(s)", ' list="dk-names"') + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
+                '<button class="dk-x" type="button" data-act="delr" data-i="' + i + '" data-j="' + j + '" aria-label="Remove row">&times;</button></div>';
+            }).join("") + '<button class="btn small ghost" type="button" data-act="addr" data-i="' + i + '">+ Add a role</button></div>';
+        });
+        html += '<div class="card"><label for="dk-add" class="small muted">Add another group of events, or a break</label><div class="btn-row" style="margin-top:4px"><select id="dk-add" style="max-width:220px">' +
+          Object.keys(TPL).map(function (k) { return '<option value="' + k + '">' + TPL[k].label + "</option>"; }).join("") + '</select><button class="btn small coord" type="button" data-act="addb">+ Add</button></div>' +
+          '<div style="max-width:160px;margin-top:12px"><label class="small muted">End time (last event done)</label>' + inp("end", D.end, "", ' type="time" style="width:100%;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px"') + "</div></div>" +
+          '<div class="card"><h2 style="margin-top:0">Stroke &amp; Turn</h2><div class="dk-st">' + stCol("a", "Start End ST", D) + stCol("b", "Relief", D, true) + stCol("c", "Turn End ST", D) + stCol("d", "Apprentice", D, true) + "</div></div>" +
+          '<datalist id="dk-names">' + nameList(cur).map(function (x) { return '<option value="' + esc(x) + '">'; }).join("") + "</datalist>" +
+          '<div class="btn-row"><button class="btn green" type="button" data-act="print">Print (1 page)</button><span id="dk-status" class="muted" role="status"></span></div>';
+        app.innerHTML = html;
+      }
+      function refreshTotals() {
+        var D = deckOf(cur), d = durs(D);
+        Array.prototype.forEach.call(app.querySelectorAll("[data-tot]"), function (el) { var v = d[+el.getAttribute("data-tot")]; el.textContent = v == null ? "--" : hm(v); });
+      }
+      function printSheet() {
+        var D = deckOf(cur), d = durs(D), x = n.sessions[cur];
+        var h = "<h1>" + esc(m.title) + (n.sessions.length > 1 ? " &mdash; " + esc(x.name) : "") + ' <span style="font-weight:400;font-size:11pt">' + esc(R.sessionWhen(x) || R.fmtRange(m)) + "</span></h1>" +
+          "<table><thead><tr><th>Event #</th><th>Event</th><th>Start</th><th>Total</th><th>Role</th><th>Rotation / Assignment</th><th>Relief</th><th>Shadow</th></tr></thead><tbody>";
+        D.blocks.forEach(function (b, i) {
+          if (b.type === "break") {
+            h += '<tr class="brk"><td></td><td><strong>' + esc(b.name || "Break") + "</strong></td><td>" + esc(clock(b.start)) + "</td><td>" + (d[i] == null ? "" : hm(d[i])) + '</td><td colspan="4" style="letter-spacing:.3em">BREAK</td></tr>';
+            return;
+          }
+          var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }];
+          rows.forEach(function (r, j) {
+            h += "<tr>" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clock(b.start)) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
+              "<td>" + esc(r.role) + "</td><td>" + esc(r.who) + "</td><td>" + esc(r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
+          });
+        });
+        h += '<tr class="endr"><td colspan="2">End Time</td><td colspan="6">' + esc(clock(D.end)) + "</td></tr></tbody></table>";
+        function stT(key, title, one) {
+          var list = D.st[key]; if (!list.length) return "";
+          return "<table><thead><tr><th" + (one ? "" : ' colspan="2"') + ">" + title + "</th></tr></thead><tbody>" + list.map(function (it) { return "<tr>" + (one ? "" : '<td style="width:48px">' + esc(it.l) + "</td>") + '<td class="lo">' + esc(it.n) + "</td></tr>"; }).join("") + "</tbody></table>";
+        }
+        var tot = D.blocks.map(function (b, i) { return d[i] == null ? "" : "<tr><td>" + esc(b.name || ("Events " + b.num)) + "</td><td>" + hm(d[i]) + "</td></tr>"; }).join("");
+        h += '<div class="sub">' + stT("a", "Start End ST") + stT("b", "Relief", true) + stT("c", "Turn End ST") + stT("d", "Apprentice", true) +
+          (tot ? '<table style="width:auto;margin-left:auto"><thead><tr><th colspan="2">Total Time</th></tr></thead><tbody>' + tot + "</tbody></table>" : "") + "</div>";
+        var sheet = document.getElementById("print-sheet"); if (!sheet) { sheet = document.createElement("div"); sheet.id = "print-sheet"; app.appendChild(sheet); }
+        sheet.innerHTML = h; sheet.style.zoom = "";
+        sheet.style.cssText = "display:block;position:absolute;left:-9999px;top:0;width:979px"; var ht = sheet.scrollHeight; sheet.style.cssText = "";
+        var avail = 7.6 * 96; if (ht > avail) sheet.style.zoom = String(Math.max(0.4, avail / ht));
+        document.body.classList.add("pa");
+        var done = function () { document.body.classList.remove("pa"); window.removeEventListener("afterprint", done); };
+        window.addEventListener("afterprint", done); window.print();
+      }
+      app.addEventListener("input", function (e) {
+        var p = e.target.getAttribute && e.target.getAttribute("data-p"); if (!p) return;
+        setPath(deckOf(cur), p, e.target.value); refreshTotals(); save();
+      });
+      app.addEventListener("click", function (e) {
+        var t = e.target.closest && e.target.closest("[data-act]"); if (!t) return;
+        var D = deckOf(cur), act = t.getAttribute("data-act"), i = +t.getAttribute("data-i"), j = +t.getAttribute("data-j"), k = t.getAttribute("data-k");
+        if (act === "tab") { cur = i; draw(); return; }
+        if (act === "print") { printSheet(); return; }
+        if (act === "addb") D.blocks.push(mkBlock($("dk-add").value));
+        else if (act === "delb") { if (!confirm("Remove this group of events?")) return; D.blocks.splice(i, 1); }
+        else if (act === "up" && i > 0) D.blocks.splice(i - 1, 0, D.blocks.splice(i, 1)[0]);
+        else if (act === "dn" && i < D.blocks.length - 1) D.blocks.splice(i + 1, 0, D.blocks.splice(i, 1)[0]);
+        else if (act === "addr") D.blocks[i].rows.push({ role: "", who: "", relief: "", shadow: "" });
+        else if (act === "delr") D.blocks[i].rows.splice(j, 1);
+        else if (act === "stadd") D.st[k].push({ l: "", n: "" });
+        else if (act === "stdel") D.st[k].splice(j, 1);
+        else return;
+        draw(); save();
+      });
+      function $(id) { return document.getElementById(id); }
+      draw();
+    }
+  });
+})();
+</script>
+</body>
+</html>

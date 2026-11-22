@@ -133,6 +133,11 @@ service cloud.firestore {
         allow delete: if true;
       }
 
+      // Deck setup (events, start times, who is where) - coordinators and meet managers only.
+      match /deck/{sid} {
+        allow read, write: if isMeetAdmin();
+      }
+
       // One document per sign-up, keyed by a random secret code. Nobody can list them (only admins can),
       // so only the person who signed up (who holds their private edit link) or an admin can open one.
       match /contacts/{key} {
