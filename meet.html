@@ -57,7 +57,7 @@
       return out;
     }
     var ORDER = [["w", "meetRef", "Meet Referee"], ["w", "admin", "Admin Official"], ["s", "deckRef", "Deck Referee"], ["s", "leadStarter", "Lead Starter"],
-                 ["s", "reliefDeckRef", "Relief Deck Referee"], ["s", "reliefStarter", "Relief Starter"], ["s", "strokeTurn", "Stroke & Turn"], ["s", "reliefStrokeTurn", "Relief Stroke & Turn"]];
+                 ["s", "reliefDeckRef", "Relief Deck Referee"], ["s", "reliefStarter", "Relief Starter"], ["s", "strokeTurn", "Stroke & Turn"], ["s", "reliefStrokeTurn", "Relief Stroke & Turn"], ["s", "reliefStartEnd", "Relief Start End"], ["s", "reliefTurnEnd", "Relief Turn End"]];
     function asgTable(whole, o) {   // one neat row per position, in a fixed order
       var rows = ORDER.map(function (r) {
         var names = (r[0] === "w" ? whole : o)[r[1]] || [];

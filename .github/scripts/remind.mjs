@@ -42,7 +42,7 @@ const norm = (t) => String(t || "").toLowerCase().replace(/\s*\(.*?\)\s*$/, "").
 const nowChicago = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
 const today = new Date(nowChicago.getFullYear(), nowChicago.getMonth(), nowChicago.getDate());
 const GROUPS = { meetRef: "Meet Referee", admin: "Admin Official", deckRef: "Deck Referee", reliefDeckRef: "Relief Deck Referee", leadStarter: "Lead Starter",
-  reliefStarter: "Relief Starter", strokeTurn: "Stroke & Turn", reliefStrokeTurn: "Relief Stroke & Turn", shadow: "Shadowing" };
+  reliefStarter: "Relief Starter", strokeTurn: "Stroke & Turn", reliefStrokeTurn: "Relief Stroke & Turn", reliefStartEnd: "Relief Start End", reliefTurnEnd: "Relief Turn End", shadow: "Shadowing" };
 const WHOLE = ["meetRef", "admin"];
 
 const meets = (await list("meets")).filter((m) => {

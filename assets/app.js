@@ -309,6 +309,8 @@
     { key: "reliefStarter", label: "Relief Starter", cert: "Starter" },
     { key: "strokeTurn", label: "Stroke & Turn", cert: "Stroke & Turn" },
     { key: "reliefStrokeTurn", label: "Relief Stroke & Turn", cert: "Stroke & Turn" },
+    { key: "reliefStartEnd", label: "Relief Start End (only if separate)", cert: "Stroke & Turn" },
+    { key: "reliefTurnEnd", label: "Relief Turn End (only if separate)", cert: "Stroke & Turn" },
     { key: "shadow", label: "Shadowing", cert: "" }
   ];
   R.fmtTime = function (t) {

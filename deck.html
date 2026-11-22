@@ -75,7 +75,7 @@
     strokes: { label: "Strokes", rows: [["DR", ""], ["SR", ""], ["ST Start End 1-4", ""], ["ST Start End 5-8", ""], ["ST Turn End 1-4", ""], ["ST Turn End 5-8", ""], ["ST Relief", ""]] },
     blank: { label: "Blank", rows: [["DR", ""]] }
   };
-  var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8", "ST Relief"];
+  var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8", "ST Relief", "ST Relief Start", "ST Relief Turn"];
   function roleSel(path, val, other) {
     var isOther = other || (val && ROLES.indexOf(val) < 0);
     var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("") +
@@ -171,7 +171,7 @@
         R.WHOLE_GROUPS.forEach(function (g) { asg.whole[g.key].forEach(function (v) { add("all", v); }); });
         var A = asg.sessions[i];
         R.SESSION_GROUPS.forEach(function (g) { (A[g.key] || []).forEach(function (v) { add("all", v); }); });
-        (A.strokeTurn || []).concat(A.reliefStrokeTurn || []).forEach(function (v) { add("st", v); });
+        (A.strokeTurn || []).concat(A.reliefStrokeTurn || [], A.reliefStartEnd || [], A.reliefTurnEnd || []).forEach(function (v) { add("st", v); });
         (A.deckRef || []).concat(A.reliefDeckRef || []).forEach(function (v) { add("dr", v); });
         (A.leadStarter || []).concat(A.reliefStarter || []).forEach(function (v) { add("sr", v); });
         var adm = (asg.whole.admin || []).map(cleanName);   // the Admin Official is at the desk, not on deck
@@ -201,12 +201,20 @@
       }
       function autoFill(D) {   // pre-fill the ST roles from the lists below; anything the coordinator typed or chose is left alone
         var changed = false;
-        D.blocks.forEach(function (b) { b.rows.forEach(function (r, j) {
-          var isFl = r.role === "ST Relief", isDR = r.role === "DR" || r.role === "SR" || isFl, ak = r.role === "SR" ? "leadStarter" : "deckRef";
+        var RELK = { "ST Relief": "reliefStrokeTurn", "ST Relief Start": "reliefStartEnd", "ST Relief Turn": "reliefTurnEnd" };
+        D.blocks.forEach(function (b) {
+          if (b.type !== "break" && b.rows.some(function (r) { return /^ST (Start|Turn) End/.test(r.role || ""); })) {   // relief picked on the Assignments page for just the start or turn end
+            b.relAdded = b.relAdded || {};
+            [["ST Relief Start", "reliefStartEnd"], ["ST Relief Turn", "reliefTurnEnd"]].forEach(function (x) {
+              if (!b.relAdded[x[1]] && (asg.sessions[cur][x[1]] || []).length && !b.rows.some(function (r) { return r.role === x[0]; })) { b.rows.push({ role: x[0], who: "", relief: "", shadow: "" }); b.relAdded[x[1]] = true; changed = true; }
+            });
+          }
+          b.rows.forEach(function (r, j) {
+          var isFl = !!RELK[r.role], isDR = r.role === "DR" || r.role === "SR" || isFl, ak = r.role === "SR" ? "leadStarter" : "deckRef";
           if (!(/^ST /.test(r.role || "") || isDR) || r.whoOther) return;
           if (r.who && r.who !== r.auto) return;          // changed by hand
           if (!r.who && r.noauto) return;                  // cleared by hand
-          var v = isFl ? ((asg.sessions[cur].reliefStrokeTurn || []).map(cleanName).filter(Boolean).join(" / ") || D.st.b.map(function (it) { return (it.n || "").trim(); }).filter(Boolean).join(" / ")) : isDR ? ((asg.sessions[cur][ak] || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
+          var v = isFl ? ((asg.sessions[cur][RELK[r.role]] || []).map(cleanName).filter(Boolean).join(" / ") || (r.role === "ST Relief" ? D.st.b.map(function (it) { return (it.n || "").trim(); }).filter(Boolean).join(" / ") : "")) : isDR ? ((asg.sessions[cur][ak] || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
           if (v !== (r.who || "")) { r.who = v; changed = true; }
           r.auto = v;
         }); });

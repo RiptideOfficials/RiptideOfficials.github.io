@@ -128,7 +128,9 @@
           }
           var lab = label(s);
           var PARTNER = { deckRef: "reliefDeckRef", reliefDeckRef: "deckRef", leadStarter: "reliefStarter", reliefStarter: "leadStarter", strokeTurn: "reliefStrokeTurn", reliefStrokeTurn: "strokeTurn" }, pk = PARTNER[g.key];
-          if (scope !== "w" && pk && list.indexOf(lab) < 0 && (asg.sessions[sessionIndex][pk] || []).indexOf(lab) >= 0) return;   // already the main (or relief) one, so not offered for the other
+          if (scope !== "w" && pk && list.indexOf(lab) < 0 && (asg.sessions[sessionIndex][pk] || []).indexOf(lab) >= 0) return;
+          var STG = ["strokeTurn", "reliefStrokeTurn", "reliefStartEnd", "reliefTurnEnd"];
+          if (scope !== "w" && STG.indexOf(g.key) >= 0 && list.indexOf(lab) < 0 && STG.some(function (k) { return k !== g.key && (asg.sessions[sessionIndex][k] || []).indexOf(lab) >= 0; })) return;   // already the main (or relief) one, so not offered for the other
           names[lab] = 1;
           var lv = s.certLevels && Object.keys(s.certLevels).filter(function (k) { return k.toLowerCase() === (g.cert || "").toLowerCase(); })[0];
           var lvTxt = lv && (s.certLevels[lv] || []).length ? s.certLevels[lv].join("/") : "";
