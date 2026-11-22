@@ -84,7 +84,7 @@
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         '<div class="meet-when"><span class="when">' + esc(R.fmtRange(m)) + "</span>" + "</div>" +
-        (refRowsHtml() ? '<div style="margin:10px 0 4px;padding:10px 14px;border:1px solid #cfd9e3;border-left:4px solid #1f6fb2;border-radius:8px;background:#f6f9fc"><h3 style="margin:0 0 4px;font-size:1rem">Meet Referee</h3><table class="sched" style="margin:0">' + refRowsHtml().replace("<tr><td>Meet Referee</td>", "<tr><td>Name</td>") + "</table></div>" : "") +
+        (refRowsHtml() ? '<div style="margin:10px 0 4px;padding:10px 14px;border:1px solid #cfd9e3;border-left:4px solid #1f6fb2;border-radius:8px;background:#f6f9fc"><h3 style="margin:0 0 4px;font-size:1rem">Meet Referee</h3>" + refLinesHtml() + "</div>" : "") +
         (n.v2 ? "" : notesHtml(m.notes)) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up</a>' +
         '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button><button class="btn ghost noprint" type="button" onclick="window.print()">Print</button></div>' +
@@ -99,6 +99,12 @@
           '<button class="btn coord" type="button" id="copylink">Copy link</button></div></div>' : "") + "</div>";
 
       function nonEmpty(o, groups) { return groups.some(function (g) { return o[g.key] && o[g.key].length; }); }
+      function refLinesHtml() {   // name, email and phone as plain lines under the heading
+        var rn = asg.whole.meetRef.map(function (v) { return String(v).replace(/\s*\([^)]*\)\s*$/, ""); }).join(", "), em = m.refEmail || window.ADMIN_EMAIL || "";
+        return '<p style="margin:2px 0"><strong>' + esc(rn) + "</strong></p>" +
+          (em ? '<p style="margin:2px 0"><a href="mailto:' + esc(em) + '">' + esc(em) + "</a></p>" : "") +
+          (m.refPhone ? '<p style="margin:2px 0"><a href="tel:' + esc(m.refPhone.replace(/[^\d+]/g, "")) + '">' + esc(m.refPhone) + "</a></p>" : "");
+      }
       function locRow() { return m.location ? "<tr><td>Location</td><td>" + esc(m.location) + "</td></tr>" : ""; }
       function refRowsHtml() {   // the Meet Referee is part of the meet details, with contact info for questions
         if (!(asg.whole.meetRef || []).length) return "";
