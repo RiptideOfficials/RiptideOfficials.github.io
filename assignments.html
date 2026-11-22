@@ -82,7 +82,7 @@
         R.copyText(u).then(function () { $("copysu").textContent = "Copied!"; setTimeout(function () { $("copysu").textContent = "Copy sign-up link"; }, 1500); });
       };
 
-      function label(s) { return s.name + (s.team && !/^riptide$/i.test(s.team) ? " (" + s.team + ")" : ""); }   // what gets published
+      function label(s) { return s.name + (s.team ? " (" + s.team + ")" : ""); }   // what gets published
       function labelLv(s) { return label(s) + (s.level ? " [" + s.level + "]" : ""); }
       function arr(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
       function picks(s, i, kind) {
@@ -264,6 +264,9 @@
         meetRef.collection("whole").get().then(function (cs) { claims = {}; cs.docs.forEach(function (d) { claims[d.id] = d.data(); }); drawAssign(); }).catch(function () {});
         return meetRef.collection("contacts").orderBy("createdAt").get().then(function (cs) {
           signups = cs.docs.map(function (d) { var s = d.data(); s.id = d.id; return s; });
+          var fix = function (list) { (list || []).forEach(function (v, i) { signups.forEach(function (s) { if (s.team && v === s.name) list[i] = label(s); }); }); };   // add the team name to names published without it
+          R.WHOLE_GROUPS.forEach(function (g) { fix(asg.whole[g.key]); });
+          asg.sessions.forEach(function (o) { R.SESSION_GROUPS.forEach(function (g) { if (g.key !== "shadow") fix(o[g.key]); }); });
           drawPeople(); drawAssign(); drawTools();
         }).catch(function () { $("people").innerHTML = '<div class="msg err">Could not load the sign-ups.</div>'; });
       }
