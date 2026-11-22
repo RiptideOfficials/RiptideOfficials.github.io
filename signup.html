@@ -120,7 +120,7 @@
         '<div class="hint" style="margin-bottom:0">Your email and phone are only seen by the officials coordinators.</div></div>' +
         (n.whole.length ? '<div class="card"><h2>Meet Referee and Admin Official</h2><div class="checks certs">' + n.whole.map(function (p) {
           var c = claims[WK[p]], isMine = editing && has(ex.certified, p);
-          if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + ' &mdash; ' + esc(c.name) + "</div>";
+          if (c && !isMine) return '<div class="chk filled"><span class="filled-tag">Filled</span> ' + esc(p) + "</div>";
           return '<div class="chk2"><label class="pos"><input type="checkbox" data-whole="1" value="' + esc(p) + '"' + (isMine ? " checked" : "") + "> " + esc(p) + "</label>" + lvBox(p, isMine) + "</div>";
         }).join("") + "</div></div>" : "") +
         sessCards +
@@ -139,7 +139,7 @@
         }
         if (!ctx.user) return;
         var p = ctx.profile || {};
-        $("su-name").value = p.name || ""; $("su-email").value = p.email || ctx.user.email || ""; $("su-phone").value = p.phone || ""; $("su-team").value = "Riptide";
+        $("su-name").value = p.name || ""; $("su-phone").value = p.phone || "";   // email and team start blank
       }
       fillMine();
       var DK = "ro_draft_" + meetId;
@@ -182,7 +182,7 @@
         e.preventDefault();
         var st = $("su-status"), btn = $("su-btn");
         var name = $("su-name").value.trim(), email = $("su-email").value.trim(), phone = $("su-phone").value.trim(),
-            team = $("su-team").value.trim(), comments = $("su-comments").value.trim();
+            team = $("su-team").value.trim() || (ctx.user ? "Riptide" : ""), comments = $("su-comments").value.trim();
         var wholeSel = picked("input[data-whole]"), perSession = [], workAll = [], shadowAll = [], names = [];
         n.sessions.forEach(function (x, i) {
           var w = picked('input[data-s="' + i + '"][data-k="work"]'), sh = picked('input[data-s="' + i + '"][data-k="shadow"]');
