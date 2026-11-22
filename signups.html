@@ -57,7 +57,7 @@
       var t = lv && (s.certLevels[lv] || []).length ? " <span class=\"chip\">" + esc(s.certLevels[lv].join("/")) + "</span>" : "";
       return esc(s.name) + (s.team ? " <span class=\"muted small\">(" + esc(s.team) + ")</span>" : "") + t;
     }
-    var gaps = 0, gapList = [], curSess = "";
+    var gaps = 0, gapList = [], curSess = "", unasg = [], asg = R.normAssign(m, n.sessions.length);
     function row(label, items, shadow) {
       if (!shadow) {
         var stp = /stroke/i.test(label), lbl = label + (curSess ? " (" + curSess + ")" : "");
@@ -84,6 +84,11 @@
       var rows = R.sortPos(x.positions || R.SESSION_POS).filter(function (p) { return R.WHOLE_POS.indexOf(p) < 0; }).map(function (p) {
         var names = signups.filter(function (s) { return picks(s, i, "work").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s, p); });
         var sh = signups.filter(function (s) { return picks(s, i, "shadow").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s); });
+        if (names.length) {
+          var assigned = 0;
+          R.SESSION_GROUPS.forEach(function (g) { if (g.cert && g.cert.toLowerCase() === p.toLowerCase()) assigned += ((asg.sessions[i] || {})[g.key] || []).length; });
+          if (!assigned) unasg.push(p + (n.sessions.length > 1 ? " (" + (x.name || ("Session " + (i + 1))) + ")" : "") + " \u2013 " + names.length + " signed up, none assigned yet");
+        }
         return row(p, names) + (sh.length ? row(p + " (shadow)", sh, true) : "");
       });
       var single = n.sessions.length === 1, sd = x.date || m.date, head = single ? (sd ? R.fmtDate(sd) : (x.name || "Session")) : x.name, when = single ? (x.start ? R.fmtTime(x.start) : "") : R.sessionWhen(x);
@@ -92,7 +97,8 @@
     html += '<div class="card"><details><summary><strong>Everyone who signed up (' + signups.length + ')</strong> &mdash; contact details</summary><div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Name</th><th>Email / phone</th><th>Comments</th></tr></thead><tbody>' +
       (signups.length ? signups.map(function (s) { return "<tr><td>" + nm(s) + "</td><td>" + esc(s.email || "") + "<br>" + esc(s.phone || "") + "</td><td>" + esc(s.comments || "") + "</td></tr>"; }).join("") : '<tr><td colspan="3" class="muted">No sign-ups yet.</td></tr>') +
       "</tbody></table></div></details></div>";
-    html = html.replace("%%GAPS%%", gaps ? '<p class="gaps-note warn" style="margin:10px 0 0">Still needed: ' + gaps + " position" + (gaps === 1 ? "" : "s") + ":</p><ul class=\"gaps-note warn\" style=\"margin:4px 0 0 18px\">" + gapList.map(function (g) { return "<li>" + esc(g) + "</li>"; }).join("") + "</ul>" : '<p class="gaps-note ok" style="margin:10px 0 0">Every position has someone signed up.</p>');
+    var un = unasg.length ? '<p class="muted" style="margin:10px 0 0"><strong>Signed up, but not assigned yet:</strong></p><ul style="margin:4px 0 0 18px">' + unasg.map(function (g) { return "<li>" + esc(g) + "</li>"; }).join("") + "</ul>" : "";
+    html = html.replace("%%GAPS%%", (gaps ? '<p class="gaps-note warn" style="margin:10px 0 0">Still needed: ' + gaps + " position" + (gaps === 1 ? "" : "s") + ":</p><ul class=\"gaps-note warn\" style=\"margin:4px 0 0 18px\">" + gapList.map(function (g) { return "<li>" + esc(g) + "</li>"; }).join("") + "</ul>" : '<p class="gaps-note ok" style="margin:10px 0 0">Every position has someone signed up.</p>') + un);
     app.innerHTML = html;
   }
 })();
