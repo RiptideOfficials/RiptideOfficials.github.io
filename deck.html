@@ -41,6 +41,7 @@
 #print-sheet th,#print-sheet td{border:1px solid #666;padding:2px 5px;font-size:9.5pt;line-height:1.2;text-align:center;vertical-align:middle}
 #print-sheet th{background:#dde8f2}
 #print-sheet .lo{text-align:left}
+#print-sheet td.na{background:#9a9a9a!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #print-sheet .sub{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
 #print-sheet .sub table{font-size:9.5pt}
 #print-sheet,#print-sheet *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -279,7 +280,7 @@
           var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }];
           rows.forEach(function (r, j) {
             h += "<tr" + (j === 0 ? ' class="grp"' : "") + ">" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clockM(cc.st[i])) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
-              "<td>" + esc(r.role) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? r.relief : r.who) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? "" : /^ST /.test(r.role || "") ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
+              "<td>" + esc(r.role) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? r.relief : r.who) + "</td><td" + (/^ST /.test(r.role || "") ? ' class="na"' : "") + ">" + esc((r.role === "DR" || r.role === "SR") && r.relief ? "" : /^ST /.test(r.role || "") ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
           });
         });
         h += '<tr class="endr"><td colspan="2">End Time</td><td colspan="6">' + esc(clock(D.end)) + "</td></tr></tbody></table>";
