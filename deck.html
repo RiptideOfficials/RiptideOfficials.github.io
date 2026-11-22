@@ -253,7 +253,7 @@
             '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
             b.rows.map(function (r, j) {
               var p = "blocks." + i + ".rows." + j + ".";
-              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + (whoSel(p + "who", r, D, usedInBlock(b, j, "who")) || inp(p + "who", r.who, "Name(s)", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "who"), r.who)))) + (/^ST /.test(r.role || "") ? "<div></div>" : inp(p + "relief", r.relief, "Relief", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "relief"), r.relief)))) + inp(p + "shadow", r.shadow, "Shadow", dlFor(offer(PL.all, usedInBlock(b, j, "shadow"), r.shadow))) +
+              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + (whoSel(p + "who", r, D, usedInBlock(b, j, "who")) || inp(p + "who", r.who, "Name(s)", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "who"), r.who)))) + (/^(ST |Relay)/.test(r.role || "") ? "<div></div>" : inp(p + "relief", r.relief, "Relief", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "relief"), r.relief)))) + inp(p + "shadow", r.shadow, "Shadow", dlFor(offer(PL.all, usedInBlock(b, j, "shadow"), r.shadow))) +
                 '<button class="dk-x" type="button" data-act="delr" data-i="' + i + '" data-j="' + j + '" aria-label="Remove row">&times;</button></div>';
             }).join("") + '<button class="btn small ghost" type="button" data-act="addr" data-i="' + i + '">+ Add a role</button>' +
               '<div style="margin-top:8px"><label>Note for this group (prints under it)</label>' + inp("blocks." + i + ".note", b.note, "e.g. Jim leaves after event 30") + "</div></div>";
@@ -283,7 +283,7 @@
           var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }], rs = rows.length + ((b.note || "").trim() ? 1 : 0);
           rows.forEach(function (r, j) {
             h += "<tr" + (j === 0 ? ' class="grp"' : "") + ">" + (j === 0 ? '<td rowspan="' + rs + '">' + esc(b.num) + '</td><td rowspan="' + rs + '">' + esc(b.name) + '</td><td rowspan="' + rs + '">' + esc(clockM(cc.st[i])) + '</td><td rowspan="' + rs + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
-              "<td>" + esc(r.role) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? r.relief : r.who) + "</td><td" + (/^ST /.test(r.role || "") ? ' class="na"' : "") + ">" + esc((r.role === "DR" || r.role === "SR") && r.relief ? "" : /^ST /.test(r.role || "") ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
+              "<td>" + esc(r.role) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? r.relief : r.who) + "</td><td" + (/^(ST |Relay)/.test(r.role || "") ? ' class="na"' : "") + ">" + esc((r.role === "DR" || r.role === "SR") && r.relief ? "" : /^(ST |Relay)/.test(r.role || "") ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
           });
           if ((b.note || "").trim()) h += '<tr class="nt"><td colspan="4" class="lo" style="font-style:italic">Note: ' + esc(b.note) + "</td></tr>";
         });
