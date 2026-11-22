@@ -77,7 +77,7 @@
     var isOther = other || (val && ROLES.indexOf(val) < 0);
     var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("") +
       '<option value="__other__"' + (isOther ? " selected" : "") + ">Other (type it in)</option>";
-    return '<div><select data-rolesel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(ROLES.indexOf(val) < 0 ? val : "") + '" placeholder="Type the role" style="margin-top:4px">' : "") + "</div>";
+    return '<div><select data-rolesel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(ROLES.indexOf(val) < 0 ? val : "") + '" placeholder="Type the role" style="margin-top:4px"><button type="button" class="btn small ghost" data-act="backrole" data-path="' + path + '" style="margin-top:4px">Cancel - back to the list</button>' : "") + "</div>";
   }
   function laneSel(path, val) {
     var L = ["1-4", "5-8"], o = '<option value="">Lanes</option>' + L.map(function (x) { return "<option" + (x === val ? " selected" : "") + ">" + x + "</option>"; }).join("");
@@ -99,7 +99,7 @@
     function opt(v) { return "<option" + (v === r.who && !isOther ? " selected" : "") + ">" + esc(v) + "</option>"; }
     var o = '<option value="">Choose a name...</option>' + vals.map(opt).join("") + (rest.length ? '<optgroup label="Others in the lists below">' + rest.map(opt).join("") + "</optgroup>" : "") +
       '<option value="__other__"' + (isOther ? " selected" : "") + ">Other (type it in)</option>";
-    return '<div><select data-whosel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(r.who || "") + '" placeholder="Type the name(s)" style="margin-top:4px">' : "") + "</div>";
+    return '<div><select data-whosel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(r.who || "") + '" placeholder="Type the name(s)" style="margin-top:4px"><button type="button" class="btn small ghost" data-act="backwho" data-path="' + path + '" style="margin-top:4px">Cancel - back to the list</button>' : "") + "</div>";
   }
   function mkBlock(t) { return { type: t === "brk" ? "break" : "", num: "", name: t === "brk" ? "Break" : "", start: "", rows: TPL[t].rows.map(function (r) { return { role: r[0], who: r[1], relief: "", shadow: "" }; }) }; }
   function emptyDeck() { return { blocks: [mkBlock("free")], end: "", st: { a: [], b: [], c: [], d: [] } }; }
@@ -274,6 +274,11 @@
         var t = e.target.closest && e.target.closest("[data-act]"); if (!t) return;
         var D = deckOf(cur), act = t.getAttribute("data-act"), i = +t.getAttribute("data-i"), j = +t.getAttribute("data-j"), k = t.getAttribute("data-k");
         if (act === "tab") { cur = i; draw(); return; }
+        if (act === "backrole" || act === "backwho") {   // leave "Other" and go back to the drop-down
+          var pp = t.getAttribute("data-path").split("."), rw = D.blocks[+pp[1]].rows[+pp[3]];
+          if (act === "backrole") { rw.other = false; rw.role = ""; } else { rw.whoOther = false; rw.who = ""; }
+          draw(); save(); return;
+        }
         if (act === "print") { printSheet(); return; }
         if (act === "close") {   // everything is already saved; make sure the last change is sent, then go back
           clearTimeout(timer);
