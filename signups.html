@@ -55,7 +55,7 @@
     function nm(s, pos) {
       var lv = pos && s.certLevels && Object.keys(s.certLevels).filter(function (k) { return k.toLowerCase() === pos.toLowerCase(); })[0];
       var t = lv && (s.certLevels[lv] || []).length ? " <span class=\"chip\">" + esc(s.certLevels[lv].join("/")) + "</span>" : "";
-      return esc(s.name) + (s.team && !/^riptide$/i.test(s.team) ? " <span class=\"muted small\">(" + esc(s.team) + ")</span>" : "") + t;
+      return esc(s.name) + (s.team ? " <span class=\"muted small\">(" + esc(s.team) + ")</span>" : "") + t;
     }
     var gaps = 0;
     function row(label, items, shadow) { if (!items.length && !shadow) gaps++; return '<div class="asg-row"><div class="asg-pos' + (shadow ? " shadow" : "") + '">' + esc(label) + '</div><div class="asg-names">' + (items.length ? items.map(function (x) { return "<div>" + x + "</div>"; }).join("") : '<span class="need">Needed</span>') + "</div></div>"; }
