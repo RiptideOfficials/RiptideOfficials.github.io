@@ -85,7 +85,21 @@ const newSignups = firstRun ? [] : signups.filter((x) => !notified.includes(x.id
 console.log(`waiting: ${users.length} account(s), ${interest.length} interested; new: ${newUsers.length} + ${newInterest.length}; sign-ups new: ${newSignups.length}${firstRun ? " (first run, baseline saved)" : ""}`);
 const keepIds = () => notified.filter((k) => (k.startsWith("u:") ? users.some((d) => "u:" + idOf(d) === k) : k.startsWith("i:") ? interest.some((d) => "i:" + idOf(d) === k) : k === "s:init" || signups.some((x) => x.id === k)));
 if (!newUsers.length && !newInterest.length && !newSignups.length) {
-  if (firstRun) await saveNotified(token, keepIds().concat(["s:init"], signups.map((x) => x.id)));
+  if (firstRun) // Email about new meet sign-ups (best effort; needs the MAIL_USER / MAIL_APP_PASSWORD secrets).
+if (newSignups.length && process.env.MAIL_USER && process.env.MAIL_APP_PASSWORD) {
+  try {
+    const nodemailer = (await import("nodemailer")).default;
+    const mail = nodemailer.createTransport({ service: "gmail", auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_APP_PASSWORD } });
+    const lines = newSignups.map((x) => `- ${x.name || "Someone"}: ${x.role || "position not listed"} (${x.meet || "a meet"})`).join("\n");
+    await mail.sendMail({
+      from: `"Riptide Officials" <${process.env.MAIL_USER}>`, to: process.env.NOTIFY_EMAIL || "whpeterson@gmail.com",
+      subject: newSignups.length === 1 ? `New sign-up: ${newSignups[0].name || "Someone"} for ${newSignups[0].meet || "a meet"}` : `${newSignups.length} new meet sign-ups`,
+      text: `New meet sign-up${newSignups.length > 1 ? "s" : ""}:\n\n${lines}\n\nSee everyone who signed up: ${SITE}meets.html\n`
+    });
+    console.log("sign-up email sent");
+  } catch (e) { console.log("sign-up email failed:", e.message); }
+}
+await saveNotified(token, keepIds().concat(["s:init"], signups.map((x) => x.id)));
   process.exit(0);
 }
 const total = users.length + interest.length + newSignups.length;

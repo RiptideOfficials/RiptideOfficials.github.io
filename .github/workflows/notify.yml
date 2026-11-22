@@ -29,6 +29,8 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           NOTIFY_USER: ${{ vars.NOTIFY_USER }}
+          MAIL_USER: ${{ secrets.MAIL_USER }}
+          MAIL_APP_PASSWORD: ${{ secrets.MAIL_APP_PASSWORD }}
       - run: node .github/scripts/remind.mjs
         if: always()
         env:
