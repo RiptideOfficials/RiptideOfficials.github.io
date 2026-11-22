@@ -40,7 +40,11 @@
       if (!snap.exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2><p>This link is not valid. Please check the link you were sent.</p></div>'; return; }
       document.title = snap.data().title + " | Riptide Officials";
       return meetRef.collection("whole").get().then(function (cs) { var c = {}; cs.docs.forEach(function (d) { c[d.id] = d.data().name; }); return c; })
-        .catch(function () { return {}; }).then(function (claims) { render(snap.data(), claims); });
+        .catch(function () { return {}; }).then(function (claims) {
+          var ls = null; try { ls = localStorage.getItem("ro_su_" + meetId); } catch (x) {}
+          var chk = ctx.user ? R.db.collection("users").doc(ctx.user.uid).collection("mysignups").doc(meetId).get().then(function (sn) { return sn.exists || !!ls; }).catch(function () { return !!ls; }) : Promise.resolve(!!ls);
+          chk.then(function (mine) { signedUp = mine; render(snap.data(), claims); });   // people who signed up for this meet can see their assignments
+        });
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet. Please try again.</div>'; });
 
     function paras(t) {
@@ -77,6 +81,7 @@
       return '<div class="asg-show"><h3>' + esc(label) + "</h3><ul>" + names.map(function (n) { return "<li>" + esc(n) + "</li>"; }).join("") + "</ul></div>";
     }
 
+    var signedUp = false;
     function render(m, claims) {
       var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length);
       R.WHOLE_GROUPS.forEach(function (g) { if (!asg.whole[g.key].length && claims[g.key]) asg.whole[g.key] = [claims[g.key]]; });
@@ -124,9 +129,9 @@
         if (ud.length) out += "<h3>Meet uniform</h3>" + ud.map(function (d) {
           return (d.date && (ud.length > 1) ? '<p class="uni-day-line"><strong>' + esc(R.fmtDate(d.date)) + "</strong></p>" : "") + paras(d.text);
         }).join("");
-        if (ctx.isMeetAdmin) {   // coordinators only: the other assignments (Admin Official, Deck Referee, ...) are not on the shared view
+        if (ctx.isMeetAdmin || signedUp) {   // coordinators and people who signed up for this meet see the other assignments; the plain shared link does not
           var anyHere = (asg.whole.admin || []).length || nonEmpty(o, R.SESSION_GROUPS);
-          if (anyHere) out += "<h3>Meet assignments <span class=\"muted small\">(coordinators only)</span></h3>" + asgTable(asg.whole, o);
+          if (anyHere) out += "<h3>Meet assignments</h3>" + asgTable(asg.whole, o);
         }
         return out;
       }
