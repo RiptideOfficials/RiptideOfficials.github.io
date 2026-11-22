@@ -163,6 +163,7 @@
         var L = [], single = n.sessions.length === 1;
         function names(a) { return (a || []).map(function (v) { return v.indexOf(" | ") > 0 ? v.split(" | ")[1] + " (shadowing " + v.split(" | ")[0] + ")" : v; }).join(", "); }
         L.push(m.title, R.fmtRange(m) + (m.location ? " - " + m.location : ""));
+        if (m.address) L.push(m.address);
         if ((asg.whole.meetRef || []).length) {   // the Meet Referee is part of the meet details, with contact info
           L.push("Meet Referee: " + asg.whole.meetRef.map(function (v) { return String(v).replace(/\s*\([^)]*\)\s*$/, ""); }).join(", "));
           var rem = m.refEmail || window.ADMIN_EMAIL || ""; if (rem) L.push("Email: " + rem);

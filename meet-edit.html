@@ -94,7 +94,8 @@
         '<label for="m-title">Meet name</label><input id="m-title" placeholder="Jingle Bell Invite">' +
         '<div class="row2"><div><label for="m-date">First day</label><input id="m-date" type="date"></div>' +
         '<div><label for="m-end">Last day (if more than one day)</label><input id="m-end" type="date"></div></div>' +
-        '<label for="m-loc">Location</label><input id="m-loc" placeholder="Pool name and address">' +
+        '<label for="m-loc">Location</label><input id="m-loc" placeholder="Pool name">' +
+        '<label for="m-addr">Address (shown under the location on the meet page)</label><input id="m-addr" placeholder="Street, city, state ZIP">' +
         '<label for="m-refemail">Meet Referee email (shown on the meet page for questions)</label><input id="m-refemail" type="email" placeholder="name@example.com">' +
         '<label for="m-refphone">Meet Referee cell (shown on the meet page for questions)</label><input id="m-refphone" type="tel" placeholder="555-555-5555"></div>' +
         '<div class="card coord-card"><h2>All sessions</h2><p class="muted small" style="margin-top:0">These positions cover all sessions, so people choose them once.</p>' +
@@ -110,7 +111,7 @@
         '<label for="i-misc">Miscellaneous</label><textarea id="i-misc" rows="3"></textarea></div>' +
         '<div class="btn-row"><button class="btn green" type="submit" id="m-save">Save meet</button><a class="btn ghost" href="admin.html">Cancel</a></div>' +
         '<div id="m-status" role="status"></div></form>';
-      $("m-title").value = m.title || ""; $("m-date").value = m.date || ""; $("m-end").value = m.endDate || ""; $("m-loc").value = m.location || ""; $("m-refemail").value = m.refEmail || ""; $("m-refphone").value = m.refPhone || "";
+      $("m-title").value = m.title || ""; $("m-date").value = m.date || ""; $("m-end").value = m.endDate || ""; $("m-loc").value = m.location || ""; $("m-addr").value = m.address || ""; $("m-refemail").value = m.refEmail || ""; $("m-refphone").value = m.refPhone || "";
       $("i-parking").value = info.parking || ""; (function () {
         U = {};
         (info.uniformByDate || []).forEach(function (d) { U[d.date] = d.text || ""; });
@@ -202,7 +203,7 @@
       if (end && end < date) { st.innerHTML = '<div class="msg err">The last day is before the first day.</div>'; return; }
       var FV = firebase.firestore.FieldValue;
       var data = {
-        title: title, date: date, endDate: end || "", location: $("m-loc").value.trim(), refEmail: $("m-refemail").value.trim(), refPhone: $("m-refphone").value.trim(),
+        title: title, date: date, endDate: end || "", location: $("m-loc").value.trim(), address: $("m-addr").value.trim(), refEmail: $("m-refemail").value.trim(), refPhone: $("m-refphone").value.trim(),
         wholeMeet: whole.slice(),
         sessionList: S.map(function (x, i) { return { name: (x.name || "").trim(), date: x.date || "", start: x.start || "",
           positions: x.positions || [], shadow: x.shadow || [], details: buildDetails(x), notes: (x.notes || "").trim() }; }),
