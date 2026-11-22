@@ -67,7 +67,7 @@
     brk: { label: "Break (no officials needed)", rows: [] },
     relay: { label: "Relays", rows: [["DR", ""], ["SR", ""], ["Relay 1-4", ""], ["Relay 4-1", ""], ["Relay 5-8", ""], ["Relay 8-5", ""], ["Watch Turns", ""]] },
     free: { label: "Freestyle / other", rows: [["DR", ""], ["SR", ""], ["Watch Turns", "Rotate"]] },
-    strokes: { label: "Strokes", rows: [["DR", ""], ["SR", ""], ["ST Start End 1-4", "See chart below"], ["ST Start End 5-8", "See chart below"], ["ST Turn End 1-4", "See chart below"], ["ST Turn End 5-8", "See chart below"]] },
+    strokes: { label: "Strokes", rows: [["DR", ""], ["SR", ""], ["ST Start End 1-4", ""], ["ST Start End 5-8", ""], ["ST Turn End 1-4", ""], ["ST Turn End 5-8", ""]] },
     blank: { label: "Blank", rows: [["DR", ""]] }
   };
   var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8"];
@@ -76,6 +76,23 @@
     var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("") +
       '<option value="__other__"' + (isOther ? " selected" : "") + ">Other (type it in)</option>";
     return '<div><select data-rolesel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(ROLES.indexOf(val) < 0 ? val : "") + '" placeholder="Type the role" style="margin-top:4px">' : "") + "</div>";
+  }
+  function whoSel(path, r, D) {   // for the ST roles: pick from the names entered in the Stroke & Turn lists below
+    var key = /Start End/.test(r.role || "") ? "a" : /Turn End/.test(r.role || "") ? "c" : null;
+    if (!key) return null;
+    var rng = ((r.role || "").match(/\d-\d/) || [""])[0], seen = {}, all = [];
+    ["a", "c", "b", "d"].forEach(function (k) { D.st[k].forEach(function (it) { var nm = (it.n || "").trim(); if (nm && !seen[k + nm]) { seen[k + nm] = 1; all.push({ k: k, l: it.l || "", n: nm }); } }); });
+    var sug = all.filter(function (x) { return x.k === key && x.l.replace(/\s/g, "").indexOf(rng) >= 0; });
+    if (!sug.length) sug = all.filter(function (x) { return x.k === key; });
+    var names = []; function addN(n) { if (names.indexOf(n) < 0) names.push(n); }
+    var combo = sug.length > 1 ? sug.map(function (x) { return x.n; }).join(" / ") : "";
+    var vals = []; if (combo) vals.push(combo); sug.forEach(function (x) { vals.push(x.n); });
+    var rest = all.filter(function (x) { return sug.indexOf(x) < 0; }).map(function (x) { return x.n; }).filter(function (v, i, a) { return vals.indexOf(v) < 0 && a.indexOf(v) === i; });
+    var isOther = r.whoOther || (r.who && vals.indexOf(r.who) < 0 && rest.indexOf(r.who) < 0);
+    function opt(v) { return "<option" + (v === r.who && !isOther ? " selected" : "") + ">" + esc(v) + "</option>"; }
+    var o = '<option value="">Choose a name...</option>' + vals.map(opt).join("") + (rest.length ? '<optgroup label="Others in the lists below">' + rest.map(opt).join("") + "</optgroup>" : "") +
+      '<option value="__other__"' + (isOther ? " selected" : "") + ">Other (type it in)</option>";
+    return '<div><select data-whosel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(r.who || "") + '" placeholder="Type the name(s)" style="margin-top:4px">' : "") + "</div>";
   }
   function mkBlock(t) { return { type: t === "brk" ? "break" : "", num: "", name: t === "brk" ? "Break" : "", start: "", rows: TPL[t].rows.map(function (r) { return { role: r[0], who: r[1], relief: "", shadow: "" }; }) }; }
   function emptyDeck() { return { blocks: [mkBlock("free")], end: "", st: { a: [], b: [], c: [], d: [] } }; }
@@ -175,7 +192,7 @@
             '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
             b.rows.map(function (r, j) {
               var p = "blocks." + i + ".rows." + j + ".";
-              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + inp(p + "who", r.who, "Name(s)", ' list="dk-names"') + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
+              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + (whoSel(p + "who", r, D) || inp(p + "who", r.who, "Name(s)", ' list="dk-names"')) + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
                 '<button class="dk-x" type="button" data-act="delr" data-i="' + i + '" data-j="' + j + '" aria-label="Remove row">&times;</button></div>';
             }).join("") + '<button class="btn small ghost" type="button" data-act="addr" data-i="' + i + '">+ Add a role</button></div>';
         });
@@ -232,9 +249,15 @@
         var p = e.target.getAttribute && e.target.getAttribute("data-p"); if (!p) return;
         setPath(deckOf(cur), p, e.target.value); refreshTotals(); save();
       });
+      app.addEventListener("change", function (e) {   // ST assigned drop-down
+        var wp = e.target.getAttribute && e.target.getAttribute("data-whosel"); if (!wp) return;
+        var D = deckOf(cur), parts = wp.split("."), row = D.blocks[+parts[1]].rows[+parts[3]];
+        if (e.target.value === "__other__") { row.whoOther = true; row.who = ""; } else { row.whoOther = false; row.who = e.target.value; }
+        draw(); save();
+      });
       app.addEventListener("change", function (e) {   // times and break lengths ripple into later groups, so redraw once the box is left
         var p = e.target.getAttribute && e.target.getAttribute("data-p");
-        if (p && /(\.len|\.start|^end)$/.test(p)) draw();
+        if (p && /(\.len|\.start|^end|^st\..*\.[ln]$)/.test(p)) draw();
       });
       app.addEventListener("click", function (e) {
         var t = e.target.closest && e.target.closest("[data-act]"); if (!t) return;
