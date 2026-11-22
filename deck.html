@@ -79,6 +79,11 @@
       '<option value="__other__"' + (isOther ? " selected" : "") + ">Other (type it in)</option>";
     return '<div><select data-rolesel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(ROLES.indexOf(val) < 0 ? val : "") + '" placeholder="Type the role" style="margin-top:4px">' : "") + "</div>";
   }
+  function laneSel(path, val) {
+    var L = ["1-4", "5-8"], o = '<option value="">Lanes</option>' + L.map(function (x) { return "<option" + (x === val ? " selected" : "") + ">" + x + "</option>"; }).join("");
+    if (val && L.indexOf(val) < 0) o += "<option selected>" + esc(val) + "</option>";   // keeps anything typed before
+    return '<select data-p="' + path + '">' + o + "</select>";
+  }
   function whoSel(path, r, D) {   // for the ST roles: pick from the names entered in the Stroke & Turn lists below
     var key = /Start End/.test(r.role || "") ? "a" : /Turn End/.test(r.role || "") ? "c" : null;
     if (!key) return null;
@@ -167,7 +172,7 @@
       function inp(path, val, ph, extra) { return '<input data-p="' + path + '" value="' + esc(val || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + (extra || "") + ">"; }
       function stCol(key, title, D, one) {
         return '<div><h3>' + title + "</h3>" + D.st[key].map(function (it, j) {
-          return '<div class="it' + (one ? " one" : "") + '">' + (one ? "" : inp("st." + key + "." + j + ".l", it.l, "Lanes")) + inp("st." + key + "." + j + ".n", it.n, "Name", ' list="dk-names"') + '<button class="dk-x" type="button" data-act="stdel" data-k="' + key + '" data-j="' + j + '" aria-label="Remove">&times;</button></div>';
+          return '<div class="it' + (one ? " one" : "") + '">' + (one ? "" : laneSel("st." + key + "." + j + ".l", it.l)) + inp("st." + key + "." + j + ".n", it.n, "Name", ' list="dk-names"') + '<button class="dk-x" type="button" data-act="stdel" data-k="' + key + '" data-j="' + j + '" aria-label="Remove">&times;</button></div>';
         }).join("") + '<button class="btn small ghost" type="button" data-act="stadd" data-k="' + key + '">+ Add</button></div>';
       }
       function draw() {
