@@ -75,7 +75,7 @@
     strokes: { label: "Strokes", rows: [["DR", ""], ["SR", ""], ["ST Start End 1-4", ""], ["ST Start End 5-8", ""], ["ST Turn End 1-4", ""], ["ST Turn End 5-8", ""], ["ST Relief", ""]] },
     blank: { label: "Blank", rows: [["DR", ""]] }
   };
-  var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8", "ST Relief", "ST Relief Start", "ST Relief Turn"];
+  var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8", "ST Relief", "ST Start End Relief", "ST Turn End Relief"];
   function roleSel(path, val, other) {
     var isOther = other || (val && ROLES.indexOf(val) < 0);
     var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("") +
@@ -88,14 +88,14 @@
     return '<select data-p="' + path + '">' + o + "</select>";
   }
   function stDefault(r, D, used) {   // the name(s) from the Stroke & Turn lists that belong in this ST role
-    var key = /Start End/.test(r.role || "") ? "a" : /Turn End/.test(r.role || "") ? "c" : null; if (!key) return "";
+    var key = /^ST Start End \d/.test(r.role || "") ? "a" : /^ST Turn End \d/.test(r.role || "") ? "c" : null; if (!key) return "";
     var rng = ((r.role || "").match(/\d-\d/) || [""])[0], list = [];
     D.st[key].forEach(function (it) { var nm = (it.n || "").trim(); if (nm && !(used || {})[nm] && list.indexOf(nm) < 0 && (it.l || "").replace(/\s/g, "").indexOf(rng) >= 0) list.push(nm); });
     return list.join(" / ");
   }
   function whoSel(path, r, D, used) {
     used = used || {};   // for the ST roles: pick from the names entered in the Stroke & Turn lists below
-    var key = /Start End/.test(r.role || "") ? "a" : /Turn End/.test(r.role || "") ? "c" : null;
+    var key = /^ST Start End \d/.test(r.role || "") ? "a" : /^ST Turn End \d/.test(r.role || "") ? "c" : null;
     if (!key) return null;
     var rng = ((r.role || "").match(/\d-\d/) || [""])[0], seen = {}, all = [];
     ["a", "c", "b", "d"].forEach(function (k) { D.st[k].forEach(function (it) { var nm = (it.n || "").trim(); if (nm && !seen[k + nm]) { seen[k + nm] = 1; all.push({ k: k, l: it.l || "", n: nm }); } }); });
@@ -201,11 +201,12 @@
       }
       function autoFill(D) {   // pre-fill the ST roles from the lists below; anything the coordinator typed or chose is left alone
         var changed = false;
-        var RELK = { "ST Relief": "reliefStrokeTurn", "ST Relief Start": "reliefStartEnd", "ST Relief Turn": "reliefTurnEnd" };
+        D.blocks.forEach(function (b) { (b.rows || []).forEach(function (r) { if (r.role === "ST Relief Start") r.role = "ST Start End Relief"; if (r.role === "ST Relief Turn") r.role = "ST Turn End Relief"; }); });
+        var RELK = { "ST Relief": "reliefStrokeTurn", "ST Start End Relief": "reliefStartEnd", "ST Turn End Relief": "reliefTurnEnd" };
         D.blocks.forEach(function (b) {
-          if (b.type !== "break" && b.rows.some(function (r) { return /^ST (Start|Turn) End/.test(r.role || ""); })) {   // relief picked on the Assignments page for just the start or turn end
+          if (b.type !== "break" && b.rows.some(function (r) { return /^ST (Start|Turn) End \d/.test(r.role || ""); })) {   // relief picked on the Assignments page for just the start or turn end
             b.relAdded = b.relAdded || {};
-            [["ST Relief Start", "reliefStartEnd"], ["ST Relief Turn", "reliefTurnEnd"]].forEach(function (x) {
+            [["ST Start End Relief", "reliefStartEnd"], ["ST Turn End Relief", "reliefTurnEnd"]].forEach(function (x) {
               if (!b.relAdded[x[1]] && (asg.sessions[cur][x[1]] || []).length && !b.rows.some(function (r) { return r.role === x[0]; })) { b.rows.push({ role: x[0], who: "", relief: "", shadow: "" }); b.relAdded[x[1]] = true; changed = true; }
             });
           }
