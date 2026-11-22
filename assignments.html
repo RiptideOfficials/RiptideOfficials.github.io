@@ -249,7 +249,14 @@
         } else if (g("data-remove")) {
           var rid = g("data-remove");
           if (!confirm("Remove this person's sign-up?")) return;
-          meetRef.collection("contacts").doc(rid).delete().then(load).catch(function () { alert("Could not remove that sign-up."); });
+          var gone = signups.filter(function (x) { return x.id === rid; })[0];
+          meetRef.collection("contacts").doc(rid).delete().then(function () {
+            if (!gone) return;   // also take them off the published assignments
+            var mine = function (v) { var nm = String(v).split(" | ").slice(-1)[0]; return nm === gone.name || nm === label(gone); }, hit = false;
+            var strip = function (o) { Object.keys(o).forEach(function (k) { if (Array.isArray(o[k])) { var n2 = o[k].filter(function (v) { return !mine(v); }); if (n2.length !== o[k].length) { o[k] = n2; hit = true; } } }); };
+            strip(asg.whole); asg.sessions.forEach(strip);
+            return hit ? meetRef.update({ assignments: asg }) : null;
+          }).then(function () { load(); drawAssign(); }).catch(function () { alert("Could not remove that sign-up."); });
         }
       });
 
