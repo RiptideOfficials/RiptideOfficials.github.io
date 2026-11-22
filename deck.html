@@ -133,15 +133,16 @@
       return;
     }
     var meetRef = R.db.collection("meets").doc(meetId);
-    Promise.all([meetRef.get(), meetRef.collection("deck").get().catch(function () { return null; })]).then(function (res) {
+    Promise.all([meetRef.get(), meetRef.collection("deck").get().catch(function () { return null; }), meetRef.collection("contacts").get().catch(function () { return null; })]).then(function (res) {
       if (!res[0].exists) { app.innerHTML = '<div class="card"><h2>Meet not found</h2></div>'; return; }
       var m = res[0].data(); m.id = meetId;
       if (!res[1]) { app.innerHTML = '<div class="msg err">Could not open the deck planner. The newest firestore.rules need to be published (see the note from Claude).</div>'; return; }
       var saved = {}; res[1].docs.forEach(function (d) { saved[d.id] = d.data(); });
-      start(m, saved);
+      var su = []; if (res[2]) res[2].docs.forEach(function (d) { var nm = String((d.data() || {}).name || "").trim(); if (nm && su.indexOf(nm) < 0) su.push(nm); });
+      start(m, saved, su);
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
 
-    function start(m, saved) {
+    function start(m, saved, signedUp) {
       var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length), cur = 0, timer = null, decks = {};
       function sid(i) { return "s" + i; }
       function deckOf(i) {
@@ -150,9 +151,10 @@
       }
       function nameList(i) {
         var out = [];
-        function add(v) { String(v || "").split(" | ").slice(-1).forEach(function (x) { x = x.trim(); if (x && out.indexOf(x) < 0) out.push(x); }); }
+        function add(v) { String(v || "").split(" | ").slice(-1).forEach(function (x) { x = x.trim().replace(/\s*\([^)]*\)\s*$/, ""); if (x && out.indexOf(x) < 0) out.push(x); }); }
         R.WHOLE_GROUPS.forEach(function (g) { asg.whole[g.key].forEach(add); });
         R.SESSION_GROUPS.forEach(function (g) { (asg.sessions[i][g.key] || []).forEach(add); });
+        (signedUp || []).slice().sort().forEach(add);   // everyone who signed up for this meet
         return out;
       }
       function setPath(D, path, val) {
