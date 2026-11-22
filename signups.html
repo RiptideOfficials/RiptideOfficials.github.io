@@ -64,7 +64,7 @@
       '<div class="card coord-card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": sign-ups</h1>" +
       "<p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" +
       '<p class="muted" style="margin:0 0 8px">' + signups.length + " sign-up" + (signups.length === 1 ? "" : "s") + ' so far. Choosing who works where happens on the Assignments page.</p>' +
-      '<div class="btn-row"><a class="btn coord" href="assignments.html?m=' + id + '">Assignments</a><a class="btn small ghost" href="meet.html?m=' + id + '">Meet details</a><a class="btn small coord" href="meet-edit.html?m=' + id + '">Edit meet</a><button class="btn small ghost noprint" type="button" onclick="window.print()">Print</button></div>%%GAPS%%</div>';
+      '<div class="btn-row"><a class="btn coord" href="assignments.html?m=' + id + '">Assignments</a><a class="btn small coord" href="deck.html?m=' + id + '">Deck setup</a><a class="btn small ghost" href="meet.html?m=' + id + '">Meet details</a><a class="btn small coord" href="meet-edit.html?m=' + id + '">Edit meet</a><button class="btn small ghost noprint" type="button" onclick="window.print()">Print</button></div>%%GAPS%%</div>';
     // whole-meet positions
     var wrows = R.WHOLE_POS.map(function (p) {
       var key = p === "Meet Referee" ? "meetRef" : "admin", names = [];

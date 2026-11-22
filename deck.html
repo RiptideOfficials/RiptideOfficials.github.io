@@ -85,11 +85,13 @@
     if (val && L.indexOf(val) < 0) o += "<option selected>" + esc(val) + "</option>";   // keeps anything typed before
     return '<select data-p="' + path + '">' + o + "</select>";
   }
-  function whoSel(path, r, D) {   // for the ST roles: pick from the names entered in the Stroke & Turn lists below
+  function whoSel(path, r, D, used) {
+    used = used || {};   // for the ST roles: pick from the names entered in the Stroke & Turn lists below
     var key = /Start End/.test(r.role || "") ? "a" : /Turn End/.test(r.role || "") ? "c" : null;
     if (!key) return null;
     var rng = ((r.role || "").match(/\d-\d/) || [""])[0], seen = {}, all = [];
     ["a", "c", "b", "d"].forEach(function (k) { D.st[k].forEach(function (it) { var nm = (it.n || "").trim(); if (nm && !seen[k + nm]) { seen[k + nm] = 1; all.push({ k: k, l: it.l || "", n: nm }); } }); });
+    all = all.filter(function (x) { return !used[x.n] || x.n === r.who; });
     var sug = all.filter(function (x) { return x.k === key && x.l.replace(/\s/g, "").indexOf(rng) >= 0; });
     if (!sug.length) sug = all.filter(function (x) { return x.k === key; });
     var names = []; function addN(n) { if (names.indexOf(n) < 0) names.push(n); }
@@ -138,7 +140,8 @@
       var m = res[0].data(); m.id = meetId;
       if (!res[1]) { app.innerHTML = '<div class="msg err">Could not open the deck planner. The newest firestore.rules need to be published (see the note from Claude).</div>'; return; }
       var saved = {}; res[1].docs.forEach(function (d) { saved[d.id] = d.data(); });
-      var su = []; if (res[2]) res[2].docs.forEach(function (d) { var nm = String((d.data() || {}).name || "").trim(); if (nm && su.indexOf(nm) < 0) su.push(nm); });
+      var su = []; if (res[2]) res[2].docs.forEach(function (d) { var c = d.data() || {}, nm = String(c.name || "").trim(); if (!nm) return;
+        su.push({ name: nm, tags: ((c.certified || []).concat(c.shadow || [], [c.role || ""])).join(" ").toLowerCase(), cert: ((c.certified || []).concat([c.role || ""])).join(" ").toLowerCase() }); });
       start(m, saved, su);
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
 
@@ -149,14 +152,35 @@
         if (!decks[i]) { var s = saved[sid(i)]; decks[i] = s ? { blocks: s.blocks || [], end: s.end || "", st: { a: (s.st || {}).a || [], b: (s.st || {}).b || [], c: (s.st || {}).c || [], d: (s.st || {}).d || [] } } : emptyDeck(); }
         return decks[i];
       }
-      function nameList(i) {
-        var out = [];
-        function add(v) { String(v || "").split(" | ").slice(-1).forEach(function (x) { x = x.trim().replace(/\s*\([^)]*\)\s*$/, ""); if (x && out.indexOf(x) < 0) out.push(x); }); }
-        R.WHOLE_GROUPS.forEach(function (g) { asg.whole[g.key].forEach(add); });
-        R.SESSION_GROUPS.forEach(function (g) { (asg.sessions[i][g.key] || []).forEach(add); });
-        (signedUp || []).slice().sort().forEach(add);   // everyone who signed up for this meet
-        return out;
+      function cleanName(v) { return String(v || "").split(" | ").slice(-1)[0].trim().replace(/\s*\([^)]*\)\s*$/, ""); }
+      function pools(i) {   // who can fill which kind of position: only people who signed up for it (or are already assigned to it)
+        var P = { all: [], st: [], dr: [], sr: [] };
+        function add(k, v) { var n = cleanName(v); if (n && P[k].indexOf(n) < 0) P[k].push(n); }
+        (signedUp || []).forEach(function (c) { add("all", c.name); if (/stroke/.test(c.cert)) add("st", c.name); if (/deck/.test(c.cert)) add("dr", c.name); if (/starter/.test(c.cert)) add("sr", c.name); });
+        R.WHOLE_GROUPS.forEach(function (g) { asg.whole[g.key].forEach(function (v) { add("all", v); }); });
+        var A = asg.sessions[i];
+        R.SESSION_GROUPS.forEach(function (g) { (A[g.key] || []).forEach(function (v) { add("all", v); }); });
+        (A.strokeTurn || []).forEach(function (v) { add("st", v); });
+        (A.deckRef || []).concat(A.reliefDeckRef || []).forEach(function (v) { add("dr", v); });
+        (A.leadStarter || []).concat(A.reliefStarter || []).forEach(function (v) { add("sr", v); });
+        ["all", "st", "dr", "sr"].forEach(function (k) { P[k].sort(); if (!P[k].length && k !== "all") P[k] = P.all.slice(); });
+        return P;
       }
+      function roleKey(role) { return /^ST /.test(role || "") ? "st" : role === "DR" ? "dr" : role === "SR" ? "sr" : "all"; }
+      var DLS = [], DLN = 0, PL = { all: [], st: [], dr: [], sr: [] };
+      function dlFor(names) { var id = "dl" + (++DLN); DLS.push('<datalist id="' + id + '">' + names.map(function (x) { return '<option value="' + esc(x) + '">'; }).join("") + "</datalist>"); return ' list="' + id + '"'; }
+      function splitNames(v) { return String(v || "").split(/\s*\/\s*/).map(cleanName).filter(Boolean); }
+      function usedInBlock(b, skipRow, skipField) {   // people already placed somewhere in this group of events
+        var u = {};
+        b.rows.forEach(function (r, j) { ["who", "relief", "shadow"].forEach(function (f) { if (j === skipRow && f === skipField) return; splitNames(r[f]).forEach(function (n) { u[n] = 1; }); }); });
+        return u;
+      }
+      function usedInST(D, skipKey, skipJ) {
+        var u = {};
+        ["a", "b", "c", "d"].forEach(function (k) { D.st[k].forEach(function (it, j) { if (k === skipKey && j === skipJ) return; var n = cleanName(it.n); if (n) u[n] = 1; }); });
+        return u;
+      }
+      function offer(list, used, cur) { return list.filter(function (n) { return !used[n] || n === cleanName(cur); }); }
       function setPath(D, path, val) {
         var p = path.split("."), o = D;
         for (var k = 0; k < p.length - 1; k++) o = o[p[k]];
@@ -175,11 +199,11 @@
       function inp(path, val, ph, extra) { return '<input data-p="' + path + '" value="' + esc(val || "") + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : "") + (extra || "") + ">"; }
       function stCol(key, title, D, one) {
         return '<div><h3>' + title + "</h3>" + D.st[key].map(function (it, j) {
-          return '<div class="it' + (one ? " one" : "") + '">' + (one ? "" : laneSel("st." + key + "." + j + ".l", it.l)) + inp("st." + key + "." + j + ".n", it.n, "Name", ' list="dk-names"') + '<button class="dk-x" type="button" data-act="stdel" data-k="' + key + '" data-j="' + j + '" aria-label="Remove">&times;</button></div>';
+          return '<div class="it' + (one ? " one" : "") + '">' + (one ? "" : laneSel("st." + key + "." + j + ".l", it.l)) + inp("st." + key + "." + j + ".n", it.n, "Name", dlFor(offer(PL.st, usedInST(D, key, j), it.n))) + '<button class="dk-x" type="button" data-act="stdel" data-k="' + key + '" data-j="' + j + '" aria-label="Remove">&times;</button></div>';
         }).join("") + '<button class="btn small ghost" type="button" data-act="stadd" data-k="' + key + '">+ Add</button></div>';
       }
       function draw() {
-        var D = deckOf(cur), cc = calc(D), d = cc.d, stx = cc.st;
+        var D = deckOf(cur), cc = calc(D), d = cc.d, stx = cc.st; PL = pools(cur); DLS = []; DLN = 0;
         var tabs = n.sessions.length > 1 ? '<div class="dk-tabs">' + n.sessions.map(function (x, i) { return '<button type="button" class="btn small ' + (i === cur ? "coord" : "ghost") + '" data-act="tab" data-i="' + i + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "";
         var html = '<p style="margin:0 0 10px"><a href="assignments.html?m=' + encodeURIComponent(meetId) + '">&larr; Assignments</a></p>' +
           '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": deck setup</h1><p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" + tabs +
@@ -202,7 +226,7 @@
             '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
             b.rows.map(function (r, j) {
               var p = "blocks." + i + ".rows." + j + ".";
-              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + (whoSel(p + "who", r, D) || inp(p + "who", r.who, "Name(s)", ' list="dk-names"')) + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
+              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + (whoSel(p + "who", r, D, usedInBlock(b, j, "who")) || inp(p + "who", r.who, "Name(s)", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "who"), r.who)))) + inp(p + "relief", r.relief, "Relief", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "relief"), r.relief))) + inp(p + "shadow", r.shadow, "Shadow", dlFor(offer(PL.all, usedInBlock(b, j, "shadow"), r.shadow))) +
                 '<button class="dk-x" type="button" data-act="delr" data-i="' + i + '" data-j="' + j + '" aria-label="Remove row">&times;</button></div>';
             }).join("") + '<button class="btn small ghost" type="button" data-act="addr" data-i="' + i + '">+ Add a role</button></div>';
         });
@@ -210,7 +234,7 @@
           Object.keys(TPL).map(function (k) { return '<option value="' + k + '">' + TPL[k].label + "</option>"; }).join("") + '</select><button class="btn small coord" type="button" data-act="addb">+ Add</button></div>' +
           '<div style="max-width:190px;margin-top:12px"><label class="small muted">End time (last event done)</label>' + inp("end", D.end, "", ' type="time" style="width:100%;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px"') + "</div></div>" +
           '<div class="card"><h2 style="margin-top:0">Stroke &amp; Turn</h2><div class="dk-st">' + stCol("a", "Start End ST", D) + stCol("b", "Relief", D, true) + stCol("c", "Turn End ST", D) + stCol("d", "Apprentice", D, true) + "</div></div>" +
-          '<datalist id="dk-names">' + nameList(cur).map(function (x) { return '<option value="' + esc(x) + '">'; }).join("") + "</datalist>" +
+          DLS.join("") +
           '<div class="btn-row"><button class="btn green" type="button" data-act="print">Print (1 page)</button><button class="btn ghost" type="button" data-act="close">Close</button><span id="dk-status" class="muted" role="status"></span></div>';
         app.innerHTML = html;
       }
