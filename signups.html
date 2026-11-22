@@ -57,8 +57,13 @@
       var t = lv && (s.certLevels[lv] || []).length ? " <span class=\"chip\">" + esc(s.certLevels[lv].join("/")) + "</span>" : "";
       return esc(s.name) + (s.team ? " <span class=\"muted small\">(" + esc(s.team) + ")</span>" : "") + t;
     }
-    var gaps = 0;
-    function row(label, items, shadow) { if (!items.length && !shadow) gaps++; return '<div class="asg-row"><div class="asg-pos' + (shadow ? " shadow" : "") + '">' + esc(label) + '</div><div class="asg-names">' + (items.length ? items.map(function (x) { return "<div>" + x + "</div>"; }).join("") : '<span class="need">Needed</span>') + "</div></div>"; }
+    var gaps = 0, gapList = [], curSess = "";
+    function row(label, items, shadow) {
+      if (!shadow) {
+        var stp = /stroke/i.test(label), lbl = label + (curSess ? " (" + curSess + ")" : "");
+        if (!items.length) { gaps++; gapList.push(lbl + (stp ? " \u2013 need 4" : "")); }
+        else if (stp && items.length < 4) { gaps++; gapList.push(lbl + " \u2013 have " + items.length + ", need 4 (" + (4 - items.length) + " more)"); }
+      } return '<div class="asg-row"><div class="asg-pos' + (shadow ? " shadow" : "") + '">' + esc(label) + '</div><div class="asg-names">' + (items.length ? items.map(function (x) { return "<div>" + x + "</div>"; }).join("") : '<span class="need">Needed</span>') + "</div></div>"; }
     var id = encodeURIComponent(meetId), html =
       '<p style="margin:0 0 10px"><a href="meets.html">&larr; All meets</a></p>' +
       '<div class="card coord-card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": sign-ups</h1>" +
@@ -75,6 +80,7 @@
     });
     html += '<div class="card"><h2>All sessions</h2><div class="asg-table">' + wrows.join("") + "</div></div>";
     n.sessions.forEach(function (x, i) {
+      curSess = n.sessions.length > 1 ? (x.name || ("Session " + (i + 1))) : "";
       var rows = R.sortPos(x.positions || R.SESSION_POS).filter(function (p) { return R.WHOLE_POS.indexOf(p) < 0; }).map(function (p) {
         var names = signups.filter(function (s) { return picks(s, i, "work").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s, p); });
         var sh = signups.filter(function (s) { return picks(s, i, "shadow").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s); });
@@ -86,7 +92,7 @@
     html += '<div class="card"><details><summary><strong>Everyone who signed up (' + signups.length + ')</strong> &mdash; contact details</summary><div class="table-wrap" style="margin-top:8px"><table class="data"><thead><tr><th>Name</th><th>Email / phone</th><th>Comments</th></tr></thead><tbody>' +
       (signups.length ? signups.map(function (s) { return "<tr><td>" + nm(s) + "</td><td>" + esc(s.email || "") + "<br>" + esc(s.phone || "") + "</td><td>" + esc(s.comments || "") + "</td></tr>"; }).join("") : '<tr><td colspan="3" class="muted">No sign-ups yet.</td></tr>') +
       "</tbody></table></div></details></div>";
-    html = html.replace("%%GAPS%%", gaps ? '<p class="gaps-note warn" style="margin:10px 0 0">Still needed: ' + gaps + " position" + (gaps === 1 ? "" : "s") + " with no one signed up.</p>" : '<p class="gaps-note ok" style="margin:10px 0 0">Every position has someone signed up.</p>');
+    html = html.replace("%%GAPS%%", gaps ? '<p class="gaps-note warn" style="margin:10px 0 0">Still needed: ' + gaps + " position" + (gaps === 1 ? "" : "s") + ":</p><ul class=\"gaps-note warn\" style=\"margin:4px 0 0 18px\">" + gapList.map(function (g) { return "<li>" + esc(g) + "</li>"; }).join("") + "</ul>" : '<p class="gaps-note ok" style="margin:10px 0 0">Every position has someone signed up.</p>');
     app.innerHTML = html;
   }
 })();
