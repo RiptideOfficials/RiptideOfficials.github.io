@@ -133,7 +133,8 @@
         if (ud.length) out += "<h3>Meet uniform</h3>" + ud.map(function (d) {
           return (d.date && (ud.length > 1) ? '<p class="uni-day-line"><strong>' + esc(R.fmtDate(d.date)) + "</strong></p>" : "") + paras(d.text);
         }).join("");
-        if (ctx.isMeetAdmin || ctx.member || signedUp) {   // coordinators and people who signed up for this meet see the other assignments; the plain shared link does not
+        if (ctx.isMeetAdmin || ctx.member) {   // only site members (and coordinators) see assignments; everyone else gets the meet details, and assignments come later by email
+           // 
           var anyHere = (asg.whole.admin || []).length || nonEmpty(o, R.SESSION_GROUPS);
           if (anyHere) out += "<h3>Meet assignments</h3>" + asgTable(asg.whole, o);
         }
