@@ -59,7 +59,7 @@
     var ORDER = [["w", "meetRef", "Meet Referee"], ["w", "admin", "Admin Official"], ["s", "deckRef", "Deck Referee"], ["s", "leadStarter", "Lead Starter"],
                  ["s", "reliefDeckRef", "Relief Deck Referee"], ["s", "reliefStarter", "Relief Starter"], ["s", "strokeTurn", "Stroke & Turn"], ["s", "reliefStrokeTurn", "Relief Stroke & Turn"], ["s", "reliefStartEnd", "Relief Start End"], ["s", "reliefTurnEnd", "Relief Turn End"]];
     function asgTable(whole, o) {   // one neat row per position, in a fixed order
-      var rows = ORDER.filter(function (r) { return r[1] === "meetRef"; }).map(function (r) {   // the shared link only shows the Meet Referee; everything else stays with the coordinator
+      var rows = ORDER.filter(function (r) { return r[1] !== "meetRef"; }).map(function (r) {   // the shared link only shows the Meet Referee; everything else stays with the coordinator
         var names = (r[0] === "w" ? whole : o)[r[1]] || [];
         return names.length ? '<div class="asg-row"><div class="asg-pos' + (r[1] === "shadow" ? " shadow" : "") + '">' + esc(r[2]) + '</div><div class="asg-names">' + names.map(function (n) { return "<div>" + esc(n) + "</div>"; }).join("") + "</div></div>" : "";
       }).join("");
@@ -70,7 +70,7 @@
       var shHtml = poss.length ? '<div class="asg-shadow"><h4>Shadowing</h4><div class="asg-table">' + poss.map(function (p) {
         return '<div class="asg-row"><div class="asg-pos">' + esc(p) + '</div><div class="asg-names">' + byPos[p].map(function (n) { return "<div>" + esc(n) + "</div>"; }).join("") + "</div></div>";
       }).join("") + "</div></div>" : "";
-      return '<div class="asg-table">' + rows + "</div>";
+      return '<div class="asg-table">' + rows + "</div>" + shHtml;
     }
     function listHtml(label, names) {
       if (!names || !names.length) return "";
@@ -84,7 +84,6 @@
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         '<div class="meet-when"><span class="when">' + esc(R.fmtRange(m)) + "</span>" + (m.location ? '<span class="where">' + esc(m.location) + "</span>" : "") + "</div>" +
-        ((asg.whole.meetRef || []).length ? '<p style="margin:8px 0 0"><strong>Meet Referee:</strong> ' + esc(asg.whole.meetRef.map(function (x) { return String(x).replace(/\s*\([^)]*\)\s*$/, ""); }).join(", ")) + (m.refEmail || window.ADMIN_EMAIL ? ' &mdash; questions? <a href="mailto:' + esc(m.refEmail || window.ADMIN_EMAIL) + '">' + esc(m.refEmail || window.ADMIN_EMAIL) + "</a>" : "") + (m.refPhone ? ' &middot; cell <a href="tel:' + esc(m.refPhone.replace(/[^\d+]/g, "")) + '">' + esc(m.refPhone) + "</a>" : "") + "</p>" : "") +
         (n.v2 ? "" : notesHtml(m.notes)) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up</a>' +
         '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button><button class="btn ghost noprint" type="button" onclick="window.print()">Print</button></div>' +
@@ -99,16 +98,28 @@
           '<button class="btn coord" type="button" id="copylink">Copy link</button></div></div>' : "") + "</div>";
 
       function nonEmpty(o, groups) { return groups.some(function (g) { return o[g.key] && o[g.key].length; }); }
+      function refRowsHtml() {   // the Meet Referee is part of the meet details, with contact info for questions
+        if (!(asg.whole.meetRef || []).length) return "";
+        var rn = asg.whole.meetRef.map(function (v) { return String(v).replace(/\s*\([^)]*\)\s*$/, ""); }).join(", "), em = m.refEmail || window.ADMIN_EMAIL || "";
+        return "<tr><td>Meet Referee</td><td>" + esc(rn) + "</td></tr>" +
+          (em ? '<tr><td>Email</td><td><a href="mailto:' + esc(em) + '">' + esc(em) + "</a></td></tr>" : "") +
+          (m.refPhone ? '<tr><td>Phone</td><td><a href="tel:' + esc(m.refPhone.replace(/[^\d+]/g, "")) + '">' + esc(m.refPhone) + "</a></td></tr>" : "");
+      }
       function sessionBody(x, i) {
         var o = asg.sessions[i], out = "";
-        var det = R.parseSchedule(x.details).filter(function (d) { return d.value; });
-        if (det.length) out += "<h3>Meet details</h3>" + '<table class="sched">' + det.map(function (d) {
+        var det = R.parseSchedule(x.details).filter(function (d) { return d.value; }), refRows = "";
+        if (i === 0) refRows = refRowsHtml();
+        if (det.length || refRows) out += "<h3>Meet details</h3>" + '<table class="sched">' + refRows + det.map(function (d) {
           return "<tr><td>" + esc(d.label) + "</td><td>" + esc(d.value) + "</td></tr>"; }).join("") + "</table>";
         if (x.notes) out += "<h3>Notes for officials</h3>" + paras(x.notes);
         var ud = R.uniformDays(n.info).filter(function (d) { return !d.date || !x.date || d.date === x.date || n.sessions.length === 1; });
         if (ud.length) out += "<h3>Meet uniform</h3>" + ud.map(function (d) {
           return (d.date && (ud.length > 1) ? '<p class="uni-day-line"><strong>' + esc(R.fmtDate(d.date)) + "</strong></p>" : "") + paras(d.text);
         }).join("");
+        if (ctx.isMeetAdmin) {   // coordinators only: the other assignments (Admin Official, Deck Referee, ...) are not on the shared view
+          var anyHere = (asg.whole.admin || []).length || nonEmpty(o, R.SESSION_GROUPS);
+          if (anyHere) out += "<h3>Meet assignments <span class=\"muted small\">(coordinators only)</span></h3>" + asgTable(asg.whole, o);
+        }
         return out;
       }
 
@@ -124,7 +135,7 @@
         if (n.info.food) html += '<div class="card"><h2>Food</h2>' + paras(n.info.food) + "</div>";
         if (n.info.misc) html += '<div class="card"><h2>Miscellaneous</h2>' + paras(n.info.misc) + "</div>";
       } else {
-        if (m.schedule) html += '<div class="card"><h2>Meet details</h2><table class="sched">' + R.parseSchedule(m.schedule).map(function (s) {
+        if (m.schedule || refRowsHtml()) html += '<div class="card"><h2>Meet details</h2><table class="sched">' + refRowsHtml() + R.parseSchedule(m.schedule || "").map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
       }
       app.innerHTML = html;
