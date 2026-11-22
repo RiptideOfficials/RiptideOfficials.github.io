@@ -112,7 +112,7 @@
     return '<div><select data-whosel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(r.who || "") + '" placeholder="Type the name(s)" style="margin-top:4px"><button type="button" class="btn small ghost" data-act="backwho" data-path="' + path + '" style="margin-top:4px">Cancel - back to the list</button>' : "") + "</div>";
   }
   function mkBlock(t) { return { type: t === "brk" ? "break" : "", num: "", name: t === "brk" ? "Break" : "", start: "", rows: TPL[t].rows.map(function (r) { return { role: r[0], who: r[1], relief: "", shadow: "" }; }) }; }
-  function emptyDeck() { return { blocks: [mkBlock("free")], end: "", st: { a: [], b: [], c: [], d: [] } }; }
+  function emptyDeck() { return { blocks: [mkBlock("free")], end: "", note: "", st: { a: [], b: [], c: [], d: [] } }; }
   function mins(t) { var p = /^(\d{1,2}):(\d{2})$/.exec(t || ""); return p ? +p[1] * 60 + +p[2] : null; }
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function hm(m) { return m == null || m < 0 ? "" : Math.floor(m / 60) + ":" + pad(m % 60); }
@@ -156,7 +156,7 @@
       var n = R.normMeet(m), asg = R.normAssign(m, n.sessions.length), cur = 0, timer = null, decks = {};
       function sid(i) { return "s" + i; }
       function deckOf(i) {
-        if (!decks[i]) { var s = saved[sid(i)]; decks[i] = s ? { blocks: s.blocks || [], end: s.end || "", st: { a: (s.st || {}).a || [], b: (s.st || {}).b || [], c: (s.st || {}).c || [], d: (s.st || {}).d || [] } } : emptyDeck(); }
+        if (!decks[i]) { var s = saved[sid(i)]; decks[i] = s ? { blocks: s.blocks || [], end: s.end || "", note: s.note || "", st: { a: (s.st || {}).a || [], b: (s.st || {}).b || [], c: (s.st || {}).c || [], d: (s.st || {}).d || [] } } : emptyDeck(); }
         return decks[i];
       }
       function cleanName(v) { return String(v || "").split(" | ").slice(-1)[0].trim().replace(/\s*\([^)]*\)\s*$/, ""); }
@@ -260,6 +260,7 @@
           Object.keys(TPL).map(function (k) { return '<option value="' + k + '">' + TPL[k].label + "</option>"; }).join("") + '</select><button class="btn small coord" type="button" data-act="addb">+ Add</button></div>' +
           '<div style="max-width:190px;margin-top:12px"><label class="small muted">End time (last event done)</label>' + inp("end", D.end, "", ' type="time" style="width:100%;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px"') + "</div></div>" +
           '<div class="card"><h2 style="margin-top:0">Stroke &amp; Turn</h2><div class="dk-st">' + stCol("a", "Start End ST", D) + stCol("b", "Relief", D, true) + stCol("c", "Turn End ST", D) + stCol("d", "Apprentice", D, true) + "</div></div>" +
+          '<div class="card"><h2 style="margin-top:0">Notes</h2><label class="small muted" for="dk-note">Someone leaving early, coming late, etc. This prints on the sheet.</label><textarea data-p="note" id="dk-note" rows="3" style="width:100%;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px">' + esc(D.note || "") + "</textarea></div>" +
           DLS.join("") +
           '<div class="btn-row"><button class="btn green" type="button" data-act="print">Print (1 page)</button><button class="btn ghost" type="button" data-act="close">Close</button><span id="dk-status" class="muted" role="status"></span></div>';
         app.innerHTML = html;
@@ -290,7 +291,8 @@
         }
         var tot = D.blocks.map(function (b, i) { return d[i] == null ? "" : "<tr><td>" + esc(b.name || ("Events " + b.num)) + "</td><td>" + hm(d[i]) + "</td></tr>"; }).join("");
         h += '<div class="sub">' + stT("a", "Start End ST") + stT("b", "Relief", true) + stT("c", "Turn End ST") + stT("d", "Apprentice", true) +
-          (tot ? '<table style="width:auto;margin-left:auto"><thead><tr><th colspan="2">Total Time</th></tr></thead><tbody>' + tot + "</tbody></table>" : "") + "</div>";
+          (tot ? '<table style="width:auto;margin-left:auto"><thead><tr><th colspan="2">Total Time</th></tr></thead><tbody>' + tot + "</tbody></table>" : "") + "</div>" +
+          ((D.note || "").trim() ? '<table style="margin-top:6px"><thead><tr><th>Notes</th></tr></thead><tbody><tr><td class="lo" style="white-space:pre-wrap">' + esc(D.note) + "</td></tr></tbody></table>" : "");
         var sheet = document.getElementById("print-sheet"); if (!sheet) { sheet = document.createElement("div"); sheet.id = "print-sheet"; app.appendChild(sheet); }
         sheet.innerHTML = h; sheet.style.zoom = ""; sheet.style.width = "";
         var avail = 6.3 * 96, z = 1;   // shrink to fit one landscape page: the sheet is laid out wider, then zoomed down to page width
