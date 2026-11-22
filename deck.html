@@ -71,10 +71,11 @@
     blank: { label: "Blank", rows: [["DR", ""]] }
   };
   var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8"];
-  function roleSel(path, val) {
-    var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("");
-    if (val && ROLES.indexOf(val) < 0) o += '<option selected>' + esc(val) + "</option>";   // keeps an older custom role
-    return '<select data-p="' + path + '">' + o + "</select>";
+  function roleSel(path, val, other) {
+    var isOther = other || (val && ROLES.indexOf(val) < 0);
+    var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("") +
+      '<option value="__other__"' + (isOther ? " selected" : "") + ">Other (type it in)</option>";
+    return '<div><select data-rolesel="' + path + '">' + o + "</select>" + (isOther ? '<input data-p="' + path + '" value="' + esc(ROLES.indexOf(val) < 0 ? val : "") + '" placeholder="Type the role" style="margin-top:4px">' : "") + "</div>";
   }
   function mkBlock(t) { return { type: t === "brk" ? "break" : "", num: "", name: t === "brk" ? "Break" : "", start: "", rows: TPL[t].rows.map(function (r) { return { role: r[0], who: r[1], relief: "", shadow: "" }; }) }; }
   function emptyDeck() { return { blocks: [mkBlock("free")], end: "", st: { a: [], b: [], c: [], d: [] } }; }
@@ -174,7 +175,7 @@
             '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
             b.rows.map(function (r, j) {
               var p = "blocks." + i + ".rows." + j + ".";
-              return '<div class="dk-row">' + roleSel(p + "role", r.role) + inp(p + "who", r.who, "Name(s)", ' list="dk-names"') + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
+              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + inp(p + "who", r.who, "Name(s)", ' list="dk-names"') + inp(p + "relief", r.relief, "Relief", ' list="dk-names"') + inp(p + "shadow", r.shadow, "Shadow", ' list="dk-names"') +
                 '<button class="dk-x" type="button" data-act="delr" data-i="' + i + '" data-j="' + j + '" aria-label="Remove row">&times;</button></div>';
             }).join("") + '<button class="btn small ghost" type="button" data-act="addr" data-i="' + i + '">+ Add a role</button></div>';
         });
@@ -221,6 +222,12 @@
         var done = function () { document.body.classList.remove("pa"); window.removeEventListener("afterprint", done); };
         window.addEventListener("afterprint", done); window.print();
       }
+      app.addEventListener("change", function (e) {   // role drop-down: a normal role, or Other to type a one-off
+        var rp = e.target.getAttribute && e.target.getAttribute("data-rolesel"); if (!rp) return;
+        var D = deckOf(cur), parts = rp.split("."), row = D.blocks[+parts[1]].rows[+parts[3]];
+        if (e.target.value === "__other__") { row.other = true; row.role = ""; } else { row.other = false; row.role = e.target.value; }
+        draw(); save();
+      });
       app.addEventListener("input", function (e) {
         var p = e.target.getAttribute && e.target.getAttribute("data-p"); if (!p) return;
         setPath(deckOf(cur), p, e.target.value); refreshTotals(); save();
