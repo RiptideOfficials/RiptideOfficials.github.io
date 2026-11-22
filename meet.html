@@ -99,9 +99,10 @@
 
       function nonEmpty(o, groups) { return groups.some(function (g) { return o[g.key] && o[g.key].length; }); }
       function refRowsHtml() {   // the Meet Referee is part of the meet details, with contact info for questions
-        if (!(asg.whole.meetRef || []).length) return "";
+        var loc = m.location ? "<tr><td>Location</td><td>" + esc(m.location) + "</td></tr>" : "";
+        if (!(asg.whole.meetRef || []).length) return loc;
         var rn = asg.whole.meetRef.map(function (v) { return String(v).replace(/\s*\([^)]*\)\s*$/, ""); }).join(", "), em = m.refEmail || window.ADMIN_EMAIL || "";
-        return "<tr><td>Meet Referee</td><td>" + esc(rn) + "</td></tr>" +
+        return loc + "<tr><td>Meet Referee</td><td>" + esc(rn) + "</td></tr>" +
           (em ? '<tr><td>Email</td><td><a href="mailto:' + esc(em) + '">' + esc(em) + "</a></td></tr>" : "") +
           (m.refPhone ? '<tr><td>Phone</td><td><a href="tel:' + esc(m.refPhone.replace(/[^\d+]/g, "")) + '">' + esc(m.refPhone) + "</a></td></tr>" : "");
       }
