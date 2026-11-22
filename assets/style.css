@@ -490,3 +490,5 @@ details.has-pencil>.pencil.del{right:76px}
 .help-body li{margin:3px 0}
 .help-body p{margin:6px 0}
 @media print{.help-box{display:none}}
+.help-tap{font-weight:400;font-size:.85em;color:#5b6b7b;margin-left:6px}
+.help-box[open] .help-tap{display:none}
