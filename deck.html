@@ -172,6 +172,8 @@
         (A.strokeTurn || []).forEach(function (v) { add("st", v); });
         (A.deckRef || []).concat(A.reliefDeckRef || []).forEach(function (v) { add("dr", v); });
         (A.leadStarter || []).concat(A.reliefStarter || []).forEach(function (v) { add("sr", v); });
+        var adm = (asg.whole.admin || []).map(cleanName);   // the Admin Official is at the desk, not on deck
+        ["all", "st", "dr", "sr"].forEach(function (k) { P[k] = P[k].filter(function (x) { return adm.indexOf(x) < 0; }); });
         ["all", "st", "dr", "sr"].forEach(function (k) { P[k].sort(); if (!P[k].length && k !== "all") P[k] = P.all.slice(); });
         return P;
       }
