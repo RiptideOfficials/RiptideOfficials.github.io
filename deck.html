@@ -208,7 +208,7 @@
           '<div style="max-width:190px;margin-top:12px"><label class="small muted">End time (last event done)</label>' + inp("end", D.end, "", ' type="time" style="width:100%;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px"') + "</div></div>" +
           '<div class="card"><h2 style="margin-top:0">Stroke &amp; Turn</h2><div class="dk-st">' + stCol("a", "Start End ST", D) + stCol("b", "Relief", D, true) + stCol("c", "Turn End ST", D) + stCol("d", "Apprentice", D, true) + "</div></div>" +
           '<datalist id="dk-names">' + nameList(cur).map(function (x) { return '<option value="' + esc(x) + '">'; }).join("") + "</datalist>" +
-          '<div class="btn-row"><button class="btn green" type="button" data-act="print">Print (1 page)</button><span id="dk-status" class="muted" role="status"></span></div>';
+          '<div class="btn-row"><button class="btn green" type="button" data-act="print">Print (1 page)</button><button class="btn ghost" type="button" data-act="close">Close</button><span id="dk-status" class="muted" role="status"></span></div>';
         app.innerHTML = html;
       }
       function refreshTotals() {
@@ -275,6 +275,14 @@
         var D = deckOf(cur), act = t.getAttribute("data-act"), i = +t.getAttribute("data-i"), j = +t.getAttribute("data-j"), k = t.getAttribute("data-k");
         if (act === "tab") { cur = i; draw(); return; }
         if (act === "print") { printSheet(); return; }
+        if (act === "close") {   // everything is already saved; make sure the last change is sent, then go back
+          clearTimeout(timer);
+          var payload = JSON.parse(JSON.stringify(D)); payload.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+          t.disabled = true; t.textContent = "Closing...";
+          var back = function () { if (document.referrer && history.length > 1) history.back(); else location.href = "assignments.html?m=" + encodeURIComponent(meetId); };
+          meetRef.collection("deck").doc(sid(cur)).set(payload).then(back, back);
+          return;
+        }
         if (act === "addb") D.blocks.push(mkBlock($("dk-add").value));
         else if (act === "delb") { if (!confirm("Remove this group of events?")) return; D.blocks.splice(i, 1); }
         else if (act === "up" && i > 0) D.blocks.splice(i - 1, 0, D.blocks.splice(i, 1)[0]);
