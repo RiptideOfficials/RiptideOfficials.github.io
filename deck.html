@@ -70,10 +70,10 @@
     brk: { label: "Break (no officials needed)", rows: [] },
     relay: { label: "Relays", rows: [["DR", ""], ["SR", ""], ["Relay 1-4", ""], ["Relay 4-1", ""], ["Relay 5-8", ""], ["Relay 8-5", ""], ["Watch Turns", ""]] },
     free: { label: "Freestyle / other", rows: [["DR", ""], ["SR", ""], ["Watch Turns", "Rotate"]] },
-    strokes: { label: "Strokes", rows: [["DR", ""], ["SR", ""], ["ST Start End 1-4", ""], ["ST Start End 5-8", ""], ["ST Turn End 1-4", ""], ["ST Turn End 5-8", ""]] },
+    strokes: { label: "Strokes", rows: [["DR", ""], ["SR", ""], ["ST Start End 1-4", ""], ["ST Start End 5-8", ""], ["ST Turn End 1-4", ""], ["ST Turn End 5-8", ""], ["ST Relief", ""]] },
     blank: { label: "Blank", rows: [["DR", ""]] }
   };
-  var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8"];
+  var ROLES = ["DR", "SR", "Relay 1-4", "Relay 4-1", "Relay 5-8", "Relay 8-5", "Watch Turns", "ST Start End 1-4", "ST Start End 5-8", "ST Turn End 1-4", "ST Turn End 5-8", "ST Relief"];
   function roleSel(path, val, other) {
     var isOther = other || (val && ROLES.indexOf(val) < 0);
     var o = '<option value="">Role...</option>' + ROLES.map(function (r) { return '<option' + (r === val ? " selected" : "") + ">" + r + "</option>"; }).join("") +
@@ -200,11 +200,11 @@
       function autoFill(D) {   // pre-fill the ST roles from the lists below; anything the coordinator typed or chose is left alone
         var changed = false;
         D.blocks.forEach(function (b) { b.rows.forEach(function (r, j) {
-          var isDR = r.role === "DR" || r.role === "SR", ak = r.role === "SR" ? "leadStarter" : "deckRef";
+          var isFl = r.role === "ST Relief", isDR = r.role === "DR" || r.role === "SR" || isFl, ak = r.role === "SR" ? "leadStarter" : "deckRef";
           if (!(/^ST /.test(r.role || "") || isDR) || r.whoOther) return;
           if (r.who && r.who !== r.auto) return;          // changed by hand
           if (!r.who && r.noauto) return;                  // cleared by hand
-          var v = isDR ? ((asg.sessions[cur][ak] || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
+          var v = isFl ? D.st.b.map(function (it) { return (it.n || "").trim(); }).filter(Boolean).join(" / ") : isDR ? ((asg.sessions[cur][ak] || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
           if (v !== (r.who || "")) { r.who = v; changed = true; }
           r.auto = v;
         }); });
@@ -251,7 +251,7 @@
             '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
             b.rows.map(function (r, j) {
               var p = "blocks." + i + ".rows." + j + ".";
-              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + (whoSel(p + "who", r, D, usedInBlock(b, j, "who")) || inp(p + "who", r.who, "Name(s)", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "who"), r.who)))) + inp(p + "relief", r.relief, "Relief", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "relief"), r.relief))) + inp(p + "shadow", r.shadow, "Shadow", dlFor(offer(PL.all, usedInBlock(b, j, "shadow"), r.shadow))) +
+              return '<div class="dk-row">' + roleSel(p + "role", r.role, r.other) + (whoSel(p + "who", r, D, usedInBlock(b, j, "who")) || inp(p + "who", r.who, "Name(s)", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "who"), r.who)))) + (/^ST /.test(r.role || "") ? "<div></div>" : inp(p + "relief", r.relief, "Relief", dlFor(offer(PL[roleKey(r.role)], usedInBlock(b, j, "relief"), r.relief)))) + inp(p + "shadow", r.shadow, "Shadow", dlFor(offer(PL.all, usedInBlock(b, j, "shadow"), r.shadow))) +
                 '<button class="dk-x" type="button" data-act="delr" data-i="' + i + '" data-j="' + j + '" aria-label="Remove row">&times;</button></div>';
             }).join("") + '<button class="btn small ghost" type="button" data-act="addr" data-i="' + i + '">+ Add a role</button></div>';
         });
@@ -279,7 +279,7 @@
           var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }];
           rows.forEach(function (r, j) {
             h += "<tr" + (j === 0 ? ' class="grp"' : "") + ">" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clockM(cc.st[i])) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
-              "<td>" + esc(r.role) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? r.relief : r.who) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
+              "<td>" + esc(r.role) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? r.relief : r.who) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? "" : /^ST /.test(r.role || "") ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
           });
         });
         h += '<tr class="endr"><td colspan="2">End Time</td><td colspan="6">' + esc(clock(D.end)) + "</td></tr></tbody></table>";
