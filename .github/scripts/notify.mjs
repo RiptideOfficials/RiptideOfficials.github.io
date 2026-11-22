@@ -71,16 +71,35 @@ const interest = (await listAll("interest", token)).filter((d) => !boolOf(d, "re
 const newUsers = users.filter((d) => !notified.includes("u:" + idOf(d)));
 const newInterest = interest.filter((d) => !notified.includes("i:" + idOf(d)));
 
-console.log(`waiting: ${users.length} account(s), ${interest.length} interested; new: ${newUsers.length} + ${newInterest.length}`);
-if (!newUsers.length && !newInterest.length) process.exit(0);
-const total = users.length + interest.length;
+// New meet sign-ups (upcoming meets only). The first time this runs, existing sign-ups are recorded silently.
+const chi = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Chicago" }));
+const todayIso = `${chi.getFullYear()}-${String(chi.getMonth() + 1).padStart(2, "0")}-${String(chi.getDate()).padStart(2, "0")}`;
+const sField = (d, k) => d.fields?.[k]?.stringValue || "";
+const signups = [];
+for (const m of (await listAll("meets", token)).filter((d) => (sField(d, "endDate") || sField(d, "date")) >= todayIso)) {
+  for (const c of await listAll(`meets/${idOf(m)}/contacts`, token)) signups.push({ id: "s:" + idOf(m) + "/" + idOf(c), name: sField(c, "name"), role: sField(c, "role"), meet: sField(m, "title") });
+}
+const firstRun = !notified.includes("s:init");
+const newSignups = firstRun ? [] : signups.filter((x) => !notified.includes(x.id));
+
+console.log(`waiting: ${users.length} account(s), ${interest.length} interested; new: ${newUsers.length} + ${newInterest.length}; sign-ups new: ${newSignups.length}${firstRun ? " (first run, baseline saved)" : ""}`);
+const keepIds = () => notified.filter((k) => (k.startsWith("u:") ? users.some((d) => "u:" + idOf(d) === k) : k.startsWith("i:") ? interest.some((d) => "i:" + idOf(d) === k) : k === "s:init" || signups.some((x) => x.id === k)));
+if (!newUsers.length && !newInterest.length && !newSignups.length) {
+  if (firstRun) await saveNotified(token, keepIds().concat(["s:init"], signups.map((x) => x.id)));
+  process.exit(0);
+}
+const total = users.length + interest.length + newSignups.length;
 
 const parts = [];
 if (newUsers.length) parts.push(`${newUsers.length} new account${newUsers.length > 1 ? "s" : ""} waiting for approval`);
 if (newInterest.length) parts.push(`${newInterest.length} new interested ${newInterest.length > 1 ? "people" : "person"}`);
+const sFirst = (n) => { const w = String(n || "Someone").trim().split(/\s+/); return w.length > 1 ? w[0] + " " + w[w.length - 1][0] + "." : w[0]; };
+const gparts = parts.slice();   // generic wording for the public GitHub issue (no names)
+if (newSignups.length) gparts.push(`${newSignups.length} new meet sign-up${newSignups.length > 1 ? "s" : ""}`);
+if (newSignups.length) parts.push(newSignups.length === 1 ? `${sFirst(newSignups[0].name)} signed up for ${newSignups[0].meet || "a meet"}` : `${newSignups.length} new meet sign-ups`);
 const issue = await gh("issues", "POST", {
-  title: "Riptide Officials: " + parts.join(" and "),
-  body: `@${MENTION} ${parts.join(" and ")}.\n\nOpen the Admin page to see who: ${SITE}admin.html\n\n(This message has no names or contact details on purpose.)`
+  title: "Riptide Officials: " + gparts.join(" and "),
+  body: `@${MENTION} ${gparts.join(" and ")}.\n\nOpen the Admin page to see who: ${SITE}admin.html\n\n(This message has no names or contact details on purpose.)`
 });
 let pushNote = "";
 
@@ -92,7 +111,7 @@ try {
     const webpush = (await import("web-push")).default;
     webpush.setVapidDetails("mailto:" + (process.env.VAPID_CONTACT || "whpeterson@gmail.com"), pub, VAPID_PRIVATE_KEY);
     const subs = await listAll("adminpush", token);
-    const payload = JSON.stringify({ title: "Riptide Officials", body: parts.join(" and ") + ".", count: total, url: "admin.html" });
+    const payload = JSON.stringify({ title: "Riptide Officials", body: parts.join(" and ") + ".", count: total, url: newSignups.length && !newUsers.length && !newInterest.length ? "meets.html" : "admin.html" });
     var pushed = 0, failed = [];
     for (const d of subs) {
       try { await webpush.sendNotification(JSON.parse(d.fields.sub.stringValue), payload); console.log("push sent"); pushed++; }
@@ -107,6 +126,5 @@ try {
 if (pushNote) await gh(`issues/${issue.number}/comments`, "POST", { body: pushNote });
 await gh(`issues/${issue.number}`, "PATCH", { state: "closed" });
 
-const keep = notified.filter((k) => (k.startsWith("u:") ? users.some((d) => "u:" + idOf(d) === k) : interest.some((d) => "i:" + idOf(d) === k)));
-await saveNotified(token, keep.concat(newUsers.map((d) => "u:" + idOf(d)), newInterest.map((d) => "i:" + idOf(d))));
+await saveNotified(token, keepIds().concat(newUsers.map((d) => "u:" + idOf(d)), newInterest.map((d) => "i:" + idOf(d)), (firstRun ? signups : newSignups).map((x) => x.id), firstRun ? ["s:init"] : []));
 console.log("Notified.");
