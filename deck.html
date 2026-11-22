@@ -169,7 +169,7 @@
         R.WHOLE_GROUPS.forEach(function (g) { asg.whole[g.key].forEach(function (v) { add("all", v); }); });
         var A = asg.sessions[i];
         R.SESSION_GROUPS.forEach(function (g) { (A[g.key] || []).forEach(function (v) { add("all", v); }); });
-        (A.strokeTurn || []).forEach(function (v) { add("st", v); });
+        (A.strokeTurn || []).concat(A.reliefStrokeTurn || []).forEach(function (v) { add("st", v); });
         (A.deckRef || []).concat(A.reliefDeckRef || []).forEach(function (v) { add("dr", v); });
         (A.leadStarter || []).concat(A.reliefStarter || []).forEach(function (v) { add("sr", v); });
         var adm = (asg.whole.admin || []).map(cleanName);   // the Admin Official is at the desk, not on deck
@@ -204,7 +204,7 @@
           if (!(/^ST /.test(r.role || "") || isDR) || r.whoOther) return;
           if (r.who && r.who !== r.auto) return;          // changed by hand
           if (!r.who && r.noauto) return;                  // cleared by hand
-          var v = isFl ? D.st.b.map(function (it) { return (it.n || "").trim(); }).filter(Boolean).join(" / ") : isDR ? ((asg.sessions[cur][ak] || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
+          var v = isFl ? ((asg.sessions[cur].reliefStrokeTurn || []).map(cleanName).filter(Boolean).join(" / ") || D.st.b.map(function (it) { return (it.n || "").trim(); }).filter(Boolean).join(" / ")) : isDR ? ((asg.sessions[cur][ak] || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
           if (v !== (r.who || "")) { r.who = v; changed = true; }
           r.auto = v;
         }); });

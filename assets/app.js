@@ -308,6 +308,7 @@
     { key: "leadStarter", label: "Lead Starter", cert: "Starter" },
     { key: "reliefStarter", label: "Relief Starter", cert: "Starter" },
     { key: "strokeTurn", label: "Stroke & Turn", cert: "Stroke & Turn" },
+    { key: "reliefStrokeTurn", label: "Relief Stroke & Turn", cert: "Stroke & Turn" },
     { key: "shadow", label: "Shadowing", cert: "" }
   ];
   R.fmtTime = function (t) {

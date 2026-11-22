@@ -127,7 +127,7 @@
             return;
           }
           var lab = label(s);
-          var PARTNER = { deckRef: "reliefDeckRef", reliefDeckRef: "deckRef", leadStarter: "reliefStarter", reliefStarter: "leadStarter" }, pk = PARTNER[g.key];
+          var PARTNER = { deckRef: "reliefDeckRef", reliefDeckRef: "deckRef", leadStarter: "reliefStarter", reliefStarter: "leadStarter", strokeTurn: "reliefStrokeTurn", reliefStrokeTurn: "strokeTurn" }, pk = PARTNER[g.key];
           if (scope !== "w" && pk && list.indexOf(lab) < 0 && (asg.sessions[sessionIndex][pk] || []).indexOf(lab) >= 0) return;   // already the main (or relief) one, so not offered for the other
           names[lab] = 1;
           var lv = s.certLevels && Object.keys(s.certLevels).filter(function (k) { return k.toLowerCase() === (g.cert || "").toLowerCase(); })[0];
