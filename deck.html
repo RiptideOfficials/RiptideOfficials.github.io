@@ -17,8 +17,9 @@
 #print-sheet{display:none}
 .dk-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
 .dk-block{border:1px solid #cfd9e3;border-left:5px solid #1f6fb2;border-radius:10px;padding:12px;margin:0 0 14px;background:#fff}
-.dk-top{display:grid;grid-template-columns:90px 1fr 120px;gap:8px;align-items:end}
+.dk-top{display:grid;grid-template-columns:90px 1fr 165px;gap:8px;align-items:end}
 .dk-block label,.dk-st label{display:block;font-size:.78rem;color:#5b6b7a;margin:0 0 2px}
+.dk-block input[type=time],.card input[type=time]{min-width:150px;padding-right:4px}
 .dk-block input,.dk-st input,.dk-block select{width:100%;box-sizing:border-box;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px;background:#fff}
 .dk-row{display:grid;grid-template-columns:1fr 1.4fr 1fr 1fr 30px;gap:6px;margin:6px 0;align-items:center}
 .dk-head{font-size:.75rem;color:#5b6b7a;margin-top:10px}
@@ -172,7 +173,7 @@
         });
         html += '<div class="card"><label for="dk-add" class="small muted">Add another group of events, or a break</label><div class="btn-row" style="margin-top:4px"><select id="dk-add" style="max-width:220px">' +
           Object.keys(TPL).map(function (k) { return '<option value="' + k + '">' + TPL[k].label + "</option>"; }).join("") + '</select><button class="btn small coord" type="button" data-act="addb">+ Add</button></div>' +
-          '<div style="max-width:160px;margin-top:12px"><label class="small muted">End time (last event done)</label>' + inp("end", D.end, "", ' type="time" style="width:100%;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px"') + "</div></div>" +
+          '<div style="max-width:190px;margin-top:12px"><label class="small muted">End time (last event done)</label>' + inp("end", D.end, "", ' type="time" style="width:100%;font:inherit;padding:7px 8px;border:1px solid #b9c7d4;border-radius:6px"') + "</div></div>" +
           '<div class="card"><h2 style="margin-top:0">Stroke &amp; Turn</h2><div class="dk-st">' + stCol("a", "Start End ST", D) + stCol("b", "Relief", D, true) + stCol("c", "Turn End ST", D) + stCol("d", "Apprentice", D, true) + "</div></div>" +
           '<datalist id="dk-names">' + nameList(cur).map(function (x) { return '<option value="' + esc(x) + '">'; }).join("") + "</datalist>" +
           '<div class="btn-row"><button class="btn green" type="button" data-act="print">Print (1 page)</button><span id="dk-status" class="muted" role="status"></span></div>';
