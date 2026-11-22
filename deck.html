@@ -205,7 +205,7 @@
       function draw() {
         var D = deckOf(cur), cc = calc(D), d = cc.d, stx = cc.st; PL = pools(cur); DLS = []; DLN = 0;
         var tabs = n.sessions.length > 1 ? '<div class="dk-tabs">' + n.sessions.map(function (x, i) { return '<button type="button" class="btn small ' + (i === cur ? "coord" : "ghost") + '" data-act="tab" data-i="' + i + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "";
-        var html = '<p style="margin:0 0 10px"><a href="assignments.html?m=' + encodeURIComponent(meetId) + '">&larr; Assignments</a></p>' +
+        var html = '<p style="margin:0 0 10px"><a href="assignments.html?m=' + encodeURIComponent(meetId) + '">&larr; Assignments</a> &nbsp;&middot;&nbsp; <a href="meet-edit.html?m=' + encodeURIComponent(meetId) + '">Edit meet</a></p>' +
           '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": deck setup</h1><p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" + tabs +
           '<p class="muted small" style="margin:0">Type the first event number and start time for each group of events. The total time for a group is worked out from the next group\'s start time (and the End Time at the bottom). Changes save by themselves.</p></div>';
         D.blocks.forEach(function (b, i) {
