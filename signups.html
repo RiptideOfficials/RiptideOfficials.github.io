@@ -86,7 +86,7 @@
         var sh = signups.filter(function (s) { return picks(s, i, "shadow").some(function (q) { return q.toLowerCase() === p.toLowerCase(); }); }).map(function (s) { return nm(s); });
         if (names.length) {
           var assigned = 0;
-          R.SESSION_GROUPS.forEach(function (g) { if (g.cert && g.cert.toLowerCase() === p.toLowerCase()) assigned += ((asg.sessions[i] || {})[g.key] || []).length; });
+          R.SESSION_GROUPS.forEach(function (g) { if (g.cert && !/^relief/.test(g.key) && g.cert.toLowerCase() === p.toLowerCase()) assigned += ((asg.sessions[i] || {})[g.key] || []).length; });
           if (!assigned) unasg.push(p + (n.sessions.length > 1 ? " (" + (x.name || ("Session " + (i + 1))) + ")" : "") + " \u2013 " + names.length + " signed up, none assigned yet");
         }
         return row(p, names) + (sh.length ? row(p + " (shadow)", sh, true) : "");
