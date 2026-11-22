@@ -297,7 +297,13 @@
         });
         h += '<tr class="endr"><td colspan="2">End Time</td><td colspan="6">' + esc(clock(D.end)) + "</td></tr></tbody></table>";
         function stT(key, title, one) {
-          var list = D.st[key]; if (!list.length) return "";
+          var list = D.st[key];
+          if (key === "b") {   // relief picked on the Assignments page is listed here too
+            list = list.slice(); var have = {}; list.forEach(function (it) { have[(it.n || "").trim()] = 1; });
+            [["reliefStrokeTurn", ""], ["reliefStartEnd", " (start end)"], ["reliefTurnEnd", " (turn end)"]].forEach(function (x) {
+              (asg.sessions[cur][x[0]] || []).map(cleanName).filter(Boolean).forEach(function (nm) { if (!have[nm]) { have[nm] = 1; list.push({ l: "", n: nm + x[1] }); } });
+            });
+          } if (!list.length) return "";
           return "<table><thead><tr><th" + (one ? "" : ' colspan="2"') + ">" + title + "</th></tr></thead><tbody>" + list.map(function (it) { return "<tr>" + (one ? "" : '<td style="width:48px">' + esc(it.l) + "</td>") + '<td class="lo">' + esc(it.n) + "</td></tr>"; }).join("") + "</tbody></table>";
         }
         var tot = D.blocks.map(function (b, i) { return d[i] == null ? "" : "<tr><td>" + esc(b.name || ("Events " + b.num)) + "</td><td>" + hm(d[i]) + "</td></tr>"; }).join("");
