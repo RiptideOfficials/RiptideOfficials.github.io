@@ -200,11 +200,11 @@
       function autoFill(D) {   // pre-fill the ST roles from the lists below; anything the coordinator typed or chose is left alone
         var changed = false;
         D.blocks.forEach(function (b) { b.rows.forEach(function (r, j) {
-          var isDR = r.role === "DR";
+          var isDR = r.role === "DR" || r.role === "SR", ak = r.role === "SR" ? "leadStarter" : "deckRef";
           if (!(/^ST /.test(r.role || "") || isDR) || r.whoOther) return;
           if (r.who && r.who !== r.auto) return;          // changed by hand
           if (!r.who && r.noauto) return;                  // cleared by hand
-          var v = isDR ? ((asg.sessions[cur].deckRef || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
+          var v = isDR ? ((asg.sessions[cur][ak] || []).map(cleanName).filter(Boolean).join(" / ")) : stDefault(r, D, usedInBlock(b, j, "who"));
           if (v !== (r.who || "")) { r.who = v; changed = true; }
           r.auto = v;
         }); });
@@ -279,7 +279,7 @@
           var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }];
           rows.forEach(function (r, j) {
             h += "<tr" + (j === 0 ? ' class="grp"' : "") + ">" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clockM(cc.st[i])) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
-              "<td>" + esc(r.role) + "</td><td>" + esc(r.role === "DR" && r.relief ? r.relief : r.who) + "</td><td>" + esc(r.role === "DR" && r.relief ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
+              "<td>" + esc(r.role) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? r.relief : r.who) + "</td><td>" + esc((r.role === "DR" || r.role === "SR") && r.relief ? "" : r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
           });
         });
         h += '<tr class="endr"><td colspan="2">End Time</td><td colspan="6">' + esc(clock(D.end)) + "</td></tr></tbody></table>";
