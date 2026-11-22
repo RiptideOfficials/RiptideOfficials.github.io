@@ -82,12 +82,18 @@
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function hm(m) { return m == null || m < 0 ? "" : Math.floor(m / 60) + ":" + pad(m % 60); }
   function clock(t) { var m = mins(t); if (m == null) return ""; var h = Math.floor(m / 60), ap = h >= 12 ? "" : ""; return ((h + 11) % 12 + 1) + ":" + pad(m % 60); }
-  function durs(D) {
-    return D.blocks.map(function (b, i) {
-      var s = mins(b.start), e = i + 1 < D.blocks.length ? mins(D.blocks[i + 1].start) : mins(D.end);
-      return s != null && e != null && e >= s ? e - s : null;
+  function clockM(m) { return m == null ? "" : (Math.floor(m / 60) + 11) % 12 + 1 + ":" + pad(m % 60); }
+  function calc(D) {   // start of each group (a break with a length fills in the next start) and how long each lasts
+    var B = D.blocks, st = [], ln = B.map(function (b) { var v = parseInt(b.len, 10); return b.type === "break" && v > 0 ? v : null; });
+    B.forEach(function (b, i) { var m = mins(b.start); st[i] = m != null ? m : (i > 0 && st[i - 1] != null && ln[i - 1] != null ? st[i - 1] + ln[i - 1] : null); });
+    var d = B.map(function (b, i) {
+      if (ln[i] != null) return ln[i];
+      var e = i + 1 < B.length ? st[i + 1] : mins(D.end);
+      return st[i] != null && e != null && e >= st[i] ? e - st[i] : null;
     });
+    return { d: d, st: st };
   }
+  function durs(D) { return calc(D).d; }
 
   R.requireMeetAdmin("assignments").then(function (ctx) {
     if (!ctx) return;
@@ -145,7 +151,7 @@
         }).join("") + '<button class="btn small ghost" type="button" data-act="stadd" data-k="' + key + '">+ Add</button></div>';
       }
       function draw() {
-        var D = deckOf(cur), d = durs(D);
+        var D = deckOf(cur), cc = calc(D), d = cc.d, stx = cc.st;
         var tabs = n.sessions.length > 1 ? '<div class="dk-tabs">' + n.sessions.map(function (x, i) { return '<button type="button" class="btn small ' + (i === cur ? "coord" : "ghost") + '" data-act="tab" data-i="' + i + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "";
         var html = '<p style="margin:0 0 10px"><a href="assignments.html?m=' + encodeURIComponent(meetId) + '">&larr; Assignments</a></p>' +
           '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": deck setup</h1><p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" + tabs +
@@ -154,14 +160,15 @@
           if (b.type === "break") {
             html += '<div class="dk-block" style="border-left-color:#e0a82e;background:#fdf6e3"><div class="dk-top"><div><label>&nbsp;</label><strong>Break</strong></div><div><label>What is happening</label>' + inp("blocks." + i + ".name", b.name, "Break / warm-up / awards") +
               '</div><div><label>Start time</label>' + inp("blocks." + i + ".start", b.start, "", ' type="time"') + '</div></div>' +
-              '<p style="margin:8px 0 0">Length: <span class="dk-tot" data-tot="' + i + '">' + (d[i] == null ? "--" : hm(d[i])) + '</span> ' +
+              '<div style="max-width:200px;margin-top:8px"><label>How long is the break? (minutes)</label>' + inp("blocks." + i + ".len", b.len, "15", ' type="number" min="1" inputmode="numeric"') + '</div>' +
+              '<p style="margin:8px 0 0">Length: <span class="dk-tot" data-tot="' + i + '">' + (d[i] == null ? "--" : hm(d[i])) + '</span> ' + (stx[i] != null && !b.start ? '<span class="muted small">starts at ' + clockM(stx[i]) + '</span> ' : "") +
               '<button class="btn small ghost" type="button" data-act="up" data-i="' + i + '">&uarr;</button> <button class="btn small ghost" type="button" data-act="dn" data-i="' + i + '">&darr;</button> ' +
               '<button class="btn small ghost" type="button" data-act="delb" data-i="' + i + '">Remove break</button></p></div>';
             return;
           }
           html += '<div class="dk-block"><div class="dk-top"><div><label>Events #</label>' + inp("blocks." + i + ".num", b.num, "1-3") + '</div><div><label>Event</label>' + inp("blocks." + i + ".name", b.name, "200 Free relays") +
             '</div><div><label>Start time</label>' + inp("blocks." + i + ".start", b.start, "", ' type="time"') + '</div></div>' +
-            '<p style="margin:8px 0 0">Total time: <span class="dk-tot" data-tot="' + i + '">' + (d[i] == null ? "--" : hm(d[i])) + '</span> ' +
+            '<p style="margin:8px 0 0">Total time: <span class="dk-tot" data-tot="' + i + '">' + (d[i] == null ? "--" : hm(d[i])) + '</span> ' + (stx[i] != null && !b.start ? '<span class="muted small">starts at ' + clockM(stx[i]) + ' (after the break)</span> ' : "") +
             '<button class="btn small ghost" type="button" data-act="up" data-i="' + i + '">&uarr;</button> <button class="btn small ghost" type="button" data-act="dn" data-i="' + i + '">&darr;</button> ' +
             '<button class="btn small ghost" type="button" data-act="delb" data-i="' + i + '">Remove group</button></p>' +
             '<div class="dk-row dk-head"><span>Role</span><span>Assigned</span><span>Relief</span><span>Shadow</span><span></span></div>' +
@@ -184,17 +191,17 @@
         Array.prototype.forEach.call(app.querySelectorAll("[data-tot]"), function (el) { var v = d[+el.getAttribute("data-tot")]; el.textContent = v == null ? "--" : hm(v); });
       }
       function printSheet() {
-        var D = deckOf(cur), d = durs(D), x = n.sessions[cur];
+        var D = deckOf(cur), cc = calc(D), d = cc.d, x = n.sessions[cur];
         var h = "<h1>" + esc(m.title) + (n.sessions.length > 1 ? " &mdash; " + esc(x.name) : "") + ' <span style="font-weight:400;font-size:11pt">' + esc(R.sessionWhen(x) || R.fmtRange(m)) + "</span></h1>" +
           "<table><thead><tr><th>Event #</th><th>Event</th><th>Start</th><th>Total</th><th>Role</th><th>Rotation / Assignment</th><th>Relief</th><th>Shadow</th></tr></thead><tbody>";
         D.blocks.forEach(function (b, i) {
           if (b.type === "break") {
-            h += '<tr class="brk"><td></td><td><strong>' + esc(b.name || "Break") + "</strong></td><td>" + esc(clock(b.start)) + "</td><td>" + (d[i] == null ? "" : hm(d[i])) + '</td><td colspan="4" style="letter-spacing:.3em">BREAK</td></tr>';
+            h += '<tr class="brk"><td></td><td><strong>' + esc(b.name || "Break") + "</strong></td><td>" + esc(clockM(cc.st[i])) + "</td><td>" + (d[i] == null ? "" : hm(d[i])) + '</td><td colspan="4" style="letter-spacing:.3em">BREAK</td></tr>';
             return;
           }
           var rows = b.rows.length ? b.rows : [{ role: "", who: "", relief: "", shadow: "" }];
           rows.forEach(function (r, j) {
-            h += "<tr>" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clock(b.start)) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
+            h += "<tr>" + (j === 0 ? '<td rowspan="' + rows.length + '">' + esc(b.num) + '</td><td rowspan="' + rows.length + '">' + esc(b.name) + '</td><td rowspan="' + rows.length + '">' + esc(clockM(cc.st[i])) + '</td><td rowspan="' + rows.length + '">' + (d[i] == null ? "" : hm(d[i])) + "</td>" : "") +
               "<td>" + esc(r.role) + "</td><td>" + esc(r.who) + "</td><td>" + esc(r.relief) + "</td><td>" + esc(r.shadow) + "</td></tr>";
           });
         });
@@ -217,6 +224,10 @@
       app.addEventListener("input", function (e) {
         var p = e.target.getAttribute && e.target.getAttribute("data-p"); if (!p) return;
         setPath(deckOf(cur), p, e.target.value); refreshTotals(); save();
+      });
+      app.addEventListener("change", function (e) {   // times and break lengths ripple into later groups, so redraw once the box is left
+        var p = e.target.getAttribute && e.target.getAttribute("data-p");
+        if (p && /(\.len|\.start|^end)$/.test(p)) draw();
       });
       app.addEventListener("click", function (e) {
         var t = e.target.closest && e.target.closest("[data-act]"); if (!t) return;
