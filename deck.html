@@ -141,7 +141,7 @@
       if (!res[1]) { app.innerHTML = '<div class="msg err">Could not open the deck planner. The newest firestore.rules need to be published (see the note from Claude).</div>'; return; }
       var saved = {}; res[1].docs.forEach(function (d) { saved[d.id] = d.data(); });
       var su = []; if (res[2]) res[2].docs.forEach(function (d) { var c = d.data() || {}, nm = String(c.name || "").trim(); if (!nm) return;
-        su.push({ name: nm, tags: ((c.certified || []).concat(c.shadow || [], [c.role || ""])).join(" ").toLowerCase(), cert: ((c.certified || []).concat([c.role || ""])).join(" ").toLowerCase() }); });
+        su.push({ ps: Array.isArray(c.perSession) ? c.perSession : null, name: nm, tags: ((c.certified || []).concat(c.shadow || [], [c.role || ""])).join(" ").toLowerCase(), cert: ((c.certified || []).concat([c.role || ""])).join(" ").toLowerCase() }); });
       start(m, saved, su);
     }).catch(function () { app.innerHTML = '<div class="msg err">Could not load this meet.</div>'; });
 
@@ -156,7 +156,10 @@
       function pools(i) {   // who can fill which kind of position: only people who signed up for it (or are already assigned to it)
         var P = { all: [], st: [], dr: [], sr: [] };
         function add(k, v) { var n = cleanName(v); if (n && P[k].indexOf(n) < 0) P[k].push(n); }
-        (signedUp || []).forEach(function (c) { add("all", c.name); if (/stroke/.test(c.cert)) add("st", c.name); if (/deck/.test(c.cert)) add("dr", c.name); if (/starter/.test(c.cert)) add("sr", c.name); });
+        (signedUp || []).forEach(function (c) {
+          var cert = c.cert;
+          if (c.ps) { var f = c.ps.filter(function (x) { return x.i === i; })[0]; cert = f ? (f.work || []).join(" ").toLowerCase() : ""; }
+          var wm = c.cert; add("all", c.name); if (/stroke/.test(cert)) add("st", c.name); if (/deck/.test(cert)) add("dr", c.name); if (/starter/.test(cert)) add("sr", c.name); });
         R.WHOLE_GROUPS.forEach(function (g) { asg.whole[g.key].forEach(function (v) { add("all", v); }); });
         var A = asg.sessions[i];
         R.SESSION_GROUPS.forEach(function (g) { (A[g.key] || []).forEach(function (v) { add("all", v); }); });
