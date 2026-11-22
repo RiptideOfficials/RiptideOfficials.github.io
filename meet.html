@@ -84,6 +84,7 @@
       var html = '<div class="card"><span class="pill green">Riptide hosted meet</span>' +
         '<h1 style="margin-top:8px">' + esc(m.title) + "</h1>" +
         '<div class="meet-when"><span class="when">' + esc(R.fmtRange(m)) + "</span>" + (m.location ? '<span class="where">' + esc(m.location) + "</span>" : "") + "</div>" +
+        (refRowsHtml() ? '<table class="sched" style="margin:6px 0 4px">' + refRowsHtml() + "</table>" : "") +
         (n.v2 ? "" : notesHtml(m.notes)) +
         '<div class="btn-row"><a class="btn green" href="' + signupUrl + '">Sign up</a>' +
         '<button class="btn ghost" type="button" id="cal-btn">Add to calendar</button><button class="btn ghost noprint" type="button" onclick="window.print()">Print</button></div>' +
@@ -98,18 +99,18 @@
           '<button class="btn coord" type="button" id="copylink">Copy link</button></div></div>' : "") + "</div>";
 
       function nonEmpty(o, groups) { return groups.some(function (g) { return o[g.key] && o[g.key].length; }); }
+      function locRow() { return m.location ? "<tr><td>Location</td><td>" + esc(m.location) + "</td></tr>" : ""; }
       function refRowsHtml() {   // the Meet Referee is part of the meet details, with contact info for questions
-        var loc = m.location ? "<tr><td>Location</td><td>" + esc(m.location) + "</td></tr>" : "";
-        if (!(asg.whole.meetRef || []).length) return loc;
+        if (!(asg.whole.meetRef || []).length) return "";
         var rn = asg.whole.meetRef.map(function (v) { return String(v).replace(/\s*\([^)]*\)\s*$/, ""); }).join(", "), em = m.refEmail || window.ADMIN_EMAIL || "";
-        return loc + "<tr><td>Meet Referee</td><td>" + esc(rn) + "</td></tr>" +
+        return "<tr><td>Meet Referee</td><td>" + esc(rn) + "</td></tr>" +
           (em ? '<tr><td>Email</td><td><a href="mailto:' + esc(em) + '">' + esc(em) + "</a></td></tr>" : "") +
           (m.refPhone ? '<tr><td>Phone</td><td><a href="tel:' + esc(m.refPhone.replace(/[^\d+]/g, "")) + '">' + esc(m.refPhone) + "</a></td></tr>" : "");
       }
       function sessionBody(x, i) {
         var o = asg.sessions[i], out = "";
         var det = R.parseSchedule(x.details).filter(function (d) { return d.value; }), refRows = "";
-        if (i === 0) refRows = refRowsHtml();
+        if (i === 0) refRows = locRow();
         if (det.length || refRows) out += "<h3>Meet details</h3>" + '<table class="sched">' + refRows + det.map(function (d) {
           return "<tr><td>" + esc(d.label) + "</td><td>" + esc(d.value) + "</td></tr>"; }).join("") + "</table>";
         if (x.notes) out += "<h3>Notes for officials</h3>" + paras(x.notes);
@@ -136,7 +137,7 @@
         if (n.info.food) html += '<div class="card"><h2>Food</h2>' + paras(n.info.food) + "</div>";
         if (n.info.misc) html += '<div class="card"><h2>Miscellaneous</h2>' + paras(n.info.misc) + "</div>";
       } else {
-        if (m.schedule || refRowsHtml()) html += '<div class="card"><h2>Meet details</h2><table class="sched">' + refRowsHtml() + R.parseSchedule(m.schedule || "").map(function (s) {
+        if (m.schedule || locRow()) html += '<div class="card"><h2>Meet details</h2><table class="sched">' + locRow() + R.parseSchedule(m.schedule || "").map(function (s) {
           return "<tr><td>" + esc(s.label) + "</td><td>" + esc(s.value) + "</td></tr>"; }).join("") + "</table></div>";
       }
       app.innerHTML = html;
