@@ -85,6 +85,12 @@
     if (val && L.indexOf(val) < 0) o += "<option selected>" + esc(val) + "</option>";   // keeps anything typed before
     return '<select data-p="' + path + '">' + o + "</select>";
   }
+  function stDefault(r, D, used) {   // the name(s) from the Stroke & Turn lists that belong in this ST role
+    var key = /Start End/.test(r.role || "") ? "a" : /Turn End/.test(r.role || "") ? "c" : null; if (!key) return "";
+    var rng = ((r.role || "").match(/\d-\d/) || [""])[0], list = [];
+    D.st[key].forEach(function (it) { var nm = (it.n || "").trim(); if (nm && !(used || {})[nm] && list.indexOf(nm) < 0 && (it.l || "").replace(/\s/g, "").indexOf(rng) >= 0) list.push(nm); });
+    return list.join(" / ");
+  }
   function whoSel(path, r, D, used) {
     used = used || {};   // for the ST roles: pick from the names entered in the Stroke & Turn lists below
     var key = /Start End/.test(r.role || "") ? "a" : /Turn End/.test(r.role || "") ? "c" : null;
@@ -189,6 +195,18 @@
         for (var k = 0; k < p.length - 1; k++) o = o[p[k]];
         o[p[p.length - 1]] = val;
       }
+      function autoFill(D) {   // pre-fill the ST roles from the lists below; anything the coordinator typed or chose is left alone
+        var changed = false;
+        D.blocks.forEach(function (b) { b.rows.forEach(function (r, j) {
+          if (!/^ST /.test(r.role || "") || r.whoOther) return;
+          if (r.who && r.who !== r.auto) return;          // changed by hand
+          if (!r.who && r.noauto) return;                  // cleared by hand
+          var v = stDefault(r, D, usedInBlock(b, j, "who"));
+          if (v !== (r.who || "")) { r.who = v; changed = true; }
+          r.auto = v;
+        }); });
+        return changed;
+      }
       function save(now) {
         clearTimeout(timer);
         var st = document.getElementById("dk-status"); if (st) st.textContent = "Saving...";
@@ -206,7 +224,8 @@
         }).join("") + '<button class="btn small ghost" type="button" data-act="stadd" data-k="' + key + '">+ Add</button></div>';
       }
       function draw() {
-        var D = deckOf(cur), cc = calc(D), d = cc.d, stx = cc.st; PL = pools(cur); DLS = []; DLN = 0;
+        var D = deckOf(cur); if (autoFill(D)) save();
+        var cc = calc(D), d = cc.d, stx = cc.st; PL = pools(cur); DLS = []; DLN = 0;
         var tabs = n.sessions.length > 1 ? '<div class="dk-tabs">' + n.sessions.map(function (x, i) { return '<button type="button" class="btn small ' + (i === cur ? "coord" : "ghost") + '" data-act="tab" data-i="' + i + '">' + esc(x.name) + "</button>"; }).join("") + "</div>" : "";
         var html = '<p style="margin:0 0 10px"><a href="meets.html">&larr; All meets</a></p><div class="btn-row" style="margin:0 0 10px"><a class="btn small coord" href="meet.html?m=' + encodeURIComponent(meetId) + '">Meet details</a><a class="btn small coord" href="signups.html?m=' + encodeURIComponent(meetId) + '">Sign-ups</a><a class="btn small coord" href="assignments.html?m=' + encodeURIComponent(meetId) + '">Assignments</a><a class="btn small coord" href="meet-edit.html?m=' + encodeURIComponent(meetId) + '">Edit meet</a></div>' +
           '<div class="card"><span class="pill">Coordinator only</span><h1 style="margin-top:8px">' + esc(m.title) + ": deck setup</h1><p><strong>" + esc(R.fmtRange(m)) + "</strong>" + (m.location ? "<br>" + esc(m.location) : "") + "</p>" + tabs +
@@ -294,6 +313,7 @@
         var wp = e.target.getAttribute && e.target.getAttribute("data-whosel"); if (!wp) return;
         var D = deckOf(cur), parts = wp.split("."), row = D.blocks[+parts[1]].rows[+parts[3]];
         if (e.target.value === "__other__") { row.whoOther = true; row.who = ""; } else { row.whoOther = false; row.who = e.target.value; }
+        row.auto = ""; row.noauto = !e.target.value;
         draw(); save();
       });
       app.addEventListener("change", function (e) {   // times and break lengths ripple into later groups, so redraw once the box is left
