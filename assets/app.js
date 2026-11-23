@@ -40,7 +40,7 @@
     draw();
   };
   R.helpBox = function (title, html) {   // a "? Help" button that opens plain instructions right on the page
-    return '<details class="help-box"><summary>? Help' + (title ? ": " + title : "") + ' <span class="help-tap">&#9662; tap to open</span></summary><div class="help-body">' + html + "</div></details>";
+    return '<details class="help-box"><summary title="Help' + (title ? ": " + R.esc(title) : "") + '">? Help</summary><div class="help-body"><strong class="help-title">' + R.esc(title || "Help") + "</strong>" + html + "</div></details>";
   };
   R.esc = function (s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
